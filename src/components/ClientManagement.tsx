@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Plus, Trash2, AlertCircle, Users, Target } from 'lucide-react';
 import type { Client, Profile } from '../types/database';
@@ -27,6 +28,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   const [newClientName, setNewClientName] = useState('');
   const [newClientTarget, setNewClientTarget] = useState<number>(0);
   const [showAddClient, setShowAddClient] = useState(false);
+
 
   // Assignment form state
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
@@ -165,6 +167,16 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   async function handleAssignClient(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedClient || !selectedSDR) return;
+
+    const isDuplicate = clients.some(client =>
+      client.id === selectedClient &&
+      client.assignments.some(assignment => assignment.sdr_id === selectedSDR)
+    );
+
+    if (isDuplicate) {
+      toast.error('This SDR is already assigned to this client for this month.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
