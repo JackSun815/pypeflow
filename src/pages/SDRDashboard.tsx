@@ -11,6 +11,7 @@ import { AlertCircle, Calendar, DollarSign, History, Info, Rocket } from 'lucide
 import confetti from 'canvas-confetti';
 import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
+import CalendarView from '../components/CalendarView';
 
 export default function SDRDashboard() {
   const { token } = useParams();
@@ -318,6 +319,19 @@ export default function SDRDashboard() {
                 Commissions
               </span>
             </Link>
+            <Link
+              to="calendar"
+              className={`text-sm font-medium ${
+                location.pathname === `/dashboard/sdr/${token}/calendar`
+                  ? 'text-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                Calendar
+              </span>
+            </Link>
           </div>
         </div>
       </header>
@@ -334,7 +348,7 @@ export default function SDRDashboard() {
 
         <Routes>
           <Route
-            path="/"
+            index
             element={
               <>
                 <div className="mb-8">
@@ -524,8 +538,12 @@ export default function SDRDashboard() {
               </>
             }
           />
-          <Route path="/history" element={<MeetingsHistory meetings={meetings} loading={meetingsLoading} error={meetingsError} onUpdateHeldDate={handleMeetingHeldDateUpdate} onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate} />} />
-          <Route path="/commissions" element={<Commissions sdrId={sdrId || ''} />} />
+          <Route path="history" element={<MeetingsHistory meetings={meetings} loading={meetingsLoading} error={meetingsError} onUpdateHeldDate={handleMeetingHeldDateUpdate} onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate} />} />
+          <Route path="commissions" element={<Commissions sdrId={sdrId || ''} />} />
+          <Route
+            path="calendar"
+            element={<CalendarView meetings={meetings} />}
+          />
         </Routes>
       </main>
     </div>
