@@ -3,13 +3,19 @@ import { Search } from 'lucide-react';
 import type { Meeting } from '../types/database';
 import { MeetingCard } from './MeetingCard';
 
+
 interface ScrollableMeetingListProps {
   title: string;
   icon: React.ReactNode;
   meetings: Meeting[];
+  onEdit?: (meeting: Meeting) => void;
+  editingMeetingId?: string | null;
   onDelete?: (meetingId: string) => void;
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
+  editable?: boolean;
+  onSave?: (meeting: Meeting) => void;
+  onCancel?: () => void;
   showActions?: boolean;
   showDateControls?: boolean;
 }
@@ -18,14 +24,18 @@ export default function ScrollableMeetingList({
   title,
   icon,
   meetings,
+  onEdit,
+  editingMeetingId,
   onDelete,
   onUpdateHeldDate,
   onUpdateConfirmedDate,
+  editable = false,
+  onSave,
+  onCancel,
   showActions = false,
   showDateControls = false
 }: ScrollableMeetingListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-
   const filteredMeetings = meetings.filter(meeting => {
     const searchString = `${(meeting as any).clients?.name || ''} ${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
@@ -62,8 +72,13 @@ export default function ScrollableMeetingList({
                 onDelete={onDelete}
                 onUpdateHeldDate={onUpdateHeldDate}
                 onUpdateConfirmedDate={onUpdateConfirmedDate}
+                editable={editable}
+                onSave={onSave}
+                onCancel={onCancel}
                 showActions={showActions}
                 showDateControls={showDateControls}
+                onEdit={onEdit}
+                isEditing={editingMeetingId === meeting.id}
               />
             ))
           ) : (

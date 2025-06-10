@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, XCircle, Edit2, Trash2 } from 'lucide-react';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { supabase } from '../lib/supabase';
 import ScrollableMeetingList from '../components/ScrollableMeetingList';
 import type { Meeting } from '../types/database';
 
-export default function TeamMeetings() {
+export default function TeamMeetings({
+  meetings,
+  fetchSDRs,
+}: {
+  meetings: Meeting[];
+  fetchSDRs: () => void;
+}) {
+  const [highlightPending, setHighlightPending] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setHighlightPending(false), 10000);
+    return () => clearTimeout(timer);
+  }, []);
   const { sdrs, loading: sdrsLoading } = useSDRs();
   const [selectedSDR, setSelectedSDR] = useState<string | 'all'>('all');
   const [allMeetings, setAllMeetings] = useState<(Meeting & { sdr_name?: string })[]>([]);
+  const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null);
+  const [draftMeeting, setDraftMeeting] = useState<Partial<Meeting>>({});
 
   // Get meetings for the selected SDR
   const { meetings: selectedSDRMeetings } = useMeetings(selectedSDR === 'all' ? null : selectedSDR);
@@ -44,6 +58,53 @@ export default function TeamMeetings() {
     fetchAllMeetings();
   }, [selectedSDR, sdrs, selectedSDRMeetings]);
 
+  const handleDeleteMeeting = async (meetingId: string) => {
+    const { error } = await supabase
+      .from('meetings')
+      .delete()
+      .eq('id', meetingId);
+
+    if (error) {
+      console.error('Error deleting meeting:', error);
+    } else {
+      setAllMeetings(allMeetings.filter(meeting => meeting.id !== meetingId));
+      fetchSDRs();
+    }
+  };
+
+  const handleSaveMeeting = async (updatedMeeting: Meeting) => {
+    const { error } = await supabase
+      .from('meetings')
+      .update({
+        scheduled_date: updatedMeeting.scheduled_date,
+        status: updatedMeeting.status,
+        no_show: updatedMeeting.no_show,
+      })
+      .eq('id', updatedMeeting.id);
+
+    if (error) {
+      console.error('Error updating meeting:', error);
+    } else {
+      setAllMeetings(allMeetings.map(meeting => 
+        meeting.id === updatedMeeting.id ? updatedMeeting : meeting
+      ));
+      fetchSDRs();
+      setEditingMeetingId(null);
+      setDraftMeeting({});
+    }
+  };
+
+  const handleEditMeeting = (meeting: Meeting) => {
+    setEditingMeetingId(meeting.id);
+    setDraftMeeting({
+      ...meeting,
+      scheduled_date: meeting.scheduled_date,
+      status: meeting.status,
+      no_show: meeting.no_show,
+    });
+  };
+
+  
   // Get today's date string for comparison
   const todayString = new Date().toISOString().split('T')[0];
 
@@ -103,6 +164,8 @@ export default function TeamMeetings() {
         </div>
       </div>
 
+  
+
       {/* Meeting Lists */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScrollableMeetingList
@@ -110,14 +173,27 @@ export default function TeamMeetings() {
           icon={<Calendar className="w-5 h-5 text-indigo-600" />}
           meetings={todaysMeetings}
           showDateControls={true}
+          editable={true}
+          onSave={handleSaveMeeting}
+          onDelete={handleDeleteMeeting}
+          onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
+          onEdit={handleEditMeeting}
+          editingMeetingId={editingMeetingId}
         />
-
-        <ScrollableMeetingList
-          title="Pending Meetings"
-          icon={<Clock className="w-5 h-5 text-yellow-600" />}
-          meetings={pendingMeetings}
-          showDateControls={true}
-        />
+        <div className={`${highlightPending ? 'animate-glow-orange ring-2 ring-orange-400' : ''}`}>
+          <ScrollableMeetingList
+            title="Pending Meetings"
+            icon={<Clock className="w-5 h-5 text-yellow-600" />}
+            meetings={pendingMeetings}
+            showDateControls={true}
+            editable={true}
+            onSave={handleSaveMeeting}
+            onDelete={handleDeleteMeeting}
+            onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
+            onEdit={handleEditMeeting}
+            editingMeetingId={editingMeetingId}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -126,6 +202,12 @@ export default function TeamMeetings() {
           icon={<CheckCircle className="w-5 h-5 text-green-600" />}
           meetings={confirmedMeetings}
           showDateControls={true}
+          editable={true}
+          onSave={handleSaveMeeting}
+          onDelete={handleDeleteMeeting}
+          onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
+          onEdit={handleEditMeeting}
+          editingMeetingId={editingMeetingId}
         />
 
         <ScrollableMeetingList
@@ -133,6 +215,12 @@ export default function TeamMeetings() {
           icon={<XCircle className="w-5 h-5 text-red-600" />}
           meetings={noShowMeetings}
           showDateControls={true}
+          editable={true}
+          onSave={handleSaveMeeting}
+          onDelete={handleDeleteMeeting}
+          onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
+          onEdit={handleEditMeeting}
+          editingMeetingId={editingMeetingId}
         />
       </div>
     </div>
