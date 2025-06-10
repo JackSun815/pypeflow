@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle } from 'lucide-react';
+import CalendarView from '../components/CalendarView';
 import SDRManagement from '../components/SDRManagement';
 import ClientManagement from '../components/ClientManagement';
 import UserManagement from '../components/UserManagement';
@@ -454,7 +455,9 @@ export default function ManagerDashboard() {
                   {todayMeetings.map((meeting) => (
                     <div
                       key={meeting.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className={`flex items-center justify-between p-3 bg-gray-50 rounded-lg ${
+                        meeting.status === 'pending' ? 'animate-glow-orange ring-2 ring-orange-400' : ''
+                      }`}
                     >
                       <div>
                         <p className="text-sm font-medium text-gray-900">
@@ -513,7 +516,12 @@ export default function ManagerDashboard() {
           </>
         )}
 
-        {activeTab === 'meetings' && <TeamMeetings />}
+        {activeTab === 'meetings' && (
+          <>
+            <CalendarView meetings={meetings} />
+            <TeamMeetings />
+          </>
+        )}
 
         {activeTab === 'sdrs' && (
           <SDRManagement sdrs={sdrs} onInviteSent={fetchSDRs} />

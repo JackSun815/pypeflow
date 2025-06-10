@@ -7,23 +7,28 @@ import TimeSelector from './TimeSelector';
 interface MeetingCardProps {
   meeting: Meeting & { sdr_name?: string };
   onDelete?: (meetingId: string) => void;
+  onSave?: (meeting: Meeting) => void;
+  onEdit?: (meeting: Meeting) => void;
+  onCancel?: () => void;
+  isEditing?: boolean;
+  editable?: boolean;
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
-  onUpdateMeeting?: (meetingId: string, updates: Partial<Meeting>) => void;
-  showActions?: boolean;
   showDateControls?: boolean;
 }
 
-export function MeetingCard({ 
-  meeting, 
-  onDelete, 
-  onUpdateHeldDate, 
+export function MeetingCard({
+  meeting,
+  onDelete,
+  onSave,
+  onEdit,
+  onCancel,
+  isEditing = false,
+  editable = false,
+  onUpdateHeldDate,
   onUpdateConfirmedDate,
-  onUpdateMeeting,
-  showActions = false, 
-  showDateControls = false 
+  showDateControls = false,
 }: MeetingCardProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({
     contact_full_name: meeting.contact_full_name || '',
     contact_email: meeting.contact_email || '',
@@ -51,26 +56,18 @@ export function MeetingCard({
   const isTomorrow = meetingDateString === tomorrowString;
   const needsConfirmation = meeting.status === 'pending' && isTomorrow;
 
-  const handleSave = async () => {
-    if (!onUpdateMeeting) return;
-
-    try {
-      const scheduledDateTime = `${editedData.scheduled_date}T${editedData.scheduled_time}:00`;
-      
-      await onUpdateMeeting(meeting.id, {
-        contact_full_name: editedData.contact_full_name,
-        contact_email: editedData.contact_email,
-        contact_phone: editedData.contact_phone,
-        scheduled_date: scheduledDateTime,
-        status: editedData.status,
-        no_show: editedData.no_show
-      });
-
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to update meeting:', error);
-      // You could add error handling UI here
-    }
+  const handleInternalSave = () => {
+    if (!onSave) return;
+    const scheduledDateTime = `${editedData.scheduled_date}T${editedData.scheduled_time}:00`;
+    onSave({
+      ...meeting,
+      contact_full_name: editedData.contact_full_name,
+      contact_email: editedData.contact_email,
+      contact_phone: editedData.contact_phone,
+      scheduled_date: scheduledDateTime,
+      status: editedData.status,
+      no_show: editedData.no_show,
+    });
   };
 
   return (
@@ -97,23 +94,32 @@ export function MeetingCard({
             </div>
             <div className="flex items-center gap-2">
               {isEditing ? (
-                <button
-                  onClick={handleSave}
-                  className="p-1 text-green-600 hover:text-green-700 focus:outline-none"
-                  title="Save changes"
-                >
-                  <Save className="w-4 h-4" />
-                </button>
+                <>
+                  <button
+                    onClick={handleInternalSave}
+                    className="p-1 text-green-600 hover:text-green-700 focus:outline-none"
+                    title="Save changes"
+                  >
+                    <Save className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={onCancel}
+                    className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
+                    title="Cancel"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </>
               ) : (
                 <button
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => onEdit?.(meeting)}
                   className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
                   title="Edit meeting"
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
               )}
-              {showActions && onDelete && (
+              {editable && onDelete && (
                 <button
                   onClick={() => onDelete(meeting.id)}
                   className="p-1 text-red-600 hover:text-red-700 focus:outline-none"

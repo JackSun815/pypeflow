@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.calendar-wrapper .rbc-calendar {
+  font-family: 'Times New Roman', sans-serif; 
+  font-size: 16px; 
+}
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  background-color: transparent !important;
+  border: none !important;
+  vertical-align: middle;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td + td {
+  padding-left: 8px;
+}
+
+.rbc-agenda-time-cell {
+  font-weight: normal;
+  color: inherit;
+  padding: 8px 16px !important;
+}
+
+.rbc-agenda-content-cell {
+  padding: 4px !important;
+}
+
+.rbc-agenda-event-cell {
+  width: 100%;
+}
