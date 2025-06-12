@@ -73,15 +73,17 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
   }, []);
 
   const events: MeetingEvent[] = calendarMeetings.map((m) => {
-    const start = new Date(m.scheduled_date);
-    const isValidDate = !isNaN(start.getTime());
-    const fallbackStart = isValidDate ? start : new Date();
-    const end = new Date(fallbackStart.getTime() + 30 * 60 * 1000);
+    // Parse local date/time from stored ISO string
+    const [datePart, timePart = '09:00'] = (m.scheduled_date || '').split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = timePart.split(':').map(Number);
+    const start = new Date(year, month - 1, day, hour, minute);
+    const end   = new Date(start.getTime() + 30 * 60 * 1000);
     
     return {
       id: m.id,
       title: m.clients?.name || 'Untitled Meeting',
-      start: fallbackStart,
+      start: start,
       end,
       status: m.status,
       contact_full_name: m.contact_full_name,
@@ -173,10 +175,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
             <div className="mb-4">
               <h2 className="text-xl font-semibold">{selectedMeeting.client_name || selectedMeeting.title}</h2>
             </div>
-            <MeetingCard meeting={{ 
-              ...selectedMeeting, 
-              scheduled_date: selectedMeeting?.start?.toISOString() 
-            }} />
+            <MeetingCard meeting={selectedMeeting} />
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => setSelectedMeeting(null)}

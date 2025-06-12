@@ -6,6 +6,7 @@
 .calendar-wrapper .rbc-calendar {
   font-family: 'Times New Roman', sans-serif; 
   font-size: 16px; 
+  padding-bottom: 30px !important;
 }
 .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
   background-color: transparent !important;

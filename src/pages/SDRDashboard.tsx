@@ -182,7 +182,7 @@ export default function SDRDashboard() {
     if (!selectedClientId || !meetingDate || !sdrId || !contactFullName || !contactEmail) return;
 
     try {
-      const scheduledDateTime = `${meetingDate}T${meetingTime}:00.000Z`;
+      const scheduledDateTime = `${meetingDate}T${meetingTime}:00`;
       
       await addMeeting(selectedClientId, scheduledDateTime, sdrId, {
         contact_full_name: contactFullName,
