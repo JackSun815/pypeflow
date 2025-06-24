@@ -3,7 +3,8 @@ import { supabase, withRetry } from '../lib/supabase';
 import type { Client, Meeting } from '../types/database';
 
 interface ClientWithMetrics extends Client {
-  monthlyTarget: number;
+  monthly_set_target: number;
+  monthly_hold_target: number;
   confirmedMeetings: number;
   pendingMeetings: number;
   todaysMeetings: Meeting[];
@@ -35,11 +36,13 @@ export function useClients(sdrId?: string | null) {
         supabase
           .from('assignments')
           .select(`
-            monthly_target,
+            monthly_set_target,
+            monthly_hold_target,
             clients (
               id,
               name,
-              monthly_target
+              monthly_set_target,
+              monthly_hold_target
             )
           `)
           .eq('sdr_id', sdrId)
@@ -48,9 +51,9 @@ export function useClients(sdrId?: string | null) {
 
       if (assignmentsError) throw assignmentsError;
 
-      // Calculate total meeting goal from assignments
+      // Calculate total meeting goal from assignments (using set target)
       const totalGoal = assignments?.reduce((sum, assignment: any) => 
-        sum + (assignment.monthly_target || 0), 0) || 0;
+        sum + (assignment.monthly_set_target || 0), 0) || 0;
       setTotalMeetingGoal(totalGoal);
 
       // Fetch meetings for this month
@@ -78,23 +81,28 @@ export function useClients(sdrId?: string | null) {
             new Date(meeting.scheduled_date).toDateString() === new Date().toDateString()
         );
 
-        // Match the exact pending meetings calculation from Team Meetings
+        // Calculate pending meetings (status = pending and not no-show)
         const pendingMeetings = clientMeetings.filter(
           meeting => meeting.status === 'pending' && !meeting.no_show
         ).length;
 
-        // Calculate confirmed meetings for this client
+        // Calculate confirmed meetings (status = confirmed and not no-show)
         const confirmedMeetings = clientMeetings.filter(
           (meeting) => meeting.status === 'confirmed' && !meeting.no_show
         ).length;
 
+        // Calculate total meetings set (both pending and confirmed)
+        const totalMeetingsSet = clientMeetings.length;
+
         return {
           id: assignment.clients.id,
           name: assignment.clients.name,
-          monthlyTarget: assignment.monthly_target || 0,
+          monthly_set_target: assignment.monthly_set_target || 0,
+          monthly_hold_target: assignment.monthly_hold_target || 0,
           confirmedMeetings,
           pendingMeetings,
-          todaysMeetings: todayMeetings || []
+          todaysMeetings: todayMeetings,
+          totalMeetingsSet // Added this if you need it
         };
       });
 
@@ -106,10 +114,13 @@ export function useClients(sdrId?: string | null) {
         meeting => meeting.status === 'confirmed' && !meeting.no_show
       ).length;
 
-      // Match the exact pending meetings calculation from Team Meetings
+      // Calculate total pending meetings
       const totalPending = monthlyMeetings.filter(
         meeting => meeting.status === 'pending' && !meeting.no_show
       ).length;
+
+      // Calculate total meetings set (both pending and confirmed)
+      const totalMeetingsSet = monthlyMeetings.length;
 
       setTotalBookedMeetings(totalConfirmed);
       setTotalPendingMeetings(totalPending);

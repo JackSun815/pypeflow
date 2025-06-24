@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { Calendar, CheckCircle, Mail, Phone, Trash2, User, XCircle, AlertCircle, Save, Edit2 } from 'lucide-react';
+import { Calendar, CheckCircle, Mail, Phone, Trash2, User, XCircle, AlertCircle, Save, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatTimeFromISOString } from '../utils/timeUtils';
 import type { Meeting } from '../types/database';
 import TimeSelector from './TimeSelector';
 
 interface MeetingCardProps {
-  meeting: Meeting & { sdr_name?: string };
+  meeting: Meeting & { sdr_name?: string; client_name?: string; clients?: { name?: string } | null };
   onDelete?: (meetingId: string) => void;
   onSave?: (meeting: Meeting) => void;
   onEdit?: (meeting: Meeting) => void;
   onCancel?: () => void;
-  isEditing?: boolean;
   editable?: boolean;
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
   showDateControls?: boolean;
+  editingMeetingId?: string | null;
 }
 
 export function MeetingCard({
@@ -23,12 +23,13 @@ export function MeetingCard({
   onSave,
   onEdit,
   onCancel,
-  isEditing = false,
   editable = false,
+  editingMeetingId = null,
   onUpdateHeldDate,
   onUpdateConfirmedDate,
   showDateControls = false,
 }: MeetingCardProps) {
+  const isEditing = editingMeetingId === meeting.id;
   const [editedData, setEditedData] = useState({
     contact_full_name: meeting.contact_full_name || '',
     contact_email: meeting.contact_email || '',
@@ -38,6 +39,8 @@ export function MeetingCard({
     status: meeting.status,
     no_show: meeting.no_show
   });
+
+  const [showDetails, setShowDetails] = useState(false);
 
   const formattedTime = formatTimeFromISOString(meeting.scheduled_date);
   const meetingDate = new Date(meeting.scheduled_date).toLocaleDateString('en-US', {
@@ -57,9 +60,14 @@ export function MeetingCard({
   const needsConfirmation = meeting.status === 'pending' && isTomorrow;
 
   const handleInternalSave = () => {
-    if (!onSave) return;
+    console.log('Attempting to save meeting with data:', editedData);
+    if (!onSave) {
+      console.error('No onSave handler provided');
+      return;
+    }
+    
     const scheduledDateTime = `${editedData.scheduled_date}T${editedData.scheduled_time}:00`;
-    onSave({
+    const updatedMeeting = {
       ...meeting,
       contact_full_name: editedData.contact_full_name,
       contact_email: editedData.contact_email,
@@ -67,15 +75,19 @@ export function MeetingCard({
       scheduled_date: scheduledDateTime,
       status: editedData.status,
       no_show: editedData.no_show,
-    });
+    };
+    
+    console.log('Calling onSave with:', updatedMeeting);
+    onSave(updatedMeeting);
   };
-
+  
   return (
-    <div className={`rounded-lg p-4 ${
-      needsConfirmation 
-        ? 'bg-amber-50 border-2 border-amber-300 animate-pulse' 
-        : 'bg-gray-50'
-    }`}>
+    <div className="max-h-[80vh] overflow-y-auto">
+      <div className={`rounded-lg p-4 ${
+        needsConfirmation 
+          ? 'bg-amber-50 border-2 border-amber-300 animate-pulse' 
+          : 'bg-gray-50'
+      }`}>
       <div className="flex justify-between items-start">
         <div className="space-y-1 w-full">
           {needsConfirmation && (
@@ -87,7 +99,7 @@ export function MeetingCard({
 
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-medium text-gray-900">{(meeting as any).clients?.name}</p>
+              <p className="font-medium text-gray-900">{meeting.client_name || meeting.clients?.name || meeting.contact_full_name || 'Untitled Meeting'}</p>
               {meeting.sdr_name && (
                 <p className="text-sm text-gray-500">Booked by {meeting.sdr_name}</p>
               )}
@@ -112,7 +124,10 @@ export function MeetingCard({
                 </>
               ) : (
                 <button
-                  onClick={() => onEdit?.(meeting)}
+                  onClick={() => {
+                    console.log('Edit button clicked for meeting:', meeting.id); // Add this line
+                    onEdit?.(meeting);
+                  }}
                   className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
                   title="Edit meeting"
                 >
@@ -141,7 +156,7 @@ export function MeetingCard({
                   type="text"
                   value={editedData.contact_full_name}
                   onChange={(e) => setEditedData(prev => ({ ...prev, contact_full_name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -153,7 +168,7 @@ export function MeetingCard({
                   type="email"
                   value={editedData.contact_email}
                   onChange={(e) => setEditedData(prev => ({ ...prev, contact_email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -165,7 +180,7 @@ export function MeetingCard({
                   type="tel"
                   value={editedData.contact_phone}
                   onChange={(e) => setEditedData(prev => ({ ...prev, contact_phone: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -178,7 +193,7 @@ export function MeetingCard({
                     type="date"
                     value={editedData.scheduled_date}
                     onChange={(e) => setEditedData(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -192,7 +207,7 @@ export function MeetingCard({
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3 pt-4">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -202,7 +217,7 @@ export function MeetingCard({
                       ...prev, 
                       status: e.target.checked ? 'confirmed' : 'pending'
                     }))}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
                   />
                   <label htmlFor={`confirmed-${meeting.id}`} className="text-sm text-gray-700">
                     Meeting Confirmed
@@ -215,7 +230,7 @@ export function MeetingCard({
                     id={`no-show-${meeting.id}`}
                     checked={editedData.no_show}
                     onChange={(e) => setEditedData(prev => ({ ...prev, no_show: e.target.checked }))}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
                   />
                   <label htmlFor={`no-show-${meeting.id}`} className="text-sm text-gray-700">
                     No Show
@@ -301,9 +316,33 @@ export function MeetingCard({
                   </span>
                 )}
               </div>
+              <button
+                onClick={() => setShowDetails(!showDetails)}
+                className="mt-2 text-sm text-indigo-600 hover:underline flex items-center gap-1"
+              >
+                {showDetails ? 'Hide Details' : 'Show Details'}
+                {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              {showDetails && (
+                <div className="mt-2 space-y-2 text-sm text-gray-600">
+                  {meeting.title && (
+                    <div><span className="font-medium text-gray-700">Title:</span> {meeting.title}</div>
+                  )}
+                  {meeting.company && (
+                    <div><span className="font-medium text-gray-700">Company:</span> {meeting.company}</div>
+                  )}
+                  {meeting.linkedin_url && (
+                    <div><span className="font-medium text-gray-700">LinkedIn:</span> <a href={meeting.linkedin_url} className="text-indigo-600 underline" target="_blank" rel="noopener noreferrer">{meeting.linkedin_url}</a></div>
+                  )}
+                  {meeting.notes && (
+                    <div><span className="font-medium text-gray-700">Notes:</span> {meeting.notes}</div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

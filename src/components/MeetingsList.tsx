@@ -8,8 +8,12 @@ interface MeetingsListProps {
   onDelete?: (meetingId: string) => void;
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
-  onUpdateMeeting?: (meetingId: string, updates: Partial<Meeting>) => void;
   showMeetingStatus?: boolean;
+  editable?: boolean;
+  editingMeetingId?: string | null;
+  onEdit?: (meeting: Meeting) => void;
+  onSave?: (meeting: Meeting) => void;
+  onCancel?: () => void;
 }
 
 export default function MeetingsList({ 
@@ -18,8 +22,12 @@ export default function MeetingsList({
   onDelete, 
   onUpdateHeldDate,
   onUpdateConfirmedDate,
-  onUpdateMeeting,
-  showMeetingStatus = false
+  showMeetingStatus = false,
+  editable = false,
+  editingMeetingId = null,
+  onEdit,
+  onSave,
+  onCancel
 }: MeetingsListProps) {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -35,9 +43,12 @@ export default function MeetingsList({
               onDelete={onDelete}
               onUpdateHeldDate={onUpdateHeldDate}
               onUpdateConfirmedDate={onUpdateConfirmedDate}
-              onUpdateMeeting={onUpdateMeeting}
-              showActions={true}
               showDateControls={showMeetingStatus}
+              editable={editable}
+              editingMeetingId={editingMeetingId}
+              onEdit={onEdit}
+              onSave={onSave}
+              onCancel={onCancel}
             />
           ))}
         </div>

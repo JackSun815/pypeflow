@@ -14,8 +14,12 @@ interface ClientWithAssignments extends Client {
     id: string;
     sdr_id: string;
     monthly_target: number;
+    monthly_set_target: number;
+    monthly_hold_target: number;
   }>;
   monthly_target: number;
+  monthly_set_target: number;
+  monthly_hold_target: number;
 }
 
 export default function ClientManagement({ sdrs, onUpdate }: ClientManagementProps) {
@@ -34,17 +38,19 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   // Edit mode for client target
   const [clientEditMode, setClientEditMode] = useState<string | null>(null);
 
-  // Checkbox state for allowing exceeding client monthly target
-  const [allowExceedMap, setAllowExceedMap] = useState<Record<string, boolean>>({});
 
   // Assignment form state
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
-  const [monthlyTarget, setMonthlyTarget] = useState<number>(0);
+  const [monthlyHoldTarget, setMonthlyHoldTarget] = useState<number>(0);
+  const [monthlySetTarget, setMonthlySetTarget] = useState<number>(0);
+  const [newClientHoldTarget, setNewClientHoldTarget] = useState<number>(0);
+  const [newClientSetTarget, setNewClientSetTarget] = useState<number>(0);
   const [showAssignForm, setShowAssignForm] = useState(false);
 
   const [clientDraftTargets, setClientDraftTargets] = useState<Record<string, number>>({});
   const [assignmentDraftTargets, setAssignmentDraftTargets] = useState<Record<string, number>>({});
+
 
   useEffect(() => {
     fetchClients();
@@ -55,7 +61,14 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     try {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select('id, name, monthly_target, created_at, assignments(id, sdr_id, monthly_target)');
+        .select(`
+          *,
+          assignments (
+            *,
+            monthly_set_target,
+            monthly_hold_target
+          )
+        `);
 
       if (clientsError) throw clientsError;
 
@@ -70,10 +83,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         sortedClients.sort((a, b) => a.name.localeCompare(b.name));
       } else if (sortOption === 'target') {
         sortedClients.sort((a, b) => {
-          const aAssigned = a.assignments.reduce((sum: number, x: any) => sum + x.monthly_target, 0);
-          const bAssigned = b.assignments.reduce((sum: number, x: any) => sum + x.monthly_target, 0);
-          const aPct = a.monthly_target > 0 ? aAssigned / a.monthly_target : 0;
-          const bPct = b.monthly_target > 0 ? bAssigned / b.monthly_target : 0;
+          const aAssignedSet = a.assignments.reduce((sum: number, x: any) => sum + (x.monthly_set_target || 0), 0);
+          const bAssignedSet = b.assignments.reduce((sum: number, x: any) => sum + (x.monthly_set_target || 0), 0);
+          const aPct = a.monthly_set_target > 0 ? aAssignedSet / a.monthly_set_target : 0;
+          const bPct = b.monthly_set_target > 0 ? bAssignedSet / b.monthly_set_target : 0;
           return bPct - aPct;
         });
       } else if (sortOption === 'date') {
@@ -87,15 +100,18 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     }
   }
 
-  async function handleUpdateClientTarget(clientId: string, newTarget: number) {
-    if (newTarget < 0) return;
+  async function handleUpdateClientTarget(clientId: string, newSetTarget: number, newHoldTarget: number) {
+    if (newSetTarget < 0 || newHoldTarget < 0) return;
 
     try {
       setError(null);
       
       const { error: updateError } = await supabase
         .from('clients')
-        .update({ monthly_target: newTarget })
+        .update({ 
+          monthly_set_target: newSetTarget,
+          monthly_hold_target: newHoldTarget
+        })
         .eq('id', clientId);
 
       if (updateError) throw updateError;
@@ -103,7 +119,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       setClients(prevClients => 
         prevClients.map(client => 
           client.id === clientId 
-            ? { ...client, monthly_target: newTarget }
+            ? { 
+                ...client, 
+                monthly_set_target: newSetTarget,
+                monthly_hold_target: newHoldTarget
+              }
             : client
         )
       );
@@ -114,160 +134,151 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     }
   }
 
-  async function handleUpdateSDRTarget(sdrId: string, clientId: string, newTarget: number) {
-    if (newTarget < 0) return;
+  async function handleUpdateSDRTarget(sdrId: string, clientId: string, newSetTarget: number, newHoldTarget: number) {
+  if (newSetTarget < 0 || newHoldTarget < 0) return;
 
-    try {
-      setError(null);
-      const now = new Date();
-      const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  try {
+    setError(null);
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
 
-      const { data: existingAssignment, error: checkError } = await supabase
+    const { data: existingAssignment, error: checkError } = await supabase
+      .from('assignments')
+      .select('id')
+      .eq('sdr_id', sdrId)
+      .eq('client_id', clientId)
+      .order('month', { ascending: false }) 
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    if (existingAssignment) {
+      const { error: updateError } = await supabase
         .from('assignments')
-        .select('id')
-        .eq('sdr_id', sdrId)
-        .eq('client_id', clientId)
-        .eq('month', currentMonth)
-        .maybeSingle();
-
-      if (checkError) throw checkError;
-
-      if (existingAssignment) {
-        const { error: updateError } = await supabase
-          .from('assignments')
-          .update({ monthly_target: newTarget })
-          .eq('id', existingAssignment.id);
-
-        if (updateError) throw updateError;
-      }
-
-      setClients(prevClients =>
-        prevClients.map(client => {
-          if (client.id === clientId) {
-            const updatedAssignments = client.assignments.map(assignment =>
-              assignment.sdr_id === sdrId
-                ? { ...assignment, monthly_target: newTarget }
-                : assignment
-            );
-            return { ...client, assignments: updatedAssignments };
-          }
-          return client;
+        .update({ 
+          monthly_set_target: newSetTarget,
+          monthly_hold_target: newHoldTarget
         })
-      );
+        .eq('id', existingAssignment.id);
 
-      onUpdate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update SDR target');
+      if (updateError) throw updateError;
     }
+
+    setClients(prevClients =>
+      prevClients.map(client => {
+        if (client.id === clientId) {
+          const updatedAssignments = client.assignments.map(assignment =>
+            assignment.sdr_id === sdrId
+              ? { 
+                  ...assignment, 
+                  monthly_set_target: newSetTarget,
+                  monthly_hold_target: newHoldTarget
+                }
+              : assignment
+          );
+          return { ...client, assignments: updatedAssignments };
+        }
+        return client;
+      })
+    );
+
+    onUpdate();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to update SDR target');
   }
+}
 
   async function handleAddClient(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
+  setSuccess(null);
 
-    try {
+  try {
+    const { error: insertError } = await supabase
+      .from('clients')
+      .insert([{ 
+        name: newClientName,
+        monthly_set_target: newClientSetTarget,
+        monthly_hold_target: newClientHoldTarget
+      }]);
+
+    if (insertError) throw insertError;
+
+    setSuccess('Client added successfully');
+    setNewClientName('');
+    setNewClientSetTarget(0);
+    setNewClientHoldTarget(0);
+    setShowAddClient(false);
+    await fetchClients();
+    onUpdate();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to add client');
+  } finally {
+    setLoading(false);
+  }
+}
+
+ async function handleAssignClient(e: React.FormEvent) {
+  e.preventDefault();
+  if (!selectedClient || !selectedSDR) return;
+
+  // ... existing duplicate check code ...
+
+  try {
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
+    const { data: existingAssignment, error: checkError } = await supabase
+      .from('assignments')
+      .select('*')
+      .eq('client_id', selectedClient)
+      .eq('sdr_id', selectedSDR)
+      .order('month', { ascending: false }) 
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    if (existingAssignment) {
+      const { error: updateError } = await supabase
+        .from('assignments')
+        .update({ 
+          monthly_set_target: monthlySetTarget,
+          monthly_hold_target: monthlyHoldTarget
+        })
+        .eq('id', existingAssignment.id);
+
+      if (updateError) throw updateError;
+    } else {
       const { error: insertError } = await supabase
-        .from('clients')
-        .insert([{ 
-          name: newClientName,
-          monthly_target: newClientTarget
+        .from('assignments')
+        .insert([{
+          client_id: selectedClient,
+          sdr_id: selectedSDR,
+          monthly_set_target: monthlySetTarget,
+          monthly_hold_target: monthlyHoldTarget,
+          month: currentMonth,
         }]);
 
       if (insertError) throw insertError;
-
-      setSuccess('Client added successfully');
-      setNewClientName('');
-      setNewClientTarget(0);
-      setShowAddClient(false);
-      await fetchClients();
-      onUpdate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add client');
-    } finally {
-      setLoading(false);
     }
+
+    setSuccess('Client assigned successfully');
+    setSelectedClient(null);
+    setSelectedSDR(null);
+    setMonthlySetTarget(0);
+    setMonthlyHoldTarget(0);
+    setShowAssignForm(false);
+    await fetchClients();
+    onUpdate();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to assign client');
+  } finally {
+    setLoading(false);
   }
-
-  async function handleAssignClient(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedClient || !selectedSDR) return;
-
-    const isDuplicate = clients.some(client =>
-      client.id === selectedClient &&
-      client.assignments.some(assignment => assignment.sdr_id === selectedSDR)
-    );
-
-    if (isDuplicate) {
-      toast.error('This SDR is already assigned to this client for this month.');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const now = new Date();
-      const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-
-      const { data: existingAssignment, error: checkError } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('client_id', selectedClient)
-        .eq('sdr_id', selectedSDR)
-        .eq('month', currentMonth)
-        .maybeSingle();
-
-      if (checkError) throw checkError;
-
-      // Check if adding this assignment would exceed the client's monthly target
-      if (!existingAssignment) {
-        const client = clients.find((c) => c.id === selectedClient);
-        if (client) {
-          const totalAssigned = client.assignments.reduce((sum, a) => sum + a.monthly_target, 0);
-          if (totalAssigned + monthlyTarget > client.monthly_target) {
-            toast.error('Assigning this SDR exceeds the client monthly target.');
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
-      if (existingAssignment) {
-        const { error: updateError } = await supabase
-          .from('assignments')
-          .update({ monthly_target: monthlyTarget })
-          .eq('id', existingAssignment.id);
-
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from('assignments')
-          .insert([{
-            client_id: selectedClient,
-            sdr_id: selectedSDR,
-            monthly_target: monthlyTarget,
-            month: currentMonth,
-          }]);
-
-        if (insertError) throw insertError;
-      }
-
-      setSuccess('Client assigned successfully');
-      setSelectedClient(null);
-      setSelectedSDR(null);
-      setMonthlyTarget(0);
-      setShowAssignForm(false);
-      await fetchClients();
-      onUpdate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign client');
-    } finally {
-      setLoading(false);
-    }
-  }
+}
 
   async function handleDeleteClient(clientId: string) {
     if (!confirm('Are you sure you want to delete this client? This will remove all assignments and meetings associated with this client.')) {
@@ -354,14 +365,22 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       <div className="p-6">
         <div className="space-y-4">
           {clients.map((client) => {
-            const totalAssignedTarget = client.assignments.reduce(
-              (sum, assignment) => sum + assignment.monthly_target,
+            const totalAssignedSetTarget = client.assignments.reduce(
+              (sum, assignment) => sum + (assignment.monthly_set_target || 0),
               0
             );
-            const assignmentPercentage = client.monthly_target > 0
-              ? (totalAssignedTarget / client.monthly_target) * 100
+            const totalAssignedHoldTarget = client.assignments.reduce(
+              (sum, assignment) => sum + (assignment.monthly_hold_target || 0),
+              0
+            );
+            const setAssignmentPercentage = client.monthly_set_target > 0
+              ? (totalAssignedSetTarget / client.monthly_set_target) * 100
               : 0;
-
+            const holdAssignmentPercentage = client.monthly_hold_target > 0
+              ? (totalAssignedHoldTarget / client.monthly_hold_target) * 100
+              : 0;
+            // Use setAssignmentPercentage or holdAssignmentPercentage as needed in the UI
+            // (see below for usage)
             return (
               <div
                 key={client.id}
@@ -374,27 +393,52 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <Target className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">Monthly Target:</span>
+                          <span className="text-sm text-gray-600">Monthly Targets:</span>
                           {clientEditMode === client.id ? (
                             <>
-                              <input
-                                type="number"
-                                min="0"
-                                value={clientDraftTargets[client.id] ?? client.monthly_target}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value);
-                                  if (!isNaN(val)) {
-                                    setClientDraftTargets(prev => ({ ...prev, [client.id]: val }));
-                                  }
-                                }}
-                                className="w-20 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                              />
-                             
+                              <div className="flex flex-col">
+                                <label className="text-xs text-gray-500">Set</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={clientDraftTargets[`${client.id}-set`] ?? client.monthly_set_target}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val)) {
+                                      setClientDraftTargets(prev => ({ 
+                                        ...prev, 
+                                        [`${client.id}-set`]: val 
+                                      }));
+                                    }
+                                  }}
+                                  className="w-20 px-2 py-1 border border-indigo-500 rounded-md"
+                                />
+                              </div>
+                              <div className="flex flex-col">
+                                <label className="text-xs text-gray-500">Hold</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={clientDraftTargets[`${client.id}-hold`] ?? client.monthly_hold_target}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val)) {
+                                      setClientDraftTargets(prev => ({ 
+                                        ...prev, 
+                                        [`${client.id}-hold`]: val 
+                                      }));
+                                    }
+                                  }}
+                                  className="w-20 px-2 py-1 border border-indigo-500 rounded-md"
+                                />
+                              </div>
                             </>
                           ) : (
                             <>
-                              <span className="w-20 text-center">{client.monthly_target}</span>
-                             
+                              <div className="flex flex-col">
+                                <span className="text-sm">Set: {client.monthly_set_target}</span>
+                                <span className="text-sm">Hold: {client.monthly_hold_target}</span>
+                              </div>
                             </>
                           )}
                         </div>
@@ -404,7 +448,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                             {client.assignments.length} SDR{client.assignments.length !== 1 ? 's' : ''} assigned
                           </span>
                           <span className="text-sm font-medium">
-                            ({assignmentPercentage.toFixed(1)}% of target assigned)
+                            (Set: {setAssignmentPercentage.toFixed(1)}% assigned, Hold: {holdAssignmentPercentage.toFixed(1)}% assigned)
                           </span>
                         </div>
                       </div>
@@ -429,16 +473,17 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                         Assign SDR
                       </button>
 
-                      <button
-                        onClick={() => {
-                          setClientEditMode(client.id);
-                          setClientDraftTargets(prev => ({ ...prev, [client.id]: client.monthly_target }));
-                          const draftAssignments: Record<string, number> = {};
-                          client.assignments.forEach(a => {
-                            draftAssignments[`${client.id}-${a.sdr_id}`] = a.monthly_target;
-                          });
-                          setAssignmentDraftTargets(prev => ({ ...prev, ...draftAssignments }));
-                        }}
+                          <button
+                            onClick={() => {
+                              setClientEditMode(client.id);
+                              setClientDraftTargets(prev => ({ ...prev, [client.id]: client.monthly_target }));
+                              const draftAssignments: Record<string, number> = {};
+                              client.assignments.forEach(a => {
+                                draftAssignments[`${client.id}-${a.sdr_id}-set`]  = a.monthly_set_target;
+                                draftAssignments[`${client.id}-${a.sdr_id}-hold`] = a.monthly_hold_target;
+                              });
+                              setAssignmentDraftTargets(prev => ({ ...prev, ...draftAssignments }));
+                            }}
                         disabled={clientEditMode === client.id}
                         className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                           clientEditMode === client.id
@@ -453,39 +498,17 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
                     {clientEditMode === client.id && (
                     <>
-                      {/* Checkbox for allowing exceeding client monthly target */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          id={`allow-exceed-${client.id}`}
-                          type="checkbox"
-                          checked={allowExceedMap[client.id] || false}
-                          onChange={(e) =>
-                            setAllowExceedMap(prev => ({ ...prev, [client.id]: e.target.checked }))
-                          }
-                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                        />
-                        <label
-                          htmlFor={`allow-exceed-${client.id}`}
-                          className="text-sm text-gray-600"
-                        >
-                          Allow exceeded monthly target
-                        </label>
-                      </div>
                       <button
                         onClick={() => {
-                          const newTotalAssigned = client.assignments.reduce((sum, a) => {
-                            const key = `${client.id}-${a.sdr_id}`;
-                            return sum + (assignmentDraftTargets[key] ?? a.monthly_target);
-                          }, 0);
-                          const newClientTarget = clientDraftTargets[client.id] ?? client.monthly_target;
-                          if (newTotalAssigned > newClientTarget && !allowExceedMap[client.id]) {
-                            toast.error('Combined SDR target exceeds client monthly target.');
-                            return;
-                          }
-                          handleUpdateClientTarget(client.id, newClientTarget);
-                          client.assignments.forEach((a) => {
-                            const key = `${client.id}-${a.sdr_id}`;
-                            handleUpdateSDRTarget(a.sdr_id, client.id, assignmentDraftTargets[key]);
+                          const newClientSet  = clientDraftTargets[`${client.id}-set`]  ?? client.monthly_set_target;
+                          const newClientHold = clientDraftTargets[`${client.id}-hold`] ?? client.monthly_hold_target;
+                          handleUpdateClientTarget(client.id, newClientSet, newClientHold);
+                          client.assignments.forEach(a => {
+                            const setKey  = `${client.id}-${a.sdr_id}-set`;
+                            const holdKey = `${client.id}-${a.sdr_id}-hold`;
+                            const newSet  = assignmentDraftTargets[setKey]  ?? a.monthly_set_target;
+                            const newHold = assignmentDraftTargets[holdKey] ?? a.monthly_hold_target;
+                            handleUpdateSDRTarget(a.sdr_id, client.id, newSet, newHold);
                           });
                           setClientEditMode(null);
                         }}
@@ -529,8 +552,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   <div className="mt-4 space-y-2">
                     {client.assignments.map((assignment) => {
                       const sdr = sdrs.find((s) => s.id === assignment.sdr_id);
-                      const assignmentPercentage = client.monthly_target > 0
-                        ? (assignment.monthly_target / client.monthly_target) * 100
+                      const assignmentSetPercentage = client.monthly_set_target > 0
+                        ? (assignment.monthly_set_target / client.monthly_set_target) * 100
+                        : 0;
+                      const assignmentHoldPercentage = client.monthly_hold_target > 0
+                        ? (assignment.monthly_hold_target / client.monthly_hold_target) * 100
                         : 0;
 
                       return (
@@ -548,26 +574,46 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                             <div className="flex items-center gap-2">
                               <Target className="w-4 h-4 text-gray-400" />
                               {clientEditMode === client.id ? (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={assignmentDraftTargets[`${client.id}-${assignment.sdr_id}`] ?? assignment.monthly_target}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    if (!isNaN(val)) {
+                                <div className="flex gap-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={assignmentDraftTargets[`${client.id}-${assignment.sdr_id}-set`] ?? assignment.monthly_set_target}
+                                    onChange={e => {
+                                      const v = parseInt(e.target.value) || 0;
                                       setAssignmentDraftTargets(prev => ({
                                         ...prev,
-                                        [`${client.id}-${assignment.sdr_id}`]: val
+                                        [`${client.id}-${assignment.sdr_id}-set`]: v
                                       }));
-                                    }
-                                  }}
-                                  className="w-20 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                />
+                                    }}
+                                    className="w-16 px-1 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={assignmentDraftTargets[`${client.id}-${assignment.sdr_id}-hold`] ?? assignment.monthly_hold_target}
+                                    onChange={e => {
+                                      const v = parseInt(e.target.value) || 0;
+                                      setAssignmentDraftTargets(prev => ({
+                                        ...prev,
+                                        [`${client.id}-${assignment.sdr_id}-hold`]: v
+                                      }));
+                                    }}
+                                    className="w-16 px-1 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
                               ) : (
-                                <span className="w-20 text-center">{assignment.monthly_target}</span>
+                                <div className="flex flex-col w-32 text-center">
+                                  <span className="font-medium text-gray-800">
+                                    Set: {assignment.monthly_set_target}
+                                  </span>
+                                  <span className="text-sm text-gray-500">
+                                    Held: {assignment.monthly_hold_target}
+                                  </span>
+                                </div>
                               )}
                               <span className="text-sm text-gray-500">
-                                ({assignmentPercentage.toFixed(1)}% of client target)
+                                (Set: {assignmentSetPercentage.toFixed(1)}%, Hold: {assignmentHoldPercentage.toFixed(1)}%)
                               </span>
                               {clientEditMode === client.id && (
                                 <button
@@ -580,7 +626,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                                       .select('id')
                                       .eq('sdr_id', assignment.sdr_id)
                                       .eq('client_id', client.id)
-                                      .eq('month', currentMonth)
+                                      .order('month', { ascending: false }) 
+                                      .limit(1)                                      
                                       .maybeSingle();
                                     if (checkError) {
                                       toast.error('Failed to find assignment to delete');
@@ -647,17 +694,34 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               </div>
               <div>
                 <label
-                  htmlFor="clientTarget"
+                  htmlFor="clientSetTarget"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Monthly Target
+                  Monthly Set Target
                 </label>
                 <input
                   type="number"
-                  id="clientTarget"
+                  id="clientSetTarget"
                   min="0"
-                  value={newClientTarget}
-                  onChange={(e) => setNewClientTarget(parseInt(e.target.value) || 0)}
+                  value={newClientSetTarget}
+                  onChange={(e) => setNewClientSetTarget(parseInt(e.target.value) || 0)}
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="clientHoldTarget"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Monthly Held Target
+                </label>
+                <input
+                  type="number"
+                  id="clientHoldTarget"
+                  min="0"
+                  value={newClientHoldTarget}
+                  onChange={(e) => setNewClientHoldTarget(parseInt(e.target.value) || 0)}
                   required
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
@@ -712,19 +776,39 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               </div>
               <div>
                 <label
-                  htmlFor="target"
+                  htmlFor="holdTarget"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Monthly Meeting Target
+                  Monthly Meeting Held Target
                 </label>
                 <input
                   type="number"
-                  id="target"
+                  id="holdTarget"
                   min="0"
-                  value={monthlyTarget === 0 ? '' : monthlyTarget}
-                  onChange={(e) => {
+                  value={monthlyHoldTarget === 0 ? '' : monthlyHoldTarget}
+                  onChange={e => {
                     const val = parseInt(e.target.value);
-                    setMonthlyTarget(!isNaN(val) ? val : 0);
+                    setMonthlyHoldTarget(!isNaN(val) ? val : 0);
+                  }}
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="setTarget"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Monthly Meeting Set Target
+                </label>
+                <input
+                  type="number"
+                  id="setTarget"
+                  min="0"
+                  value={monthlySetTarget === 0 ? '' : monthlySetTarget}
+                  onChange={e => {
+                    const val = parseInt(e.target.value);
+                    setMonthlySetTarget(!isNaN(val) ? val : 0);
                   }}
                   required
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"

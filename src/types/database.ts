@@ -12,6 +12,8 @@ export interface Profile {
 export interface Client {
   id: string;
   name: string;
+  monthly_set_target: number;
+  monthly_hold_target: number;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +23,8 @@ export interface Assignment {
   sdr_id: string;
   client_id: string;
   monthly_target: number;
+  monthly_set_target: number;
+  monthly_hold_target: number;
   month: string;
   created_at: string;
   updated_at: string;

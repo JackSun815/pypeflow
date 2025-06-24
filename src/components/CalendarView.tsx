@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { MeetingCard } from './MeetingCard';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { supabase } from '../lib/supabase';
+import type { Meeting } from '../types/database';
 import '../index.css';
 
 // setup locales for date-fns
@@ -19,7 +20,7 @@ const localizer = dateFnsLocalizer({
 
 export interface MeetingEvent {
   id: string;
-  title: string;
+  title?: string;
   start: Date;
   end: Date;
   status: 'pending' | 'confirmed' | 'no_show';
@@ -32,47 +33,20 @@ export interface MeetingEvent {
   scheduled_date?: string;
   client_name?: string;
   sdr_full_name?: string;
+  company?: string;
+  linkedin_url?: string;
+  notes?: string;
 }
 
 interface CalendarViewProps {
-  meetings: any[]; // raw meetings from hook
+  meetings: Meeting[];
 }
 
 export default function CalendarView({ meetings }: CalendarViewProps) {
-  const [calendarMeetings, setCalendarMeetings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingEvent | null>(null);
 
-  useEffect(() => {
-    const fetchMeetings = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('meetings')
-        .select(`
-          id,
-          scheduled_date,
-          status,
-          contact_full_name,
-          contact_email,
-          contact_phone,
-          held_at,
-          no_show,
-          clients(name),
-          sdrs: sdr_id(full_name)
-        `)
-        .order('scheduled_date', { ascending: true });
-      
-      if (error) {
-        console.error('Error fetching meetings:', error);
-      } else {
-        setCalendarMeetings(data as any[]);
-      }
-      setLoading(false);
-    };
-    fetchMeetings();
-  }, []);
 
-  const events: MeetingEvent[] = calendarMeetings.map((m) => {
+  const events: MeetingEvent[] = meetings.map((m) => {
     // Parse local date/time from stored ISO string
     const [datePart, timePart = '09:00'] = (m.scheduled_date || '').split('T');
     const [year, month, day] = datePart.split('-').map(Number);
@@ -82,7 +56,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
     
     return {
       id: m.id,
-      title: m.clients?.name || 'Untitled Meeting',
+      title: m.title,
       start: start,
       end,
       status: m.status,
@@ -94,7 +68,10 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
       sdr_name: m.sdrs?.full_name,
       client_name: m.clients?.name,
       sdr_full_name: m.sdrs?.full_name,
-      scheduled_date: m.scheduled_date
+      scheduled_date: m.scheduled_date,
+      company: m.company,
+      linkedin_url: m.linkedin_url,
+      notes: m.notes
     };
   });
 
@@ -113,7 +90,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
   // Custom event component for month/week/day views
   const CustomEvent = ({ event }: { event: MeetingEvent }) => (
     <div className="rbc-event-content">
-      {event.client_name || event.title}
+      {event.client_name || event.contact_full_name || event.title}
     </div>
   );
 
@@ -137,7 +114,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
           margin: '2px 0'
         }}
       >
-        {event.client_name || event.title}
+        {event.client_name || event.contact_full_name || event.title}
       </div>
     );
   };
@@ -145,10 +122,6 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
   const handleSelectEvent = (event: MeetingEvent) => {
     setSelectedMeeting(event);
   };
-
-  if (loading) {
-    return <div>Loading calendar...</div>;
-  }
 
   return (
     <div className="calendar-wrapper" style={{ height: '700px' }}>
@@ -173,7 +146,13 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white p-4 rounded shadow-lg max-w-md w-full">
             <div className="mb-4">
-              <h2 className="text-xl font-semibold">{selectedMeeting.client_name || selectedMeeting.title}</h2>
+              <h2 className="text-xl font-semibold">{selectedMeeting.client_name || selectedMeeting.contact_full_name || selectedMeeting.title}</h2>
+              <div className="text-sm text-gray-700 space-y-1 mt-2">
+                {selectedMeeting.title && <div><span className="font-medium">Title:</span> {selectedMeeting.title}</div>}
+                {selectedMeeting.company && <div><span className="font-medium">Company:</span> {selectedMeeting.company}</div>}
+                {selectedMeeting.linkedin_url && <div><span className="font-medium">LinkedIn:</span> <a href={selectedMeeting.linkedin_url} target="_blank" className="text-blue-600 underline">{selectedMeeting.linkedin_url}</a></div>}
+                {selectedMeeting.notes && <div><span className="font-medium">Notes:</span> {selectedMeeting.notes}</div>}
+              </div>
             </div>
             <MeetingCard meeting={selectedMeeting} />
             <div className="mt-4 flex justify-end">

@@ -5,6 +5,7 @@ import { useMeetings } from '../hooks/useMeetings';
 import { supabase } from '../lib/supabase';
 import ScrollableMeetingList from '../components/ScrollableMeetingList';
 import type { Meeting } from '../types/database';
+import CalendarView from '../components/CalendarView';
 
 export default function TeamMeetings({
   meetings,
@@ -162,6 +163,10 @@ export default function TeamMeetings({
             ))}
           </select>
         </div>
+      </div>
+      {/* Manager Calendar View */}
+      <div className="mb-8">
+        <CalendarView meetings={allMeetings} />
       </div>
 
   

@@ -8,14 +8,7 @@ interface SDRWithMetrics extends Profile {
   totalConfirmedMeetings: number;
   totalPendingMeetings: number;
   totalHeldMeetings: number;
-  totalNoShows: number;
-  clients: Array<{
-    id: string;
-    name: string;
-    monthlyTarget: number;
-    confirmedMeetings: number;
-    pendingMeetings: number;
-  }>;
+  totalNoShowMeetings: number;
 }
 
 export function useSDRs() {
@@ -33,10 +26,10 @@ export function useSDRs() {
       // Fetch all SDRs
       const { data: sdrProfiles, error: sdrError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, role, active')
         .eq('role', 'sdr')
         .eq('active', true)
-        .order('created_at', { ascending: false });
+        .order('full_name', { ascending: true });
 
       if (sdrError) throw sdrError;
 
@@ -121,7 +114,7 @@ export function useSDRs() {
           totalConfirmedMeetings,
           totalPendingMeetings,
           totalHeldMeetings,
-          totalNoShows
+          totalNoShowMeetings: totalNoShows
         };
       });
 

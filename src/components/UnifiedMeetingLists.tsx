@@ -4,13 +4,17 @@ import type { Meeting } from '../types/database';
 import { MeetingCard } from './MeetingCard';
 
 interface UnifiedMeetingListsProps {
+  editable?: boolean;
+  editingMeetingId?: string | null;
+  onEdit?: (meeting: Meeting) => void;
+  onSave?: (meeting: Meeting) => void;
+  onCancel?: () => void;
   pendingMeetings: Meeting[];
   confirmedMeetings: Meeting[];
   noShowMeetings: Meeting[];
   onDelete?: (meetingId: string) => void;
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
-  onUpdateMeeting?: (meetingId: string, updates: Partial<Meeting>) => void;
 }
 
 export default function UnifiedMeetingLists({
@@ -20,7 +24,11 @@ export default function UnifiedMeetingLists({
   onDelete,
   onUpdateHeldDate,
   onUpdateConfirmedDate,
-  onUpdateMeeting
+  editable = false,
+  editingMeetingId = null,
+  onEdit,
+  onSave,
+  onCancel,
 }: UnifiedMeetingListsProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -53,8 +61,11 @@ export default function UnifiedMeetingLists({
                 onDelete={onDelete}
                 onUpdateHeldDate={onUpdateHeldDate}
                 onUpdateConfirmedDate={onUpdateConfirmedDate}
-                onUpdateMeeting={onUpdateMeeting}
-                showActions={true}
+                editable={editable}
+                editingMeetingId={editingMeetingId}
+                onEdit={onEdit}
+                onSave={onSave}
+                onCancel={onCancel}
                 showDateControls={true}
               />
             ))

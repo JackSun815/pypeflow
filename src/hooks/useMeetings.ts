@@ -15,17 +15,27 @@ export function useMeetings(sdrId?: string | null) {
 
   async function fetchMeetings() {
     try {
-      if (!sdrId) {
-        setMeetings([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
+      // Start base query
+      let query = supabase
         .from('meetings')
-        .select('*, clients(name)')
-        .eq('sdr_id', sdrId)
+        .select(`
+          id,
+          client_id,
+          sdr_id,
+          scheduled_date,
+          status,
+          no_show,
+          held_at,
+          contact_full_name,
+          contact_email,
+          contact_phone
+        `)
         .order('scheduled_date', { ascending: true });
+      // Apply SDR filter only when sdrId is provided
+      if (sdrId) {
+        query = query.eq('sdr_id', sdrId);
+      }
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -97,52 +107,53 @@ export function useMeetings(sdrId?: string | null) {
     };
   }, [sdrId]);
 
-  async function addMeeting(clientId: string, scheduledDate: string, sdrId: string, contact?: MeetingContact) {
-    try {
-      const { data, error } = await supabase
-        .from('meetings')
-        .insert([
-          {
-            client_id: clientId,
-            sdr_id: sdrId,
-            scheduled_date: scheduledDate,
-            status: new Date(scheduledDate) <= new Date(Date.now() + (3 * 24 * 60 * 60 * 1000)) ? 'confirmed' : 'pending',
-            contact_full_name: contact?.contact_full_name,
-            contact_email: contact?.contact_email,
-            contact_phone: contact?.contact_phone,
-            booked_at: new Date().toISOString()
-          },
-        ])
-        .select()
-        .single();
+  async function addMeeting(
+    clientId: string,
+    scheduledDate: string,
+    sdrId: string,
+    meetingDetails: any
+  ) {
+    const { data, error } = await supabase
+      .from('meetings')
+      .insert([{
+        client_id: clientId,
+        sdr_id: sdrId,
+        scheduled_date: scheduledDate,
+        status: 'pending', // Default status
+        no_show: false,    // Default no_show
+        ...meetingDetails
+      }])
+      .select();
 
-      if (error) throw error;
-
-      await fetchMeetings();
-      return data;
-    } catch (err) {
-      console.error('Add meeting error:', err);
-      throw new Error(err instanceof Error ? err.message : 'Failed to add meeting');
-    }
+     if (error) {
+    console.error('Error adding meeting:', error);
+    throw error;
   }
+  return data?.[0];
+}
+  async function updateMeeting(updatedMeeting: Meeting) {
+  try {
+    console.log('Updating meeting:', updatedMeeting);
+    const { error } = await supabase
+      .from('meetings')
+      .update({
+        contact_full_name: updatedMeeting.contact_full_name,
+        contact_email: updatedMeeting.contact_email,
+        contact_phone: updatedMeeting.contact_phone,
+        scheduled_date: updatedMeeting.scheduled_date,
+        status: updatedMeeting.status,
+        no_show: updatedMeeting.no_show,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', updatedMeeting.id);
 
-  async function updateMeeting(meetingId: string, updates: Partial<Meeting>) {
-    try {
-      const { error } = await supabase
-        .from('meetings')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', meetingId);
-
-      if (error) throw error;
-      await fetchMeetings();
-    } catch (err) {
-      console.error('Update meeting error:', err);
-      throw new Error(err instanceof Error ? err.message : 'Failed to update meeting');
-    }
+    if (error) throw error;
+    await fetchMeetings();
+  } catch (err) {
+    console.error('Update meeting error:', err);
+    throw new Error(err instanceof Error ? err.message : 'Failed to update meeting');
   }
+}
 
   async function updateMeetingHeldDate(meetingId: string, heldDate: string | null) {
     try {

@@ -72,13 +72,14 @@ export default function ScrollableMeetingList({
                 onDelete={onDelete}
                 onUpdateHeldDate={onUpdateHeldDate}
                 onUpdateConfirmedDate={onUpdateConfirmedDate}
-                editable={editable}
-                onSave={onSave}
-                onCancel={onCancel}
-                showActions={showActions}
-                showDateControls={showDateControls}
+                editable={!!editable}
+                showActions={!!showActions}
+                showDateControls={!!showDateControls}
+                showDetails={true}
                 onEdit={onEdit}
                 isEditing={editingMeetingId === meeting.id}
+                onSave={onSave}
+                onCancel={onCancel}
               />
             ))
           ) : (

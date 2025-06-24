@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
@@ -13,11 +13,22 @@ import { supabase } from '../lib/supabase';
 export default function ManagerDashboard() {
   const { profile } = useAuth();
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
-  const { meetings, loading: meetingsLoading } = useMeetings();
+  // Ensures useMeetings fetches all meetings (SDR ID: null)
+  console.log('[DEBUG] useMeetings called with SDR ID:', null);
+  const { meetings, loading: meetingsLoading } = useMeetings(null);
   const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings'>('overview');
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Debug: Log raw meetings and loading state
+  useEffect(() => {
+    console.log('[DEBUG] meetingsLoading:', meetingsLoading);
+    console.log('[DEBUG] meetings count:', meetings.length);
+    meetings.forEach(m => {
+      console.log(`[DEBUG] meeting id=${m.id} scheduled_date=${m.scheduled_date} no_show=${m.no_show}`);
+    });
+  }, [meetings, meetingsLoading]);
 
   const todayMeetings = meetings.filter(
     (meeting) =>
@@ -77,6 +88,14 @@ export default function ManagerDashboard() {
     );
   }
 
+  console.log('All meetings:', meetings);
+  console.log('Held meeting candidates:', meetings.filter(m => 
+    m.status === 'confirmed' && 
+    m.scheduled_date && 
+    new Date(m.scheduled_date) < new Date() && 
+    !m.no_show
+  ));
+
   // Calculate month progress
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -96,10 +115,22 @@ export default function ManagerDashboard() {
 
   const totalMeetingsSet = totalConfirmedMeetings + totalPendingMeetings;
 
-  const totalHeldMeetings = sdrs.reduce(
-    (sum, sdr) => sum + sdr.totalHeldMeetings,
-    0
-  );
+  // Debug log for held meetings calculation
+  console.log('Held meeting candidates:', meetings.map(m => ({
+    id: m.id,
+    status: m.status,
+    scheduled_date: m.scheduled_date,
+    no_show: m.no_show,
+    in_past: m.scheduled_date ? new Date(m.scheduled_date) < new Date() : false,
+  })));
+  console.log('[DEBUG] About to calculate totalHeldMeetings filter criteria');
+  const totalHeldMeetings = meetings.filter(
+    meeting =>
+      meeting.scheduled_date &&
+      new Date(meeting.scheduled_date) < new Date() &&
+      !meeting.no_show
+  ).length;
+  console.log('[DEBUG] totalHeldMeetings:', totalHeldMeetings);
 
   const totalNoShows = sdrs.reduce(
     (sum, sdr) => sum + sdr.totalNoShows,
@@ -110,6 +141,37 @@ export default function ManagerDashboard() {
     (sum, sdr) => sum + sdr.clients.reduce((acc, client) => acc + client.monthlyTarget, 0),
     0
   );
+
+  // Monthly metrics
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const monthlyTargets = sdrs.reduce(
+    (sum, sdr) =>
+      sum +
+      sdr.clients.reduce((acc, client) => acc + (client.monthlyTarget || 0), 0),
+    0
+  );
+
+  const monthlyMeetingsSet = meetings.filter(
+    meeting =>
+      new Date(meeting.created_at).getMonth() === currentMonth &&
+      new Date(meeting.created_at).getFullYear() === currentYear
+  ).length;
+
+  const monthlyHeldMeetings = meetings.filter(meeting => {
+    if (!meeting.scheduled_date || meeting.no_show) return false;
+    const dt = new Date(meeting.scheduled_date);
+    return (
+      dt < new Date() &&
+      dt.getMonth() === currentMonth &&
+      dt.getFullYear() === currentYear
+    );
+  }).length;
+
+  const cumulativeTarget = totalTargets;
+  const cumulativeMeetingsSet = totalMeetingsSet;
+  const cumulativeMeetingsHeld = totalHeldMeetings;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -221,9 +283,12 @@ export default function ManagerDashboard() {
                   <h3 className="text-lg font-semibold text-gray-900">Monthly Target</h3>
                   <Target className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{totalTargets}</p>
+                <p className="text-3xl font-bold text-gray-900">{monthlyTargets}</p>
                 <p className="text-sm text-gray-500 mt-2">
                   {monthProgress.toFixed(1)}% of month completed
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cumulative: {totalTargets}
                 </p>
               </div>
 
@@ -232,9 +297,12 @@ export default function ManagerDashboard() {
                   <h3 className="text-lg font-semibold text-gray-900">Meetings Set</h3>
                   <Calendar className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{totalMeetingsSet}</p>
+                <p className="text-3xl font-bold text-gray-900">{monthlyMeetingsSet}</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  {((totalMeetingsSet / totalTargets) * 100).toFixed(1)}% of target
+                  {((monthlyMeetingsSet / monthlyTargets) * 100).toFixed(1)}% of target
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cumulative: {cumulativeMeetingsSet}
                 </p>
               </div>
 
@@ -243,9 +311,12 @@ export default function ManagerDashboard() {
                   <h3 className="text-lg font-semibold text-gray-900">Meetings Held</h3>
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{totalHeldMeetings}</p>
+                <p className="text-3xl font-bold text-gray-900">{monthlyHeldMeetings}</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Successfully completed
+                  Completed this month
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cumulative: {cumulativeMeetingsHeld}
                 </p>
               </div>
             </div>
@@ -262,13 +333,16 @@ export default function ManagerDashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         SDR Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Target
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Set Target
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Held Target
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Meetings Set
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Held
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -289,6 +363,15 @@ export default function ManagerDashboard() {
                       const progress = (totalMeetingsSet / totalTarget) * 100;
                       const isOnTrack = progress >= monthProgress;
                       const isExpanded = expandedSDRs[sdr.id];
+                      const heldMeetings = meetings.filter(
+                        meeting =>
+                          meeting.sdr_id === sdr.id &&
+                          meeting.scheduled_date &&
+                          new Date(meeting.scheduled_date) < new Date() &&
+                          !meeting.no_show
+                      ).length;
+                      const heldProgress = (heldMeetings / totalTarget) * 100;
+                      console.log(`[DEBUG] SDR ${sdr.id} heldMeetings:`, heldMeetings);
 
                       return (
                         <React.Fragment key={sdr.id}>
@@ -310,39 +393,65 @@ export default function ManagerDashboard() {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{totalTarget}</div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{totalTarget}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
                                 {totalMeetingsSet}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-1">
                                 <CheckCircle className="w-4 h-4 text-green-500" />
                                 <span className="text-sm text-gray-900">
-                                  {sdr.totalHeldMeetings}
+                                  {heldMeetings}
                                 </span>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
-                                  <div
-                                    className={`h-full rounded-full transition-all duration-300 ${
-                                      isOnTrack ? 'bg-green-600' : 'bg-yellow-600'
+                            <td className="px-8 py-4 whitespace-nowrap">
+                              <div className="flex flex-col items-start">
+                                {/* Meetings Set progress bar */}
+                                <div className="flex items-center w-full">
+                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-300 ${
+                                        isOnTrack ? 'bg-green-600' : 'bg-yellow-600'
+                                      }`}
+                                      style={{ width: `${progress}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      isOnTrack ? 'text-green-600' : 'text-yellow-600'
                                     }`}
-                                    style={{ width: `${progress}%` }}
-                                  />
+                                  >
+                                    {isNaN(progress) ? '0.0' : progress.toFixed(1)}%
+                                  </span>
+                                  <div className="ml-2 text-sm text-gray-500">Set</div>
                                 </div>
-                                <span
-                                  className={`text-sm font-medium ${
-                                    isOnTrack ? 'text-green-600' : 'text-yellow-600'
-                                  }`}
-                                >
-                                  {progress.toFixed(1)}%
-                                </span>
+                                {/* Held meetings progress bar */}
+                                <div className="flex items-center w-full mt-1">
+                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-300 ${
+                                        heldProgress >= monthProgress ? 'bg-green-400' : 'bg-yellow-400'
+                                      }`}
+                                      style={{ width: `${heldProgress}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      heldProgress >= monthProgress ? 'text-green-600' : 'text-yellow-600'
+                                    }`}
+                                  >
+                                    {isNaN(heldProgress) ? '0.0' : heldProgress.toFixed(1)}%
+                                  </span>
+                                  <div className="ml-2 text-sm text-gray-500">Held</div>
+                                </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -382,10 +491,14 @@ export default function ManagerDashboard() {
                                     // Calculate held meetings for this client
                                     const clientHeldMeetings = meetings.filter(
                                       meeting => 
-                                        meeting.sdr_id === sdr.id && 
-                                        meeting.client_id === client.id && 
-                                        meeting.held_at !== null
+                                        meeting.sdr_id === sdr.id &&
+                                        meeting.client_id === client.id &&
+                                        meeting.scheduled_date &&
+                                        new Date(meeting.scheduled_date) < new Date() &&
+                                        !meeting.no_show
                                     ).length;
+                                    // (not changing the client-level progress bar, since not requested)
+                                    console.log(`[DEBUG] SDR ${sdr.id} client ${client.id} heldMeetings:`, clientHeldMeetings);
 
                                     return (
                                       <div
@@ -422,7 +535,7 @@ export default function ManagerDashboard() {
                                               isClientOnTrack ? 'text-green-600' : 'text-yellow-600'
                                             }`}
                                           >
-                                            {clientProgress.toFixed(1)}%
+                                            {isNaN(clientProgress) ? '0.0' : clientProgress.toFixed(1)}%
                                           </span>
                                         </div>
                                       </div>
@@ -518,7 +631,6 @@ export default function ManagerDashboard() {
 
         {activeTab === 'meetings' && (
           <>
-            <CalendarView meetings={meetings} />
             <TeamMeetings />
           </>
         )}

@@ -20,14 +20,20 @@ export default function SDRDashboard() {
   const [sdrName, setSdrName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [addMeetingError, setAddMeetingError] = useState<string | null>(null);
+  const [editingMeeting, setEditingMeeting] = useState<string | null>(null);
+  // Add Meeting Modal State
   const [showAddMeeting, setShowAddMeeting] = useState(false);
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('09:00');
   const [contactFullName, setContactFullName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  const [addMeetingError, setAddMeetingError] = useState<string | null>(null);
-  const [editingMeeting, setEditingMeeting] = useState<string | null>(null);
+  // New fields for meeting
+  const [title, setTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [linkedinPage, setLinkedinPage] = useState('');
+  const [notes, setNotes] = useState('');
 
   const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal } = useClients(sdrId);
   const { 
@@ -41,6 +47,19 @@ export default function SDRDashboard() {
     deleteMeeting 
   } = useMeetings(sdrId);
 
+  const handleSaveMeeting = async (updatedMeeting: Meeting) => {
+  console.log('Saving meeting:', updatedMeeting);
+  try {
+    await updateMeeting(updatedMeeting);
+    setEditingMeeting(null);
+  } catch (error) {
+    console.error('Failed to update meeting:', error);
+  }
+};
+
+  const handleCancelEdit = () => {
+    setEditingMeeting(null);
+  };
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   const pendingMeetings = meetings.filter(
@@ -56,7 +75,11 @@ export default function SDRDashboard() {
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const heldMeetings = meetings.filter(
-    meeting => meeting.held_at !== null
+    meeting => 
+      meeting.status === 'confirmed' &&
+      !meeting.no_show &&
+      new Date(meeting.scheduled_date) < new Date() &&
+      new Date(meeting.scheduled_date) >= new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   ).length;
 
   const triggerConfetti = () => {
@@ -155,57 +178,54 @@ export default function SDRDashboard() {
     return meetings.find(m => m.id === meetingId);
   };
 
-  const handleEditMeeting = (meetingId: string) => {
-    const meeting = findMeeting(meetingId);
-    if (!meeting) return;
-
-    setEditingMeeting(meetingId);
-    setSelectedClientId(meeting.client_id);
-    
-    const dateParts = meeting.scheduled_date.split('T');
-    setMeetingDate(dateParts[0] || '');
-    
-    if (dateParts.length > 1 && dateParts[1]) {
-      setMeetingTime(dateParts[1].substring(0, 5));
-    } else {
-      setMeetingTime('09:00');
-    }
-    
-    setContactFullName(meeting.contact_full_name || '');
-    setContactEmail(meeting.contact_email || '');
-    setContactPhone(meeting.contact_phone || '');
-    setShowAddMeeting(true);
+  const handleEditMeeting = (meeting: Meeting) => { 
+    console.log('Editing meeting:', meeting.id);
+    setEditingMeeting(meeting.id);
   };
-
   async function handleAddMeeting(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedClientId || !meetingDate || !sdrId || !contactFullName || !contactEmail) return;
-
-    try {
-      const scheduledDateTime = `${meetingDate}T${meetingTime}:00`;
-      
-      await addMeeting(selectedClientId, scheduledDateTime, sdrId, {
-        contact_full_name: contactFullName,
-        contact_email: contactEmail,
-        contact_phone: contactPhone
-      });
-      
-      setShowAddMeeting(false);
-      setMeetingDate('');
-      setMeetingTime('09:00');
-      setSelectedClientId(null);
-      setContactFullName('');
-      setContactEmail('');
-      setContactPhone('');
-      setEditingMeeting(null);
-      setAddMeetingError(null);
-      
-      triggerConfetti();
-    } catch (error) {
-      setAddMeetingError(error instanceof Error ? error.message : 'Failed to add meeting');
-    }
+  e.preventDefault();
+  if (!selectedClientId || !meetingDate || !sdrId || !contactFullName || !contactEmail) {
+    setAddMeetingError('Please fill all required fields');
+    return;
   }
 
+  try {
+    const scheduledDateTime = `${meetingDate}T${meetingTime}:00`;
+    
+    const meetingData = {
+      contact_full_name: contactFullName,
+      contact_email: contactEmail,
+      contact_phone: contactPhone || null,
+      title: title || null,
+      company: company || null,
+      linkedin_page: linkedinPage || null,
+      notes: notes || null,
+      status: 'pending' // Explicitly set status
+    };
+
+    await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
+    
+    // Reset form
+    setShowAddMeeting(false);
+    setMeetingDate('');
+    setMeetingTime('09:00');
+    setSelectedClientId(null);
+    setContactFullName('');
+    setContactEmail('');
+    setContactPhone('');
+    setTitle('');
+    setCompany('');
+    setLinkedinPage('');
+    setNotes('');
+    setEditingMeeting(null);
+    setAddMeetingError(null);
+    
+    triggerConfetti();
+  } catch (error) {
+    console.error('Failed to add meeting:', error);
+    setAddMeetingError(error instanceof Error ? error.message : 'Failed to add meeting');
+  }
+}
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -267,6 +287,118 @@ export default function SDRDashboard() {
   };
 
   return (
+    <>
+    {showAddMeeting && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Add New Meeting</h2>
+          <form onSubmit={handleAddMeeting} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Date</label>
+              <input
+                type="date"
+                value={meetingDate}
+                onChange={(e) => setMeetingDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Time</label>
+              <input
+                type="time"
+                value={meetingTime}
+                onChange={(e) => setMeetingTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Full Name</label>
+              <input
+                type="text"
+                value={contactFullName}
+                onChange={(e) => setContactFullName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+              <input
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+              <input
+                type="tel"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            {/* New fields below Contact Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <input
+                type="text"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn Page</label>
+              <input
+                type="text"
+                value={linkedinPage}
+                onChange={(e) => setLinkedinPage(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                rows={3}
+              />
+            </div>
+            {addMeetingError && <p className="text-red-500 text-sm">{addMeetingError}</p>}
+            <div className="flex justify-end gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAddMeeting(false)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition duration-150"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md transition duration-150"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
@@ -337,215 +469,144 @@ export default function SDRDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {(clientsError || meetingsError) && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2 text-red-700">
-              <AlertCircle className="w-5 h-5" />
-              <p>{clientsError || meetingsError}</p>
-            </div>
+      {(clientsError || meetingsError) && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2 text-red-700">
+            <AlertCircle className="w-5 h-5" />
+            <p>{clientsError || meetingsError}</p>
           </div>
-        )}
+        </div>
+      )}
 
         <Routes>
-          <Route
-            index
-            element={
-              <>
-                <div className="mb-8">
-                  <DashboardMetrics 
-                    clients={clients}
-                    monthProgress={monthProgress}
-                    totalMeetingGoal={totalMeetingGoal}
-                    totalPendingMeetings={pendingMeetings.length}
-                    totalHeldMeetings={heldMeetings}
-                  />
-                </div>
+        <Route
+          index
+          element={
+            <>
+              {(() => {
+              const calculateMetrics = () => {
+              // Calculate targets from clients
+                const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
+                const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+                
+                // Filter meetings for current month only
+                const now = new Date();
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {clients.map((client) => (
-                    <ClientCard
-                      key={client.id}
-                      name={client.name}
-                      monthlyTarget={client.monthlyTarget}
-                      confirmedMeetings={client.confirmedMeetings}
-                      pendingMeetings={client.pendingMeetings}
-                      todaysMeetings={client.todaysMeetings}
-                      onAddMeeting={() => {
-                        setSelectedClientId(client.id);
-                        setShowAddMeeting(true);
-                        setEditingMeeting(null);
-                        setAddMeetingError(null);
-                        setMeetingDate('');
-                        setMeetingTime('09:00');
-                        setContactFullName('');
-                        setContactEmail('');
-                        setContactPhone('');
-                      }}
-                      onConfirmMeeting={(meetingId) => {
-                        handleMeetingConfirmedDateUpdate(meetingId, todayDateString);
-                      }}
-                      onEditMeeting={handleEditMeeting}
+                const monthlyMeetings = meetings.filter(meeting => {
+                  const meetingDate = new Date(meeting.scheduled_date);
+                  return meetingDate >= monthStart && meetingDate <= monthEnd;
+                });
+
+                return {
+                  totalSetTarget,
+                  totalHeldTarget,
+                  totalMeetingsSet: monthlyMeetings.length, // This counts ALL meetings in the month
+                  totalMeetingsHeld: monthlyMeetings.filter(m => m.held_at !== null).length,
+                  totalPendingMeetings: monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length,
+                  totalNoShowMeetings: monthlyMeetings.filter(m => m.no_show).length
+                };
+              };
+
+            const metrics = calculateMetrics();
+
+                return (
+                  <div className="mb-8">
+                    <DashboardMetrics 
+                      clients={clients}
+                      monthProgress={monthProgress}
+                      totalMeetingGoal={totalMeetingGoal}
+                      totalHeldMeetings={metrics.totalMeetingsHeld}
+                      totalSetTarget={metrics.totalSetTarget}
+                      totalHeldTarget={metrics.totalHeldTarget}
+                      totalMeetingsSet={metrics.totalMeetingsSet}
+                      totalPendingMeetings={metrics.totalPendingMeetings}
+                      totalNoShowMeetings={metrics.totalNoShowMeetings}
                     />
-                  ))}
-                  {clients.length === 0 && (
-                    <div className="col-span-full p-6 bg-white rounded-lg shadow-md text-center">
-                      <p className="text-gray-500">No clients assigned for this month</p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                );
+              })()}
 
-                <div className="mb-8">
-                  <MeetingsList
-                    title="Today's Meetings"
-                    meetings={todayMeetings}
-                    onDelete={deleteMeeting}
-                    onUpdateHeldDate={handleMeetingHeldDateUpdate}
-                    onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
-                    onUpdateMeeting={updateMeeting}
-                    showMeetingStatus={true}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {clients.map((client) => (
+                  <ClientCard
+                    key={client.id}
+                    name={client.name}
+                    monthly_set_target={client.monthly_set_target}
+                    monthly_hold_target={client.monthly_hold_target}
+                    confirmedMeetings={client.confirmedMeetings}
+                    pendingMeetings={client.pendingMeetings}
+                    todaysMeetings={client.todaysMeetings}
+                    onAddMeeting={() => {
+                      setSelectedClientId(client.id); 
+                      setShowAddMeeting(true); // Show the modal
+                    }}
+                    onConfirmMeeting={(meetingId) => {
+                      handleMeetingConfirmedDateUpdate(meetingId, todayDateString);
+                    }}
+                    onEditMeeting={(meeting) => {
+                      setSelectedClientId(meeting.client_id);
+                      handleEditMeeting(meeting);
+                    }}
                   />
-                </div>
-
-                <UnifiedMeetingLists
-                  pendingMeetings={pendingMeetings}
-                  confirmedMeetings={confirmedMeetings}
-                  noShowMeetings={noShowMeetings}
-                  onDelete={deleteMeeting}
-                  onUpdateHeldDate={handleMeetingHeldDateUpdate}
-                  onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
-                  onUpdateMeeting={updateMeeting}
-                />
-
-                {showAddMeeting && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-                      <h2 className="text-xl font-semibold mb-4">
-                        {editingMeeting ? 'Edit Meeting' : 'Schedule New Meeting'}
-                      </h2>
-                      {addMeetingError && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                          <p className="text-sm text-red-700">{addMeetingError}</p>
-                        </div>
-                      )}
-                      <form onSubmit={handleAddMeeting} className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="contactFullName"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Contact Full Name
-                          </label>
-                          <input
-                            id="contactFullName"
-                            type="text"
-                            required
-                            value={contactFullName}
-                            onChange={(e) => setContactFullName(e.target.value)}
-                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="contactEmail"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Contact Email
-                          </label>
-                          <input
-                            id="contactEmail"
-                            type="email"
-                            required
-                            value={contactEmail}
-                            onChange={(e) => setContactEmail(e.target.value)}
-                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="contactPhone"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Contact Phone Number
-                          </label>
-                          <input
-                            id="contactPhone"
-                            type="tel"
-                            value={contactPhone}
-                            onChange={(e) => setContactPhone(e.target.value)}
-                            placeholder="(123) 456-7890"
-                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="meetingDate"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Meeting Date (EST)
-                          </label>
-                          <input
-                            type="date"
-                            id="meetingDate"
-                            required
-                            value={meetingDate}
-                            onChange={(e) => setMeetingDate(e.target.value)}
-                            min={todayDateString}
-                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <label
-                              htmlFor="meetingTime"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              Meeting Time (EST)
-                            </label>
-                            <div className="text-xs text-indigo-600 font-medium flex items-center">
-                              <Info className="w-3 h-3 mr-1" />
-                              All times in EST
-                            </div>
-                          </div>
-                          <TimeSelector
-                            value={meetingTime}
-                            onChange={setMeetingTime}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAddMeeting(false);
-                              setEditingMeeting(null);
-                              setAddMeetingError(null);
-                            }}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                          >
-                            {editingMeeting ? 'Update Meeting' : 'Schedule Meeting'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
+                ))}
+                {clients.length === 0 && (
+                  <div className="col-span-full p-6 bg-white rounded-lg shadow-md text-center">
+                    <p className="text-gray-500">No clients assigned for this month</p>
                   </div>
                 )}
-              </>
-            }
-          />
-          <Route path="history" element={<MeetingsHistory meetings={meetings} loading={meetingsLoading} error={meetingsError} onUpdateHeldDate={handleMeetingHeldDateUpdate} onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate} />} />
-          <Route path="commissions" element={<Commissions sdrId={sdrId || ''} />} />
-          <Route
-            path="calendar"
-            element={<CalendarView meetings={meetings} />}
-          />
-        </Routes>
-      </main>
-    </div>
-  );
+              </div>
+
+              <div className="mb-8">
+                <MeetingsList
+                  title="Today's Meetings"
+                  meetings={todayMeetings}
+                  editable={true}
+                  editingMeetingId={editingMeeting}
+                  onEdit={handleEditMeeting}
+                  onDelete={deleteMeeting}
+                  onSave={handleSaveMeeting}
+                  onCancel={handleCancelEdit}
+                  onUpdateHeldDate={handleMeetingHeldDateUpdate}
+                  onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
+                  showMeetingStatus={true}
+                />
+              </div>
+
+              <UnifiedMeetingLists
+                pendingMeetings={pendingMeetings}
+                confirmedMeetings={confirmedMeetings}
+                noShowMeetings={noShowMeetings}
+                editable={true}
+                editingMeetingId={editingMeeting}
+                onEdit={handleEditMeeting}
+                onDelete={deleteMeeting}
+                onSave={handleSaveMeeting}
+                onCancel={handleCancelEdit}
+                onUpdateHeldDate={handleMeetingHeldDateUpdate}
+                onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
+              />
+            </>
+          }
+        />
+        <Route 
+          path="history" 
+          element={
+            <MeetingsHistory 
+              meetings={meetings} 
+              loading={meetingsLoading} 
+              error={meetingsError} 
+              onUpdateHeldDate={handleMeetingHeldDateUpdate} 
+              onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate} 
+            />
+          } 
+        />
+        <Route path="commissions" element={<Commissions sdrId={sdrId || ''} />} />
+        <Route path="calendar" element={<CalendarView meetings={meetings} />} />
+      </Routes>
+    </main>
+  </div>
+  </>
+);
 }

@@ -5,7 +5,8 @@ import { formatTimeFromISOString } from '../utils/timeUtils';
 
 interface ClientCardProps {
   name: string;
-  monthlyTarget: number;
+  monthly_set_target: number;
+  monthly_hold_target: number;
   confirmedMeetings: number;
   pendingMeetings: number;
   todaysMeetings: Array<{
@@ -27,7 +28,8 @@ interface ClientCardProps {
 
 export default function ClientCard({
   name,
-  monthlyTarget,
+  monthly_set_target,
+  monthly_hold_target,
   confirmedMeetings,
   pendingMeetings,
   todaysMeetings,
@@ -36,8 +38,9 @@ export default function ClientCard({
   onEditMeeting,
   goalTiers = []
 }: ClientCardProps) {
-  // Calculate progress percentage
-  const progress = (confirmedMeetings / monthlyTarget) * 100;
+  // Calculate progress percentages
+  const setProgress = monthly_set_target > 0 ? ((confirmedMeetings + pendingMeetings) / monthly_set_target) * 100 : 0;
+  const heldProgress = monthly_hold_target > 0 ? (confirmedMeetings / monthly_hold_target) * 100 : 0;
   
   // Calculate month progress
   const now = new Date();
@@ -45,16 +48,16 @@ export default function ClientCard({
   const dayOfMonth = now.getDate();
   const monthProgress = (dayOfMonth / daysInMonth) * 100;
 
-  // Determine status color
+  // Determine status color based on held progress
   const getStatusColor = () => {
-    if (progress >= monthProgress) return 'text-green-600';
-    if (progress >= monthProgress - 10) return 'text-yellow-600';
+    if (heldProgress >= monthProgress) return 'text-green-600';
+    if (heldProgress >= monthProgress - 10) return 'text-yellow-600';
     return 'text-red-600';
   };
 
-  // Calculate meetings needed for each tier
+  // Calculate meetings needed for each tier (using held target)
   const getTierProgress = (percentage: number) => {
-    const targetMeetings = Math.ceil((percentage / 100) * monthlyTarget);
+    const targetMeetings = Math.ceil((percentage / 100) * monthly_hold_target);
     const meetingsNeeded = Math.max(0, targetMeetings - confirmedMeetings);
     const tierProgress = (confirmedMeetings / targetMeetings) * 100;
     return { targetMeetings, meetingsNeeded, tierProgress };
@@ -65,7 +68,10 @@ export default function ClientCard({
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
         <button
-          onClick={onAddMeeting}
+          onClick={() => {
+            console.log("Add Meeting button clicked");
+            onAddMeeting();
+          }}
           className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
           <Plus className="w-4 h-4" />
@@ -77,7 +83,7 @@ export default function ClientCard({
         <div className="flex items-center gap-2">
           <Target className="w-5 h-5 text-gray-400" />
           <span className="text-sm text-gray-600">
-            Target: {confirmedMeetings}/{monthlyTarget} meetings
+            Set: {confirmedMeetings + pendingMeetings}/{monthly_set_target} | Held: {confirmedMeetings}/{monthly_hold_target}
           </span>
         </div>
 
@@ -90,15 +96,15 @@ export default function ClientCard({
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="font-medium">Progress</span>
+            <span className="font-medium">Held Progress</span>
             <span className={`font-semibold ${getStatusColor()}`}>
-              {progress.toFixed(1)}%
+              {heldProgress.toFixed(1)}%
             </span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-indigo-600 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${heldProgress}%` }}
             />
           </div>
           <div className="flex justify-between text-sm text-gray-500">
