@@ -113,24 +113,32 @@ export function useMeetings(sdrId?: string | null) {
     sdrId: string,
     meetingDetails: any
   ) {
-    const { data, error } = await supabase
-      .from('meetings')
-      .insert([{
-        client_id: clientId,
-        sdr_id: sdrId,
-        scheduled_date: scheduledDate,
-        status: 'pending', // Default status
-        no_show: false,    // Default no_show
-        ...meetingDetails
-      }])
-      .select();
+    try {
+      delete meetingDetails.status;
 
-     if (error) {
-    console.error('Error adding meeting:', error);
-    throw error;
+      const { data, error } = await supabase
+        .from('meetings')
+        .insert([{
+          client_id: clientId,
+          sdr_id: sdrId,
+          scheduled_date: scheduledDate,
+          status: 'pending',  // Explicitly set status to pending
+          no_show: false,     // Default no_show
+          held_at: null,      // Explicitly set held_at to null
+          ...meetingDetails   // Other meeting details
+        }])
+        .select('*');
+
+      if (error) throw error;
+      
+      // Refresh meetings after adding
+      await fetchMeetings();
+      return data?.[0];
+    } catch (err) {
+      console.error('Error adding meeting:', err);
+      throw err;
+    }
   }
-  return data?.[0];
-}
   async function updateMeeting(updatedMeeting: Meeting) {
   try {
     console.log('Updating meeting:', updatedMeeting);
@@ -163,8 +171,8 @@ export function useMeetings(sdrId?: string | null) {
       
       if (heldDate) {
         updateData.held_at = heldDate;
-        updateData.status = 'confirmed';
-        updateData.no_show = false;
+        // updateData.status = 'confirmed';
+        // updateData.no_show = false;
       } else {
         updateData.held_at = null;
         
@@ -180,7 +188,7 @@ export function useMeetings(sdrId?: string | null) {
           
           if (meetingDateString < todayString) {
             updateData.no_show = true;
-            updateData.status = 'pending';
+            // updateData.status = 'pending';
           }
         }
       }

@@ -73,7 +73,7 @@ export function MeetingCard({
       contact_email: editedData.contact_email,
       contact_phone: editedData.contact_phone,
       scheduled_date: scheduledDateTime,
-      status: editedData.status,
+      status: editedData.status || 'pending',
       no_show: editedData.no_show,
     };
     

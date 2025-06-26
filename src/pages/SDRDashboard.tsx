@@ -191,7 +191,7 @@ export default function SDRDashboard() {
 
   try {
     const scheduledDateTime = `${meetingDate}T${meetingTime}:00`;
-    
+    // Explicitly include status: 'pending' when creating a meeting
     const meetingData = {
       contact_full_name: contactFullName,
       contact_email: contactEmail,
@@ -200,7 +200,7 @@ export default function SDRDashboard() {
       company: company || null,
       linkedin_page: linkedinPage || null,
       notes: notes || null,
-      status: 'pending' // Explicitly set status
+      status: 'pending'
     };
 
     await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
