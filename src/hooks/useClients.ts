@@ -91,6 +91,11 @@ export function useClients(sdrId?: string | null) {
           (meeting) => meeting.status === 'confirmed' && !meeting.no_show
         ).length;
 
+        const heldMeetings = clientMeetings.filter(
+        meeting => meeting.status === 'confirmed' && meeting.held_at !== null
+      ).length;
+
+
         // Calculate total meetings set (both pending and confirmed)
         const totalMeetingsSet = clientMeetings.length;
 
