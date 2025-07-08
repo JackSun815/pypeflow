@@ -80,6 +80,12 @@ export default function TeamMeetings({
         scheduled_date: updatedMeeting.scheduled_date,
         status: updatedMeeting.status,
         no_show: updatedMeeting.no_show,
+        company: updatedMeeting.company,           // <-- add this
+        linkedin_page: updatedMeeting.linkedin_page, // <-- add this
+        notes: updatedMeeting.notes,               // <-- add this
+        contact_full_name: updatedMeeting.contact_full_name, // (optional, for completeness)
+        contact_email: updatedMeeting.contact_email,         // (optional)
+        contact_phone: updatedMeeting.contact_phone,         // (optional)
       })
       .eq('id', updatedMeeting.id);
 

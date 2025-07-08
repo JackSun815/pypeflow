@@ -30,7 +30,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          role?: 'sdr' | 'manager'
+          role?: 'sdr' | 'manager' | null
           full_name?: string | null
           email?: string | null
           created_at?: string

@@ -26,9 +26,14 @@ export function useMeetings(sdrId?: string | null) {
           status,
           no_show,
           held_at,
+          created_at,
           contact_full_name,
           contact_email,
-          contact_phone
+          contact_phone,
+          company,
+          title,
+          linkedin_page,
+          notes
         `)
         .order('scheduled_date', { ascending: true });
       // Apply SDR filter only when sdrId is provided
@@ -86,21 +91,26 @@ export function useMeetings(sdrId?: string | null) {
     fetchMeetings();
 
     // Subscribe to ALL meeting changes to ensure manager dashboard stays updated
-    const subscription = supabase
-      .channel('meetings-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'meetings'
-        },
-        () => {
-          console.log('Meeting change detected');
-          fetchMeetings();
-        }
-      )
-      .subscribe();
+     const subscription = supabase
+    .channel('meetings-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'meetings'
+      },
+      (payload) => {
+        console.log('Meeting change detected:', {
+          event: payload.eventType,
+          meetingId: payload.new?.id,
+          created_at: payload.new?.created_at,
+          timestamp: new Date().toISOString()
+        });
+        fetchMeetings();
+      }
+    )
+    .subscribe();
 
     return () => {
       supabase.removeChannel(subscription);
@@ -124,13 +134,14 @@ export function useMeetings(sdrId?: string | null) {
           scheduled_date: scheduledDate,
           status: 'pending',  // Explicitly set status to pending
           no_show: false,     // Default no_show
-          held_at: null,      // Explicitly set held_at to null
+          held_at: null,   
+          created_at: new Date().toISOString(),
           ...meetingDetails   // Other meeting details
         }])
         .select('*');
 
       if (error) throw error;
-      
+
       // Refresh meetings after adding
       await fetchMeetings();
       return data?.[0];
@@ -141,7 +152,6 @@ export function useMeetings(sdrId?: string | null) {
   }
   async function updateMeeting(updatedMeeting: Meeting) {
   try {
-    console.log('Updating meeting:', updatedMeeting);
     const { error } = await supabase
       .from('meetings')
       .update({

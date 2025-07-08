@@ -4,22 +4,21 @@
  * @returns Formatted time string in format "h:MM AM/PM"
  */
 export function formatTime(timeString: string): string {
-  if (!timeString || !timeString.includes(':')) {
-    return '12:00 AM';
-  }
-
+  if (!timeString) return '12:00 AM';
+  
   try {
-    // Extract hours and minutes
-    const [hours, minutes] = timeString.split(':').map(Number);
+    // Normalize input (remove seconds if present)
+    const timeParts = timeString.split(':');
+    if (timeParts.length < 2) return '12:00 AM';
     
-    // Determine period
+    const hours = parseInt(timeParts[0], 10);
+    const minutes = parseInt(timeParts[1], 10);
+    
+    if (isNaN(hours) || isNaN(minutes)) return '12:00 AM';
+    
     const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12; // Convert 0 to 12
     
-    // Convert to 12-hour format
-    let hours12 = hours % 12;
-    if (hours12 === 0) hours12 = 12;
-    
-    // Format the time
     return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
   } catch (error) {
     console.error('Error formatting time:', error);
@@ -33,16 +32,11 @@ export function formatTime(timeString: string): string {
  * @returns Time string in format "HH:MM"
  */
 export function extractTimeFromISOString(isoString: string): string {
-  if (!isoString || !isoString.includes('T')) {
-    return '00:00';
-  }
+  if (!isoString) return '00:00';
   
   try {
-    // Extract the time part after 'T'
-    const timePart = isoString.split('T')[1];
-    
-    // Return the first 5 characters (HH:MM)
-    return timePart.substring(0, 5);
+    const timePart = isoString.split('T')[1] || '';
+    return timePart.substring(0, 5) || '00:00';
   } catch (error) {
     console.error('Error extracting time:', error);
     return '00:00';
@@ -55,6 +49,38 @@ export function extractTimeFromISOString(isoString: string): string {
  * @returns Formatted time string in format "h:MM AM/PM"
  */
 export function formatTimeFromISOString(isoString: string): string {
-  const timeString = extractTimeFromISOString(isoString);
-  return formatTime(timeString);
+  return formatTime(extractTimeFromISOString(isoString));
+}
+
+/**
+ * Formats a date string to EST timezone with custom formatting
+ * @param dateString ISO date string
+ * @param options Intl.DateTimeFormat options
+ * @returns Formatted date string in EST
+ */
+export function formatDateToEST(
+  dateString: string,
+  options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }
+): string {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    return date.toLocaleString('en-US', {
+      ...options,
+      timeZone: 'America/New_York'
+    });
+  } catch (error) {
+    console.error('Error formatting date to EST:', error);
+    return 'N/A';
+  }
 }

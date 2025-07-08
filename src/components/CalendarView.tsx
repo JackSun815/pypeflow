@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { MeetingCard } from './MeetingCard';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { supabase } from '../lib/supabase';
 import type { Meeting } from '../types/database';
 import '../index.css';
+import { Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 // setup locales for date-fns
 const locales = { 'en-US': enUS };
@@ -23,6 +22,7 @@ export interface MeetingEvent {
   title?: string;
   start: Date;
   end: Date;
+  created_at: string;
   status: 'pending' | 'confirmed' | 'no_show';
   contact_full_name?: string;
   contact_email?: string;
@@ -44,6 +44,7 @@ interface CalendarViewProps {
 
 export default function CalendarView({ meetings }: CalendarViewProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingEvent | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
 
   const events: MeetingEvent[] = meetings.map((m) => {
@@ -59,6 +60,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
       title: m.title,
       start: start,
       end,
+      created_at: m.created_at,
       status: m.status,
       contact_full_name: m.contact_full_name,
       contact_email: m.contact_email,
@@ -70,7 +72,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
       sdr_full_name: m.sdrs?.full_name,
       scheduled_date: m.scheduled_date,
       company: m.company,
-      linkedin_url: m.linkedin_url,
+      linkedin_url: m.linkedin_page,
       notes: m.notes
     };
   });
@@ -121,6 +123,8 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
 
   const handleSelectEvent = (event: MeetingEvent) => {
     setSelectedMeeting(event);
+    setShowDetails(false);
+    console.log('Selected meeting:', event);
   };
 
   return (
@@ -144,21 +148,99 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
       />
       {selectedMeeting && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded shadow-lg max-w-md w-full">
+          <div className="bg-white p-6 rounded shadow-lg max-w-md w-full">
             <div className="mb-4">
-              <h2 className="text-xl font-semibold">{selectedMeeting.client_name || selectedMeeting.contact_full_name || selectedMeeting.title}</h2>
-              <div className="text-sm text-gray-700 space-y-1 mt-2">
-                {selectedMeeting.title && <div><span className="font-medium">Title:</span> {selectedMeeting.title}</div>}
-                {selectedMeeting.company && <div><span className="font-medium">Company:</span> {selectedMeeting.company}</div>}
-                {selectedMeeting.linkedin_url && <div><span className="font-medium">LinkedIn:</span> <a href={selectedMeeting.linkedin_url} target="_blank" className="text-blue-600 underline">{selectedMeeting.linkedin_url}</a></div>}
-                {selectedMeeting.notes && <div><span className="font-medium">Notes:</span> {selectedMeeting.notes}</div>}
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {selectedMeeting.client_name || selectedMeeting.contact_full_name || selectedMeeting.title}
+              </h2>
             </div>
-            <MeetingCard meeting={selectedMeeting} />
+            <div className="text-sm text-gray-700 space-y-2">
+              <div>
+                <span className="font-medium text-gray-700">Meeting Time: </span>
+                <span className="text-gray-900">{selectedMeeting.start.toLocaleString()}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Created Time: </span>
+                <span className="text-gray-900">
+                  {new Date(selectedMeeting.created_at).toLocaleString('en-US', {
+                    timeZone: 'America/New_York',
+                    year: 'numeric', month: 'numeric', day: 'numeric',
+                    hour: 'numeric', minute: '2-digit', hour12: true,
+                  })}
+                </span>
+              </div>
+              {selectedMeeting.contact_full_name && (
+                <div>
+                  <span className="font-medium text-gray-700">Contact: </span>
+                  <span className="text-gray-900">{selectedMeeting.contact_full_name}</span>
+                </div>
+              )}
+              {selectedMeeting.contact_email && (
+                <div>
+                  <span className="font-medium text-gray-700">Email: </span>
+                  <span className="text-gray-900">{selectedMeeting.contact_email}</span>
+                </div>
+              )}
+              {selectedMeeting.contact_phone && (
+                <div>
+                  <span className="font-medium text-gray-700">Phone: </span>
+                  <span className="text-gray-900">{selectedMeeting.contact_phone}</span>
+                </div>
+              )}
+              <div>
+                <span className="font-medium text-gray-700">Status: </span>
+                <span className="text-gray-900">
+                  {selectedMeeting.status.charAt(0).toUpperCase() + selectedMeeting.status.slice(1)}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  console.log(showDetails ? 'Hiding details for' : 'Showing details for', selectedMeeting);
+                  setShowDetails(!showDetails);
+                }}
+                className="mt-2 text-sm text-indigo-600 hover:underline"
+              >
+                {showDetails ? (
+                  <><ChevronUp className="inline-block w-4 h-4 mr-1" /> Hide Details</>
+                ) : (
+                  <><ChevronDown className="inline-block w-4 h-4 mr-1" /> Show Details</>
+                )}
+              </button>
+              
+              {showDetails && (
+                
+                <div className="mt-2 space-y-2">
+                  {selectedMeeting.company && (
+                    <div>
+                      <span className="font-medium text-gray-700">Company: </span>
+                      <span className="text-gray-900">{selectedMeeting.company}</span>
+                    </div>
+                  )}
+                  {selectedMeeting.title && (
+                    <div>
+                      <span className="font-medium text-gray-700">Title: </span>
+                      <span className="text-gray-900">{selectedMeeting.title}</span>
+                    </div>
+                  )}
+                  {selectedMeeting.linkedin_url && (
+                    <div>
+                      <span className="font-medium text-gray-700">LinkedIn: </span>
+                      <span className="text-gray-900">{selectedMeeting.linkedin_url}</span>
+                    </div>
+                  )}
+                  {selectedMeeting.notes && (
+                    <div>
+                      <span className="font-medium text-gray-700">Notes: </span>
+                      <span className="text-gray-900 whitespace-pre-wrap">{selectedMeeting.notes}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => setSelectedMeeting(null)}
-                className="px-3 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+                className="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
               >
                 Close
               </button>
