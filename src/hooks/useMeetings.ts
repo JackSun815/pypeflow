@@ -47,12 +47,11 @@ export function useMeetings(sdrId?: string | null) {
       // Check for past meetings that haven't been marked as held/no-show
       const now = new Date();
       const todayString = now.toISOString().split('T')[0];
-      
       const updatedMeetings = await Promise.all((data || []).map(async (meeting) => {
         const meetingDateString = meeting.scheduled_date.split('T')[0];
         
         // If meeting is in the past and still pending, mark as no-show
-        if (meetingDateString < todayString && meeting.status === 'pending' && !meeting.no_show) {
+        if (meetingDateString < todayString && meeting.status === 'pending' && !meeting.no_show && !meeting.held_at) {
           const { error: updateError } = await supabase
             .from('meetings')
             .update({
@@ -75,6 +74,7 @@ export function useMeetings(sdrId?: string | null) {
 
         return meeting;
       }));
+      
 
       setMeetings(updatedMeetings);
       setError(null);
@@ -124,25 +124,23 @@ export function useMeetings(sdrId?: string | null) {
     meetingDetails: any
   ) {
     try {
-      delete meetingDetails.status;
-
+      const { status: _, ...cleanDetails } = meetingDetails;
+    
       const { data, error } = await supabase
         .from('meetings')
         .insert([{
           client_id: clientId,
           sdr_id: sdrId,
           scheduled_date: scheduledDate,
-          status: 'pending',  // Explicitly set status to pending
-          no_show: false,     // Default no_show
-          held_at: null,   
+          status: 'pending',  // Hardcoded to pending
+          no_show: false,     // Explicit defaults
+          held_at: null,
           created_at: new Date().toISOString(),
-          ...meetingDetails   // Other meeting details
+          ...cleanDetails
         }])
         .select('*');
 
       if (error) throw error;
-
-      // Refresh meetings after adding
       await fetchMeetings();
       return data?.[0];
     } catch (err) {

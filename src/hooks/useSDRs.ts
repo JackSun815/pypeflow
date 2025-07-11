@@ -46,8 +46,7 @@ export function useSDRs() {
             monthly_target
           )
         `)
-        .eq('month', monthStart.toISOString().split('T')[0]);
-
+        .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`)
       if (assignmentsError) throw assignmentsError;
 
       // Fetch meetings for this month

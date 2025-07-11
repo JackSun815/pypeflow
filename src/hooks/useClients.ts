@@ -8,6 +8,8 @@ interface ClientWithMetrics extends Client {
   confirmedMeetings: number;
   pendingMeetings: number;
   todaysMeetings: Meeting[];
+  heldMeetings: number;
+  totalMeetingsSet: number;
 }
 
 export function useClients(sdrId?: string | null) {
@@ -46,7 +48,7 @@ export function useClients(sdrId?: string | null) {
             )
           `)
           .eq('sdr_id', sdrId)
-          .eq('month', monthStart.toISOString().split('T')[0])
+          .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`)
       );
 
       if (assignmentsError) throw assignmentsError;
@@ -69,46 +71,50 @@ export function useClients(sdrId?: string | null) {
       if (meetingsError) throw meetingsError;
 
       // Update the counting logic in your map function:
+      // Update the counting logic in your map function:
       const clientsWithMetrics = (assignments || []).map((assignment: any) => {
-    const clientMeetings = meetings?.filter(
-      (meeting) => meeting.client_id === assignment.clients.id
-    ) || [];
+      const clientMeetings = meetings?.filter(
+        (meeting) => meeting.client_id === assignment.clients.id
+      ) || [];
 
-    // Pending meetings (status = pending, not no-show, not held)
-    const pendingMeetings = clientMeetings.filter(
-      meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.held_at
+      // Pending meetings (status = pending, not no-show, not held)
+      const pendingMeetings = clientMeetings.filter(
+        meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.held_at
+      ).length;
+
+      // Confirmed but not yet held meetings
+      const confirmedMeetings = clientMeetings.filter(
+        meeting => meeting.status === 'confirmed' && !meeting.no_show && !meeting.held_at
+      ).length;
+
+      // Held meetings (must have held_at date and be confirmed)
+      const heldMeetings = clientMeetings.filter(
+      (meeting) =>
+        meeting.status === 'confirmed' &&
+        !meeting.no_show &&
+        meeting.held_at !== null &&
+        new Date(meeting.held_at) <= new Date()
     ).length;
 
-    // Confirmed but not yet held meetings
-    const confirmedMeetings = clientMeetings.filter(
-      meeting => meeting.status === 'confirmed' && !meeting.no_show && !meeting.held_at
-    ).length;
+      // Total meetings set (pending + confirmed, whether held or not)
+      const totalMeetingsSet = clientMeetings.filter(
+        meeting => !meeting.no_show
+      ).length;
 
-    // Held meetings (must have held_at date)
-    const heldMeetings = clientMeetings.filter(
-      meeting => meeting.held_at !== null && meeting.status === 'confirmed'
-    ).length;
-
-    // Total meetings set (pending + confirmed, whether held or not)
-    const totalMeetingsSet = clientMeetings.filter(
-      meeting => !meeting.no_show
-    ).length;
-
-    return {
-      id: assignment.clients.id,
-      name: assignment.clients.name,
-      monthly_set_target: assignment.monthly_set_target || 0,
-      monthly_hold_target: assignment.monthly_hold_target || 0,
-      confirmedMeetings,
-      pendingMeetings,
-      heldMeetings,
-      todaysMeetings: clientMeetings.filter(
-        meeting => new Date(meeting.scheduled_date).toDateString() === new Date().toDateString()
-      ),
-      totalMeetingsSet
-    };
-  });
-
+      return {
+        id: assignment.clients.id,
+        name: assignment.clients.name,
+        monthly_set_target: assignment.monthly_set_target || 0,
+        monthly_hold_target: assignment.monthly_hold_target || 0,
+        confirmedMeetings,
+        pendingMeetings,
+        heldMeetings,
+        todaysMeetings: clientMeetings.filter(
+          meeting => new Date(meeting.scheduled_date).toDateString() === new Date().toDateString()
+        ),
+        totalMeetingsSet
+      };
+    });
       // Then update your total counts to match:
       const monthlyMeetings = meetings || [];
 

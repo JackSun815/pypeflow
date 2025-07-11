@@ -102,6 +102,7 @@ export default function DashboardMetrics({
 
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex items-center justify-between mb-4">
+          <span className="text-3xl font-bold text-green-700">{totalMeetingsSet.toLocaleString()}</span>
           <div className="flex items-center gap-2 group relative">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-1">Meetings Held <HelpCircle className="w-4 h-4 text-gray-400" />
               <div className="absolute left-0 top-full mt-2 w-72 bg-gray-900 text-white text-sm rounded-lg p-3 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">

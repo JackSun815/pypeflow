@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format, subMonths } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {Plus, Trash2, AlertCircle, Users, Target, Edit } from 'lucide-react';
@@ -48,6 +49,19 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   const [newClientSetTarget, setNewClientSetTarget] = useState<number>(0);
   const [showAssignForm, setShowAssignForm] = useState(false);
 
+  // Month selector state
+  const now = new Date();
+  const currentMonth = format(now, 'yyyy-MM');
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const date = subMonths(now, i);
+    return {
+      value: format(date, 'yyyy-MM'),
+      label: format(date, 'MMMM yyyy')
+    };
+  });
+
   const [clientDraftTargets, setClientDraftTargets] = useState<Record<string, number>>({});
   const [assignmentDraftTargets, setAssignmentDraftTargets] = useState<Record<string, number>>({});
 
@@ -55,29 +69,28 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   useEffect(() => {
     fetchClients();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortOption]);
+  }, [sortOption, selectedMonth]);
 
   async function fetchClients() {
     try {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select(`
-          *,
-          assignments (
-            *,
-            monthly_set_target,
-            monthly_hold_target
-          )
-        `);
+        .select('*');
 
       if (clientsError) throw clientsError;
 
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('month', selectedMonth);
+
+      if (assignmentsError) throw assignmentsError;
+
       const processedClients = (clientsData || []).map((client: any) => ({
         ...client,
-        assignments: client.assignments || [],
+        assignments: (assignmentsData || []).filter((a: any) => a.client_id === client.id)
       }));
 
-      // Sorting logic
       let sortedClients = [...processedClients];
       if (sortOption === 'alphabetical') {
         sortedClients.sort((a, b) => a.name.localeCompare(b.name));
@@ -92,6 +105,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       } else if (sortOption === 'date') {
         sortedClients.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       }
+
       setClients(sortedClients);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch clients');
@@ -135,59 +149,60 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   }
 
   async function handleUpdateSDRTarget(sdrId: string, clientId: string, newSetTarget: number, newHoldTarget: number) {
-  if (newSetTarget < 0 || newHoldTarget < 0) return;
+    if (newSetTarget < 0 || newHoldTarget < 0) return;
 
-  try {
-    setError(null);
-    const now = new Date();
-    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    try {
+      setError(null);
+      // Use selectedMonth as currentMonth for correct month logic
+      const currentMonth = selectedMonth;
 
-    const { data: existingAssignment, error: checkError } = await supabase
-      .from('assignments')
-      .select('id')
-      .eq('sdr_id', sdrId)
-      .eq('client_id', clientId)
-      .order('month', { ascending: false }) 
-      .limit(1)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-
-    if (existingAssignment) {
-      const { error: updateError } = await supabase
+      const { data: existingAssignment, error: checkError } = await supabase
         .from('assignments')
-        .update({ 
-          monthly_set_target: newSetTarget,
-          monthly_hold_target: newHoldTarget
+        .select('id')
+        .eq('sdr_id', sdrId)
+        .eq('client_id', clientId)
+        .eq('month', currentMonth)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingAssignment) {
+        const { error: updateError } = await supabase
+          .from('assignments')
+          .update({
+            monthly_set_target: newSetTarget,
+            monthly_hold_target: newHoldTarget,
+            month: currentMonth,
+          })
+          .eq('id', existingAssignment.id)
+          .eq('month', currentMonth);
+
+        if (updateError) throw updateError;
+      }
+
+      setClients(prevClients =>
+        prevClients.map(client => {
+          if (client.id === clientId) {
+            const updatedAssignments = client.assignments.map(assignment =>
+              assignment.sdr_id === sdrId
+                ? {
+                    ...assignment,
+                    monthly_set_target: newSetTarget,
+                    monthly_hold_target: newHoldTarget
+                  }
+                : assignment
+            );
+            return { ...client, assignments: updatedAssignments };
+          }
+          return client;
         })
-        .eq('id', existingAssignment.id);
+      );
 
-      if (updateError) throw updateError;
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update SDR target');
     }
-
-    setClients(prevClients =>
-      prevClients.map(client => {
-        if (client.id === clientId) {
-          const updatedAssignments = client.assignments.map(assignment =>
-            assignment.sdr_id === sdrId
-              ? { 
-                  ...assignment, 
-                  monthly_set_target: newSetTarget,
-                  monthly_hold_target: newHoldTarget
-                }
-              : assignment
-          );
-          return { ...client, assignments: updatedAssignments };
-        }
-        return client;
-      })
-    );
-
-    onUpdate();
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'Failed to update SDR target');
   }
-}
 
   async function handleAddClient(e: React.FormEvent) {
   e.preventDefault();
@@ -227,16 +242,15 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   // ... existing duplicate check code ...
 
   try {
-    const now = new Date();
-    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    // Use selectedMonth as currentMonth for correct month logic
+    const currentMonth = selectedMonth;
 
     const { data: existingAssignment, error: checkError } = await supabase
       .from('assignments')
       .select('*')
       .eq('client_id', selectedClient)
       .eq('sdr_id', selectedSDR)
-      .order('month', { ascending: false }) 
-      .limit(1)
+      .eq('month', currentMonth)
       .maybeSingle();
 
     if (checkError) throw checkError;
@@ -244,11 +258,13 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     if (existingAssignment) {
       const { error: updateError } = await supabase
         .from('assignments')
-        .update({ 
+        .update({
           monthly_set_target: monthlySetTarget,
-          monthly_hold_target: monthlyHoldTarget
+          monthly_hold_target: monthlyHoldTarget,
+          month: currentMonth,
         })
-        .eq('id', existingAssignment.id);
+        .eq('id', existingAssignment.id)
+        .eq('month', currentMonth);
 
       if (updateError) throw updateError;
     } else {
@@ -333,6 +349,20 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                 <option value="alphabetical">Alphabetical</option>
                 <option value="target">% Target Assigned</option>
                 <option value="date">Date Added</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Month:</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                {monthOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
             <button
@@ -821,7 +851,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                     setShowAssignForm(false);
                     setSelectedClient(null);
                     setSelectedSDR(null);
-                    setMonthlyTarget(0);
+                    setMonthlySetTarget(0);
+                    setMonthlyHoldTarget(0);
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
