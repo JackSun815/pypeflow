@@ -9,6 +9,7 @@ interface ClientCardProps {
   monthly_hold_target: number;
   confirmedMeetings: number;
   pendingMeetings: number;
+  heldMeetings: number;
   todaysMeetings: Array<{
     id: string;
     scheduled_date: string;
@@ -32,6 +33,7 @@ export default function ClientCard({
   monthly_hold_target,
   confirmedMeetings,
   pendingMeetings,
+  heldMeetings,
   todaysMeetings,
   onAddMeeting,
   onConfirmMeeting,
@@ -40,7 +42,7 @@ export default function ClientCard({
 }: ClientCardProps) {
   // Calculate progress percentages
   const setProgress = monthly_set_target > 0 ? ((confirmedMeetings + pendingMeetings) / monthly_set_target) * 100 : 0;
-  const heldProgress = monthly_hold_target > 0 ? (confirmedMeetings / monthly_hold_target) * 100 : 0;
+  const heldProgress = monthly_hold_target > 0 ? (heldMeetings / monthly_hold_target) * 100 : 0;
   
   // Calculate month progress
   const now = new Date();
@@ -58,8 +60,8 @@ export default function ClientCard({
   // Calculate meetings needed for each tier (using held target)
   const getTierProgress = (percentage: number) => {
     const targetMeetings = Math.ceil((percentage / 100) * monthly_hold_target);
-    const meetingsNeeded = Math.max(0, targetMeetings - confirmedMeetings);
-    const tierProgress = (confirmedMeetings / targetMeetings) * 100;
+    const meetingsNeeded = Math.max(0, targetMeetings - heldMeetings);
+    const tierProgress = (heldMeetings / targetMeetings) * 100;
     return { targetMeetings, meetingsNeeded, tierProgress };
   };
 
@@ -83,7 +85,7 @@ export default function ClientCard({
         <div className="flex items-center gap-2">
           <Target className="w-5 h-5 text-gray-400" />
           <span className="text-sm text-gray-600">
-            Set: {confirmedMeetings + pendingMeetings}/{monthly_set_target} | Held: {confirmedMeetings}/{monthly_hold_target}
+            Set: {confirmedMeetings + pendingMeetings}/{monthly_set_target} | Held: {heldMeetings}/{monthly_hold_target}
           </span>
         </div>
 
@@ -121,7 +123,7 @@ export default function ClientCard({
               .sort((a, b) => b.percentage - a.percentage)
               .map((tier, index) => {
                 const { targetMeetings, meetingsNeeded, tierProgress } = getTierProgress(tier.percentage);
-                const isAchieved = confirmedMeetings >= targetMeetings;
+                const isAchieved = heldMeetings >= targetMeetings;
 
                 return (
                   <div key={index} className="space-y-1">

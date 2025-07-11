@@ -108,15 +108,80 @@ export function MeetingCard({
     });
   };
 
+  // Generate consistent color for client
+  const getClientColor = (clientName: string) => {
+    const colors = [
+      'bg-indigo-100 text-indigo-800 border-indigo-200',
+      'bg-blue-100 text-blue-800 border-blue-200',
+      'bg-green-100 text-green-800 border-green-200',
+      'bg-purple-100 text-purple-800 border-purple-200',
+      'bg-pink-100 text-pink-800 border-pink-200',
+      'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'bg-red-100 text-red-800 border-red-200',
+      'bg-teal-100 text-teal-800 border-teal-200',
+      'bg-orange-100 text-orange-800 border-orange-200',
+      'bg-cyan-100 text-cyan-800 border-cyan-200'
+    ];
+    
+    // Simple hash function to get consistent color for client name
+    let hash = 0;
+    for (let i = 0; i < clientName.length; i++) {
+      const char = clientName.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  // Generate consistent border color for client
+  const getBorderColor = (clientName: string) => {
+    const colors = [
+      '#6366f1', // indigo
+      '#3b82f6', // blue
+      '#10b981', // green
+      '#8b5cf6', // purple
+      '#ec4899', // pink
+      '#f59e0b', // yellow
+      '#ef4444', // red
+      '#14b8a6', // teal
+      '#f97316', // orange
+      '#06b6d4'  // cyan
+    ];
+    
+    // Simple hash function to get consistent color for client name
+    let hash = 0;
+    for (let i = 0; i < clientName.length; i++) {
+      const char = clientName.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  const clientName = meeting.client_name || meeting.clients?.name;
+  const clientColorClass = clientName ? getClientColor(clientName) : 'bg-gray-100 text-gray-800 border-gray-200';
+
   return (
     <div className="max-h-[80vh] overflow-y-auto">
       <div className={`rounded-lg p-4 ${
         needsConfirmation 
           ? 'bg-amber-50 border-2 border-amber-300 animate-pulse' 
           : 'bg-gray-50'
-      }`}>
+      } ${clientName ? 'border-l-4' : ''}`} style={{
+        borderLeftColor: clientName ? getBorderColor(clientName) : undefined
+      }}>
       <div className="flex justify-between items-start">
         <div className="space-y-1 w-full">
+          {/* Client indicator */}
+          <div className="mb-2">
+            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${clientColorClass}`}>
+              <User className="w-3 h-3 mr-1" />
+              {clientName || 'Unknown Client'}
+            </span>
+          </div>
+
           {needsConfirmation && (
             <div className="flex items-center gap-2 text-amber-600 mb-2">
               <span className="text-sm font-medium">Needs confirmation for tomorrow!</span>
@@ -125,7 +190,7 @@ export function MeetingCard({
 
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-medium text-gray-900">{meeting.client_name || meeting.clients?.name || meeting.contact_full_name || 'Untitled Meeting'}</p>
+              <p className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</p>
               {meeting.sdr_name && (
                 <p className="text-sm text-gray-500">Booked by {meeting.sdr_name}</p>
               )}
@@ -289,7 +354,7 @@ export function MeetingCard({
               
               {showDateControls && (
                 <div className="space-y-2 mt-3">
-                  {/* Date controls if needed */}
+                  {/* Quick action buttons are handled below */}
                 </div>
               )}
               <div className="flex items-center gap-2 mt-2">
@@ -307,6 +372,51 @@ export function MeetingCard({
                   <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
                     Confirmed
                   </span>
+                )}
+                {meeting.status === 'pending' && !meeting.held_at && (
+                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                    Pending
+                  </span>
+                )}
+              </div>
+
+              {/* Quick Status Actions */}
+              <div className="flex items-center gap-2 mt-3">
+                {meeting.status === 'pending' && !meeting.held_at && (
+                  <button
+                    onClick={() => onUpdateConfirmedDate?.(meeting.id, new Date().toISOString())}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Confirm
+                  </button>
+                )}
+                {meeting.status === 'confirmed' && !meeting.held_at && (
+                  <button
+                    onClick={() => onUpdateHeldDate?.(meeting.id, new Date().toISOString())}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Mark as Held
+                  </button>
+                )}
+                {meeting.held_at && (
+                  <button
+                    onClick={() => onUpdateHeldDate?.(meeting.id, null)}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  >
+                    <XCircle className="w-3 h-3 mr-1" />
+                    Unmark as Held
+                  </button>
+                )}
+                {meeting.status === 'confirmed' && !meeting.held_at && (
+                  <button
+                    onClick={() => onUpdateConfirmedDate?.(meeting.id, null)}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                  >
+                    <XCircle className="w-3 h-3 mr-1" />
+                    Mark as Pending
+                  </button>
                 )}
               </div>
               <button

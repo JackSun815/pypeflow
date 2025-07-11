@@ -18,23 +18,7 @@ export function useMeetings(sdrId?: string | null) {
       // Start base query
       let query = supabase
         .from('meetings')
-        .select(`
-          id,
-          client_id,
-          sdr_id,
-          scheduled_date,
-          status,
-          no_show,
-          held_at,
-          created_at,
-          contact_full_name,
-          contact_email,
-          contact_phone,
-          company,
-          title,
-          linkedin_page,
-          notes
-        `)
+        .select('*, clients(name)')
         .order('scheduled_date', { ascending: true });
       // Apply SDR filter only when sdrId is provided
       if (sdrId) {

@@ -68,8 +68,15 @@ export default function SDRDashboard() {
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   const confirmedMeetings = meetings.filter(
-    meeting => meeting.status === 'confirmed'
+    meeting => meeting.status === 'confirmed' && !meeting.held_at
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+
+  const completedMeetings = meetings.filter(
+    meeting => 
+      meeting.status === 'confirmed' && 
+      meeting.held_at && 
+      !meeting.no_show
+  ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const noShowMeetings = meetings.filter(
     meeting => meeting.no_show
@@ -503,11 +510,28 @@ export default function SDRDashboard() {
                   return meetingDate >= monthStart && meetingDate <= monthEnd;
                 });
 
+                // Sum up held meetings from all clients (excluding no-shows)
+                const totalMeetingsHeld = clients.reduce((sum, client) => {
+                  const clientMeetings = monthlyMeetings.filter(m => m.client_id === client.id);
+                  const heldCount = clientMeetings.filter(m => 
+                    m.status === 'confirmed' && 
+                    !m.no_show && 
+                    m.held_at !== null
+                  ).length;
+                  
+                  console.log(`Client ${client.name}: ${heldCount} held meetings`);
+                  return sum + heldCount;
+                }, 0);
+                
+                console.log('Total held meetings calculated:', totalMeetingsHeld);
+                console.log('Monthly meetings:', monthlyMeetings.length);
+                console.log('Meetings with held_at:', monthlyMeetings.filter(m => m.held_at !== null).length);
+
                 return {
                   totalSetTarget,
                   totalHeldTarget,
-                  totalMeetingsSet: monthlyMeetings.length, // This counts ALL meetings in the month
-                  totalMeetingsHeld: monthlyMeetings.filter(m => m.held_at !== null).length,
+                  totalMeetingsSet: monthlyMeetings.filter(m => !m.no_show).length, // Exclude no-shows from set count
+                  totalMeetingsHeld,
                   totalPendingMeetings: monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length,
                   totalNoShowMeetings: monthlyMeetings.filter(m => m.no_show).length
                 };
@@ -541,6 +565,7 @@ export default function SDRDashboard() {
                     monthly_hold_target={client.monthly_hold_target}
                     confirmedMeetings={client.confirmedMeetings}
                     pendingMeetings={client.pendingMeetings}
+                    heldMeetings={client.heldMeetings}
                     todaysMeetings={client.todaysMeetings}
                     onAddMeeting={() => {
                       setSelectedClientId(client.id); 
@@ -581,6 +606,7 @@ export default function SDRDashboard() {
               <UnifiedMeetingLists
                 pendingMeetings={pendingMeetings}
                 confirmedMeetings={confirmedMeetings}
+                completedMeetings={completedMeetings}
                 noShowMeetings={noShowMeetings}
                 editable={true}
                 editingMeetingId={editingMeeting}

@@ -71,7 +71,6 @@ export function useClients(sdrId?: string | null) {
       if (meetingsError) throw meetingsError;
 
       // Update the counting logic in your map function:
-      // Update the counting logic in your map function:
       const clientsWithMetrics = (assignments || []).map((assignment: any) => {
       const clientMeetings = meetings?.filter(
         (meeting) => meeting.client_id === assignment.clients.id
@@ -87,14 +86,17 @@ export function useClients(sdrId?: string | null) {
         meeting => meeting.status === 'confirmed' && !meeting.no_show && !meeting.held_at
       ).length;
 
-      // Held meetings (must have held_at date and be confirmed)
+      // Held meetings (must have held_at date and be confirmed, exclude no-shows)
       const heldMeetings = clientMeetings.filter(
-      (meeting) =>
-        meeting.status === 'confirmed' &&
-        !meeting.no_show &&
-        meeting.held_at !== null &&
-        new Date(meeting.held_at) <= new Date()
-    ).length;
+        (meeting) =>
+          meeting.status === 'confirmed' &&
+          !meeting.no_show &&
+          meeting.held_at !== null
+      ).length;
+      
+      console.log(`Client ${assignment.clients.name} held meetings:`, heldMeetings);
+      console.log(`Client ${assignment.clients.name} meetings with held_at:`, clientMeetings.filter(m => m.held_at !== null).length);
+      console.log(`Client ${assignment.clients.name} confirmed meetings:`, clientMeetings.filter(m => m.status === 'confirmed').length);
 
       // Total meetings set (pending + confirmed, whether held or not)
       const totalMeetingsSet = clientMeetings.filter(
