@@ -3,13 +3,68 @@
  * 
  * Handles all date/time formatting and conversions with:
  * - Strict input validation
- * - Consistent timezone handling (UTC storage/EST display)
+ * - Consistent EST timezone handling (EST storage/EST display)
  * - Comprehensive error handling
  */
 
 interface TimeFormatOptions {
   showSeconds?: boolean;
   showTimezone?: boolean;
+}
+
+/**
+ * Converts a local time to UTC ISO string for EST time storage
+ * @param dateString Date string (YYYY-MM-DD)
+ * @param timeString Time string (HH:MM)
+ * @returns UTC ISO string that will display as EST
+ */
+export function createESTDateTime(dateString: string, timeString: string): string {
+  if (!dateString || !timeString) {
+    throw new Error('Date and time are required');
+  }
+  
+  try {
+    // Parse the date and time
+    const [year, month, day] = dateString.split('-').map(Number);
+    const [hours, minutes] = timeString.split(':').map(Number);
+    
+    // Use EDT (-04:00) for summer months (March to November)
+    // Use EST (-05:00) for winter months (November to March)
+    const isSummer = month >= 3 && month <= 11;
+    const timezoneOffset = isSummer ? '-04:00' : '-05:00';
+    
+    // Create a date object in EST/EDT timezone
+    const estDate = new Date(`${dateString}T${timeString}:00${timezoneOffset}`);
+    
+    return estDate.toISOString();
+  } catch (error) {
+    console.error('Error creating EST datetime:', error);
+    throw new Error('Invalid date or time format');
+  }
+}
+
+/**
+ * Converts UTC ISO string to EST ISO string
+ * @param utcISOString UTC ISO string
+ * @returns EST ISO string
+ */
+export function convertUTCToEST(utcISOString: string): string {
+  if (!utcISOString) return '';
+  
+  try {
+    const date = new Date(utcISOString);
+    if (isNaN(date.getTime())) return '';
+    
+    // Convert to EST
+    const estDate = new Date(date.toLocaleString('en-US', {
+      timeZone: 'America/New_York'
+    }));
+    
+    return estDate.toISOString().replace('Z', '');
+  } catch (error) {
+    console.error('Error converting UTC to EST:', error);
+    return '';
+  }
 }
 
 /**
@@ -60,8 +115,36 @@ export function formatTime(
 }
 
 /**
- * Extracts and formats time from an ISO date string
- * @param isoString ISO 8601 date string
+ * Converts UTC database time to EST for display
+ * @param utcISOString UTC ISO string from database
+ * @returns EST time string
+ */
+export function convertUTCToESTForDisplay(utcISOString: string): string {
+  if (!utcISOString) return '12:00 AM';
+  
+  try {
+    // Parse the UTC time from database
+    const utcDate = new Date(utcISOString);
+    if (isNaN(utcDate.getTime())) return '12:00 AM';
+    
+    // Convert to EST for display
+    const estTimeString = utcDate.toLocaleTimeString('en-US', {
+      timeZone: 'America/New_York',
+      hour12: true,
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+    
+    return `${estTimeString} EST`;
+  } catch (error) {
+    console.error('Error converting UTC to EST for display:', error);
+    return '12:00 AM';
+  }
+}
+
+/**
+ * Extracts and formats time from an ISO date string (assumes EST)
+ * @param isoString ISO 8601 date string (EST)
  * @param options Formatting options
  * @returns Formatted time string
  */
@@ -76,7 +159,7 @@ export function extractAndFormatTime(
     const date = new Date(isoString);
     if (isNaN(date.getTime())) return '12:00 AM';
     
-    // Convert to EST for display
+    // Convert UTC database time to EST for display
     const estTimeString = date.toLocaleTimeString('en-US', {
       timeZone: 'America/New_York',
       hour12: true,
@@ -96,7 +179,7 @@ export function extractAndFormatTime(
 
 /**
  * Formats a complete date string in EST timezone
- * @param dateString ISO date string
+ * @param dateString ISO date string (EST)
  * @param options Intl.DateTimeFormat options
  * @returns Formatted date string
  */
@@ -131,8 +214,8 @@ export function formatFullDateEST(
 }
 
 /**
- * Checks if a meeting is in the past (UTC comparison)
- * @param isoString ISO date string
+ * Checks if a meeting is in the past (EST comparison)
+ * @param isoString ISO date string (EST)
  * @returns boolean indicating if the date is in the past
  */
 export function isPastMeeting(isoString: string): boolean {
@@ -141,7 +224,16 @@ export function isPastMeeting(isoString: string): boolean {
   try {
     const meetingDate = new Date(isoString);
     const now = new Date();
-    return meetingDate < now;
+    
+    // Convert both to EST for comparison
+    const meetingEST = new Date(meetingDate.toLocaleString('en-US', {
+      timeZone: 'America/New_York'
+    }));
+    const nowEST = new Date(now.toLocaleString('en-US', {
+      timeZone: 'America/New_York'
+    }));
+    
+    return meetingEST < nowEST;
   } catch (error) {
     console.error('Error checking date:', error);
     return false;
@@ -149,8 +241,8 @@ export function isPastMeeting(isoString: string): boolean {
 }
 
 /**
- * Gets the day of week from a date string
- * @param dateString ISO date string
+ * Gets the day of week from a date string (EST)
+ * @param dateString ISO date string (EST)
  * @returns Day name (e.g., "Monday")
  */
 export function getDayOfWeek(dateString: string): string {
@@ -171,8 +263,8 @@ export function getDayOfWeek(dateString: string): string {
 }
 
 /**
- * Calculates the time remaining until a meeting
- * @param isoString ISO date string
+ * Calculates the time remaining until a meeting (EST)
+ * @param isoString ISO date string (EST)
  * @returns Human-readable time remaining (e.g., "in 2 days")
  */
 export function getTimeRemaining(isoString: string): string {
@@ -184,7 +276,15 @@ export function getTimeRemaining(isoString: string): string {
     
     if (isNaN(meetingDate.getTime())) return 'Invalid Date';
     
-    const diffMs = meetingDate.getTime() - now.getTime();
+    // Convert both to EST for comparison
+    const meetingEST = new Date(meetingDate.toLocaleString('en-US', {
+      timeZone: 'America/New_York'
+    }));
+    const nowEST = new Date(now.toLocaleString('en-US', {
+      timeZone: 'America/New_York'
+    }));
+    
+    const diffMs = meetingEST.getTime() - nowEST.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     

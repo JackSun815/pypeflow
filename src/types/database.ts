@@ -43,6 +43,10 @@ export interface Meeting {
   contact_full_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  company: string | null;
+  title: string | null;
+  linkedin_page: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }

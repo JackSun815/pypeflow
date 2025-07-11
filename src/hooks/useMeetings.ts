@@ -159,6 +159,9 @@ export function useMeetings(sdrId?: string | null) {
         scheduled_date: updatedMeeting.scheduled_date,
         status: updatedMeeting.status,
         no_show: updatedMeeting.no_show,
+        company: updatedMeeting.company,
+        linkedin_page: updatedMeeting.linkedin_page,
+        notes: updatedMeeting.notes,
         updated_at: new Date().toISOString()
       })
       .eq('id', updatedMeeting.id);

@@ -34,8 +34,7 @@ export function MeetingCard({
     contact_full_name: meeting.contact_full_name || '',
     contact_email: meeting.contact_email || '',
     contact_phone: meeting.contact_phone || '',
-    scheduled_date: meeting.scheduled_date.split('T')[0],
-    scheduled_time: meeting.scheduled_date.split('T')[1]?.substring(0, 5) || '09:00',
+    scheduled_date: meeting.scheduled_date, // Full ISO string
     status: meeting.status,
     no_show: meeting.no_show,
     company: meeting.company || '',
@@ -45,6 +44,11 @@ export function MeetingCard({
 
   const [showDetails, setShowDetails] = useState(false);
 
+  // Helper functions
+  const getDatePart = (isoString: string) => isoString.split('T')[0];
+  const getTimePart = (isoString: string) => isoString.split('T')[1]?.substring(0, 5) || '00:00';
+
+  // Formatted display values
   const formattedTime = formatTimeFromISOString(meeting.scheduled_date);
   const meetingDate = new Date(meeting.scheduled_date).toLocaleDateString('en-US', {
     weekday: 'short',
@@ -52,30 +56,29 @@ export function MeetingCard({
     day: 'numeric'
   });
 
+  // Date calculations
   const todayString = new Date().toISOString().split('T')[0];
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowString = tomorrow.toISOString().split('T')[0];
   
-  const meetingDateString = meeting.scheduled_date.split('T')[0];
+  const meetingDateString = getDatePart(meeting.scheduled_date);
   const isMoreThan3DaysOut = new Date(meetingDateString) > new Date(new Date().setDate(new Date().getDate() + 3));
   const isTomorrow = meetingDateString === tomorrowString;
   const needsConfirmation = meeting.status === 'pending' && isTomorrow;
 
   const handleInternalSave = () => {
-    console.log('Attempting to save meeting with data:', editedData);
     if (!onSave) {
       console.error('No onSave handler provided');
       return;
     }
     
-    const scheduledDateTime = `${editedData.scheduled_date}T${editedData.scheduled_time}:00`;
     const updatedMeeting = {
       ...meeting,
       contact_full_name: editedData.contact_full_name,
       contact_email: editedData.contact_email,
       contact_phone: editedData.contact_phone,
-      scheduled_date: scheduledDateTime,
+      scheduled_date: editedData.scheduled_date,
       status: editedData.status || 'pending',
       no_show: editedData.no_show,
       company: editedData.company,
@@ -83,11 +86,29 @@ export function MeetingCard({
       notes: editedData.notes
     };
     
-    console.log('Calling onSave with:', updatedMeeting);
     onSave(updatedMeeting);
   };
-  
-    return (
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    const currentTime = getTimePart(editedData.scheduled_date);
+    const newDateTime = `${newDate}T${currentTime}:00Z`;
+    
+    setEditedData({
+      ...editedData,
+      scheduled_date: newDateTime
+    });
+  };
+
+  const handleTimeChange = (timeString: string) => {
+    // timeString is a full UTC ISO string from TimeSelector
+    setEditedData({
+      ...editedData,
+      scheduled_date: timeString
+    });
+  };
+
+  return (
     <div className="max-h-[80vh] overflow-y-auto">
       <div className={`rounded-lg p-4 ${
         needsConfirmation 
@@ -129,10 +150,7 @@ export function MeetingCard({
                 </>
               ) : (
                 <button
-                  onClick={() => {
-                    console.log('Edit button clicked for meeting:', meeting.id);
-                    onEdit?.(meeting);
-                  }}
+                  onClick={() => onEdit?.(meeting)}
                   className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
                   title="Edit meeting"
                 >
@@ -187,15 +205,15 @@ export function MeetingCard({
                   <input
                     type="date"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    value={editedData.scheduled_date}
-                    onChange={e => setEditedData({ ...editedData, scheduled_date: e.target.value })}
+                    value={getDatePart(editedData.scheduled_date)}
+                    onChange={handleDateChange}
                   />
                 </div>
                 <div className="w-1/2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
                   <TimeSelector
-                    value={editedData.scheduled_time}
-                    onChange={time => setEditedData({ ...editedData, scheduled_time: time })}
+                    value={editedData.scheduled_date}
+                    onChange={handleTimeChange}
                   />
                 </div>
               </div>
@@ -204,7 +222,7 @@ export function MeetingCard({
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   value={editedData.status}
-                  onChange={e => setEditedData({ ...editedData, status: e.target.value })}
+                  onChange={e => setEditedData({ ...editedData, status: e.target.value as 'pending' | 'confirmed' })}
                 >
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
@@ -241,31 +259,37 @@ export function MeetingCard({
           ) : (
             <>
               <div className="text-sm text-gray-600">
-                <span className="font-medium text-gray-700">Meeting Time: </span><span className="text-gray-900">{meetingDate} {formattedTime} EST</span>
+                <span className="font-medium text-gray-700">Meeting Time: </span>
+                <span className="text-gray-900">{meetingDate} {formattedTime} EST</span>
               </div>
               <div className="text-sm text-gray-600">
-                <span className="font-medium text-gray-700">Created Time: </span><span className="text-gray-900">{formatDateToEST(meeting.created_at, {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                })}</span>
+                <span className="font-medium text-gray-700">Created Time (EST): </span>
+                <span className="text-gray-900">
+                  {formatDateToEST(meeting.created_at, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </span>
               </div>
               {meeting.contact_full_name && (
                 <div className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-700">Contact: </span><span className="text-gray-900">{meeting.contact_full_name}</span>
+                  <span className="font-medium text-gray-700">Contact: </span>
+                  <span className="text-gray-900">{meeting.contact_full_name}</span>
                 </div>
               )}
-             {meeting.contact_email && (
+              {meeting.contact_email && (
                 <div className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-700">Email: </span><span className="text-gray-900">{meeting.contact_email}</span>
+                  <span className="font-medium text-gray-700">Email: </span>
+                  <span className="text-gray-900">{meeting.contact_email}</span>
                 </div>
               )}
               
               {showDateControls && (
                 <div className="space-y-2 mt-3">
-                  {/* Keep date controls exactly as they were */}
+                  {/* Date controls if needed */}
                 </div>
               )}
               <div className="flex items-center gap-2 mt-2">
@@ -295,33 +319,33 @@ export function MeetingCard({
                   <><ChevronDown className="inline-block w-4 h-4 mr-1" /> Show Details</>
                 )}
               </button>
-                {showDetails && (
-                  <div className="mt-2 space-y-2 text-sm text-gray-600">
-                    {meeting.contact_phone && (
-                      <div>
-                        <span className="font-medium text-gray-700">Phone Number: </span>
-                        <span className="text-gray-900">{isEditing ? editedData.contact_phone : meeting.contact_phone}</span>
-                      </div>
-                    )}
-                    {(meeting.company || editedData.company) && (
-                      <div>
-                        <span className="font-medium text-gray-700">Company: </span>
-                        <span className="text-gray-900">{isEditing ? editedData.company : meeting.company}</span>
-                      </div>
-                    )}
-                    {(meeting.linkedin_page || editedData.linkedin_page) && (
-                      <div>
-                        <span className="font-medium text-gray-700">LinkedIn: </span>
-                        <span className="text-gray-900">{isEditing ? editedData.linkedin_page : meeting.linkedin_page}</span>
-                      </div>
-                    )}
-                    {(meeting.notes || editedData.notes) && (
-                      <div>
-                        <span className="font-medium text-gray-700">Notes: </span>
-                        <span className="text-gray-900 whitespace-pre-wrap">{isEditing ? editedData.notes : meeting.notes}</span>
-                      </div>
-                    )}
-                  </div>
+              {showDetails && (
+                <div className="mt-2 space-y-2 text-sm text-gray-600">
+                  {meeting.contact_phone && (
+                    <div>
+                      <span className="font-medium text-gray-700">Phone Number: </span>
+                      <span className="text-gray-900">{meeting.contact_phone}</span>
+                    </div>
+                  )}
+                  {meeting.company && (
+                    <div>
+                      <span className="font-medium text-gray-700">Company: </span>
+                      <span className="text-gray-900">{meeting.company}</span>
+                    </div>
+                  )}
+                  {meeting.linkedin_page && (
+                    <div>
+                      <span className="font-medium text-gray-700">LinkedIn: </span>
+                      <span className="text-gray-900">{meeting.linkedin_page}</span>
+                    </div>
+                  )}
+                  {meeting.notes && (
+                    <div>
+                      <span className="font-medium text-gray-700">Notes: </span>
+                      <span className="text-gray-900 whitespace-pre-wrap">{meeting.notes}</span>
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

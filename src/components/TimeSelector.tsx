@@ -1,66 +1,87 @@
 import React, { useState, useEffect } from 'react';
+import { DateTime } from 'luxon';
 
 interface TimeSelectorProps {
-  value: string;
-  onChange: (timeString: string) => void;
+  value: string; // Expects EST ISO string or HH:MM format
+  onChange: (timeString: string) => void; // Returns EST ISO string
   className?: string;
+  timezone?: string; // Default to EST
 }
 
-export default function TimeSelector({ value, onChange, className = '' }: TimeSelectorProps) {
-  // Parse the initial time value (format: HH:MM)
-  const [hour, setHour] = useState<number>(0);
+export default function TimeSelector({ 
+  value, 
+  onChange, 
+  className = '', 
+  timezone = 'America/New_York' 
+}: TimeSelectorProps) {
+  // Internal state for 12-hour format display
+  const [hour, setHour] = useState<number>(9);
   const [minute, setMinute] = useState<number>(0);
   const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
 
-  // Initialize from value prop
+  // Initialize from value prop (EST ISO string or HH:MM format)
   useEffect(() => {
-    if (value) {
-      try {
-        const [hourStr, minuteStr] = value.split(':');
-        let hourVal = parseInt(hourStr, 10);
-        const minuteVal = parseInt(minuteStr, 10);
-        
-        // Determine AM/PM
-        let periodVal: 'AM' | 'PM' = 'AM';
-        if (hourVal >= 12) {
-          periodVal = 'PM';
-          if (hourVal > 12) {
-            hourVal -= 12;
-          }
-        }
-        if (hourVal === 0) {
-          hourVal = 12;
-        }
-        
-        setHour(hourVal);
-        setMinute(minuteVal);
-        setPeriod(periodVal);
-      } catch (e) {
-        // Default to 9:00 AM if parsing fails
-        setHour(9);
-        setMinute(0);
-        setPeriod('AM');
+    try {
+      // Determine if input is ISO string or just time
+      const isISOString = value.includes('T') || value.includes(' ');
+      
+      let displayTime;
+      
+      if (isISOString) {
+        // Parse as EST and convert to display timezone
+        displayTime = DateTime.fromISO(value, { zone: timezone });
+      } else {
+        // Handle case where just time is provided (HH:MM format)
+        const today = DateTime.now().setZone(timezone);
+        const [hours, minutes] = value.split(':').map(Number);
+        displayTime = today.set({ hour: hours, minute: minutes });
       }
+      
+      if (!displayTime.isValid) {
+        throw new Error('Invalid time');
+      }
+      
+      // Convert to 12-hour format for display
+      let displayHour = displayTime.hour % 12;
+      displayHour = displayHour === 0 ? 12 : displayHour;
+      
+      setHour(displayHour);
+      setMinute(displayTime.minute);
+      setPeriod(displayTime.hour >= 12 ? 'PM' : 'AM');
+    } catch (e) {
+      // Default to 9:00 AM if parsing fails
+      setHour(9);
+      setMinute(0);
+      setPeriod('AM');
     }
-  }, [value]);
+  }, [value, timezone]);
 
   // Update the time when any component changes
   const updateTime = (newHour: number, newMinute: number, newPeriod: 'AM' | 'PM') => {
-    // Convert to 24-hour format for the output
+    // Convert 12-hour format to 24-hour format in the specified timezone
     let hour24 = newHour;
     
-    // Convert 12 AM to 0
     if (newPeriod === 'AM' && newHour === 12) {
-      hour24 = 0;
-    }
-    // Convert PM times to 24-hour format
-    else if (newPeriod === 'PM' && newHour < 12) {
-      hour24 = newHour + 12;
+      hour24 = 0; // 12 AM becomes 0
+    } else if (newPeriod === 'PM' && newHour < 12) {
+      hour24 = newHour + 12; // PM times get +12
     }
     
-    // Format as HH:MM
-    const timeString = `${hour24.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}`;
-    onChange(timeString);
+    // Create a DateTime in the specified timezone
+    const now = DateTime.now().setZone(timezone);
+    const localTime = now.set({ 
+      hour: hour24, 
+      minute: newMinute, 
+      second: 0, 
+      millisecond: 0 
+    });
+    
+    // Convert to EST ISO string for storage (no UTC conversion)
+    const estISO = localTime.toISO();
+    
+    if (estISO) {
+      onChange(estISO);
+    }
   };
 
   // Handle hour change

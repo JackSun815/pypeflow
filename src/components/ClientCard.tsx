@@ -19,7 +19,7 @@ interface ClientCardProps {
   }>;
   onAddMeeting: () => void;
   onConfirmMeeting: (meetingId: string) => void;
-  onEditMeeting?: (meetingId: string) => void;
+  onEditMeeting?: (meeting: any) => void;
   goalTiers?: Array<{
     percentage: number;
     bonus: number;
@@ -181,7 +181,7 @@ export default function ClientCard({
                         
                         {onEditMeeting && (
                           <button
-                            onClick={() => onEditMeeting(meeting.id)}
+                            onClick={() => onEditMeeting(meeting)}
                             className="inline-flex items-center gap-1 px-2 py-1 text-sm text-indigo-700 hover:text-indigo-800 focus:outline-none"
                             title="Edit meeting details"
                           >

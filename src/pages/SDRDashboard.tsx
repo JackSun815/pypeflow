@@ -12,6 +12,7 @@ import confetti from 'canvas-confetti';
 import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import CalendarView from '../components/CalendarView';
+import type { Meeting } from '../types/database';
 
 export default function SDRDashboard() {
   const { token } = useParams();
@@ -190,7 +191,10 @@ export default function SDRDashboard() {
   }
 
   try {
-    const scheduledDateTime = `${meetingDate}T${meetingTime}:00`;
+    // Use the new EST datetime creation function
+    const { createESTDateTime } = await import('../utils/timeUtils');
+    const scheduledDateTime = createESTDateTime(meetingDate, meetingTime);
+    
     // Explicitly include status: 'pending' when creating a meeting
     const meetingData = {
       contact_full_name: contactFullName,
