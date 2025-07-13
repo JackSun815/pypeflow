@@ -154,8 +154,8 @@ export default function DashboardMetrics({
               <div className="absolute left-0 top-full mt-2 w-72 bg-gray-900 text-white text-sm rounded-lg p-3 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                 <p className="mb-2">Meetings that need confirmation:</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Scheduled more than 3 days in advance</li>
-                  <li>Need to be confirmed as the date approaches</li>
+                  <li>All new meetings start as pending</li>
+                  <li>Need to be manually confirmed</li>
                 </ul>
               </div>
             </h3>

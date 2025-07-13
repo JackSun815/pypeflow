@@ -9,6 +9,14 @@ interface SDRWithMetrics extends Profile {
   totalPendingMeetings: number;
   totalHeldMeetings: number;
   totalNoShowMeetings: number;
+  clients: Array<{
+    id: string;
+    name: string;
+    monthly_set_target: number;
+    monthly_hold_target: number;
+    confirmedMeetings: number;
+    pendingMeetings: number;
+  }>;
 }
 
 export function useSDRs() {
@@ -39,11 +47,13 @@ export function useSDRs() {
         .select(`
           sdr_id,
           client_id,
-          monthly_target,
+          monthly_set_target,
+          monthly_hold_target,
           clients (
             id,
             name,
-            monthly_target
+            monthly_set_target,
+            monthly_hold_target
           )
         `)
         .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`)
@@ -81,7 +91,8 @@ export function useSDRs() {
             return {
               id: assignment.clients.id,
               name: assignment.clients.name,
-              monthlyTarget: assignment.monthly_target,
+              monthly_set_target: assignment.monthly_set_target || 0,
+              monthly_hold_target: assignment.monthly_hold_target || 0,
               confirmedMeetings: clientMeetings.filter(
                 (meeting) => meeting.status === 'confirmed' && !meeting.no_show
               ).length,

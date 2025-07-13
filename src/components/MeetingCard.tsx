@@ -63,7 +63,6 @@ export function MeetingCard({
   const tomorrowString = tomorrow.toISOString().split('T')[0];
   
   const meetingDateString = getDatePart(meeting.scheduled_date);
-  const isMoreThan3DaysOut = new Date(meetingDateString) > new Date(new Date().setDate(new Date().getDate() + 3));
   const isTomorrow = meetingDateString === tomorrowString;
   const needsConfirmation = meeting.status === 'pending' && isTomorrow;
 

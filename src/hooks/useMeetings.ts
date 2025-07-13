@@ -166,8 +166,7 @@ export function useMeetings(sdrId?: string | null) {
       
       if (heldDate) {
         updateData.held_at = heldDate;
-        // updateData.status = 'confirmed';
-        // updateData.no_show = false;
+        updateData.no_show = false; // Explicitly set no_show to false when marking as held
       } else {
         updateData.held_at = null;
         
@@ -183,7 +182,6 @@ export function useMeetings(sdrId?: string | null) {
           
           if (meetingDateString < todayString) {
             updateData.no_show = true;
-            // updateData.status = 'pending';
           }
         }
       }
