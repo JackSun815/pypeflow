@@ -103,16 +103,9 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
 
   console.log('Calendar events created:', events.length);
 
-  // Style events for month/week/day views
+  // Style events for month/week/day views - no background colors
   const eventStyleGetter = (event: MeetingEvent) => {
-    let backgroundColor = '';
-    switch (event.status) {
-      case 'pending': backgroundColor = '#FFBF00'; break; // yellow
-      case 'confirmed': backgroundColor = '#48D035'; break; // green
-      case 'no_show': backgroundColor = '#FECACA'; break; // red
-      default: backgroundColor = '#E5E7EB';
-    }
-    return { style: { backgroundColor, borderRadius: '4px', border: 'none' } };
+    return { style: { backgroundColor: 'white', borderRadius: '4px', border: '1px solid #E5E7EB' } };
   };
 
   // Custom event component for month/week/day views
@@ -126,22 +119,28 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
   const CustomAgendaEvent = ({ event }: { event: MeetingEvent }) => {
     let statusText = '';
     let statusColor = '';
+    let backgroundColor = '';
+    
     switch (event.status) {
       case 'pending': 
         statusColor = '#F59E0B';
         statusText = 'Pending';
+        backgroundColor = '#FEF3C7'; // Light yellow background
         break;
       case 'confirmed': 
         statusColor = '#10B981';
         statusText = 'Confirmed';
+        backgroundColor = '#D1FAE5'; // Light green background
         break;
       case 'no_show': 
         statusColor = '#EF4444';
         statusText = 'No Show';
+        backgroundColor = '#FEE2E2'; // Light red background
         break;
       default: 
         statusColor = '#6B7280';
         statusText = 'Unknown';
+        backgroundColor = '#F3F4F6'; // Light gray background
     }
 
     const formatTime = (date: Date) => {
@@ -157,7 +156,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
       <div 
         className="agenda-event-item"
         style={{ 
-          backgroundColor: 'white', 
+          backgroundColor: backgroundColor, 
           borderRadius: '8px', 
           padding: '12px',
           margin: '4px 0',
@@ -169,16 +168,17 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <span 
-                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border"
                 style={{
-                  backgroundColor: statusColor,
-                  color: 'white'
+                  color: statusColor,
+                  borderColor: statusColor,
+                  backgroundColor: 'white'
                 }}
               >
                 {statusText}
               </span>
               {event.held_at && (
-                <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border border-green-500 text-green-700 bg-white">
                   Held
                 </span>
               )}
@@ -294,15 +294,6 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
           }
         `}
       </style>
-      
-      <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Calendar Debug Info</h3>
-        <div className="text-sm text-gray-600">
-          <p>Total meetings received: {meetings.length}</p>
-          <p>Total events created: {events.length}</p>
-          <p>Date range: {events.length > 0 ? `${events[0]?.start.toLocaleDateString()} to ${events[events.length - 1]?.start.toLocaleDateString()}` : 'No events'}</p>
-        </div>
-      </div>
       
       <Calendar
         localizer={localizer}

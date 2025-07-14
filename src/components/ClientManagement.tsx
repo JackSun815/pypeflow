@@ -392,8 +392,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       )}
 
       {/* Client List */}
-      <div className="p-6">
-        <div className="space-y-4">
+      <div className="p-8">
+        <div className="space-y-8">
           {clients.map((client) => {
             const totalAssignedSetTarget = client.assignments.reduce(
               (sum, assignment) => sum + (assignment.monthly_set_target || 0),
@@ -411,15 +411,15 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               : 0;
             // Use setAssignmentPercentage or holdAssignmentPercentage as needed in the UI
             // (see below for usage)
-            return (
-              <div
-                key={client.id}
-                className="border border-gray-200 rounded-lg p-4 space-y-4"
-              >
+                          return (
+                <div
+                  key={client.id}
+                  className="bg-white border border-gray-200 rounded-xl shadow-lg p-6 space-y-6 hover:shadow-xl transition-all duration-200 hover:border-gray-300"
+                >
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
-                    <div className="mt-2 space-y-2">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">{client.name}</h3>
+                    <div className="space-y-4">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <Target className="w-4 h-4 text-gray-400" />
@@ -484,19 +484,19 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {/* Wrap Assign SDR and Edit buttons with a condition that disables them when clientEditMode === client.id */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <button
                         onClick={() => {
                           setSelectedClient(client.id);
                           setShowAssignForm(true);
                         }}
                         disabled={clientEditMode === client.id}
-                        className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ${
                           clientEditMode === client.id
                             ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500'
+                            : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500 border border-indigo-200'
                         }`}
                       >
                         <Users className="w-4 h-4" />
@@ -515,10 +515,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                               setAssignmentDraftTargets(prev => ({ ...prev, ...draftAssignments }));
                             }}
                         disabled={clientEditMode === client.id}
-                        className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ${
                           clientEditMode === client.id
                             ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500'
+                            : 'text-blue-700 bg-blue-50 hover:bg-blue-100 focus:ring-blue-500 border border-blue-200'
                         }`}
                       >
                         <Edit className="w-4 h-4" />
@@ -578,9 +578,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                 </div>
 
                 {/* Assignments */}
-                {client.assignments.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    {client.assignments.map((assignment) => {
+                {client.assignments.length > 0 ? (
+                  <div className="mt-6 space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">SDR Assignments</h4>
+                    {client.assignments.map((assignment, index) => {
                       const sdr = sdrs.find((s) => s.id === assignment.sdr_id);
                       const assignmentSetPercentage = client.monthly_set_target > 0
                         ? (assignment.monthly_set_target / client.monthly_set_target) * 100
@@ -589,62 +590,104 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                         ? (assignment.monthly_hold_target / client.monthly_hold_target) * 100
                         : 0;
 
+                      // Color scheme for SDR cards - 10 unique colors
+                      const colorSchemes = [
+                        { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600' },
+                        { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: 'text-green-600' },
+                        { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', icon: 'text-purple-600' },
+                        { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', icon: 'text-orange-600' },
+                        { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-800', icon: 'text-pink-600' },
+                        { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-800', icon: 'text-teal-600' },
+                        { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800', icon: 'text-indigo-600' },
+                        { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', icon: 'text-yellow-600' },
+                        { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: 'text-red-600' },
+                        { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-800', icon: 'text-cyan-600' }
+                      ];
+                      
+                      // Improved hash function for SDR color assignment
+                      const getSDRColorScheme = (sdrId: string, sdrName?: string) => {
+                        // Combine id and name for more uniqueness
+                        const str = sdrId + (sdrName || '');
+                        let hash = 5381;
+                        for (let i = 0; i < str.length; i++) {
+                          hash = ((hash << 5) + hash) + str.charCodeAt(i); // hash * 33 + c
+                        }
+                        return colorSchemes[Math.abs(hash) % colorSchemes.length];
+                      };
+                      
+                      const colorScheme = sdr ? getSDRColorScheme(sdr.id, sdr.full_name) : colorSchemes[0];
+
                       return (
                         <div
                           key={`${client.id}-${assignment.sdr_id}`}
-                          className="flex items-center justify-between bg-gray-50 p-3 rounded-md"
+                          className={`flex items-center justify-between ${colorScheme.bg} ${colorScheme.border} border p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200`}
                         >
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700">
-                              {sdr?.full_name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <Target className="w-4 h-4 text-gray-400" />
-                              {clientEditMode === client.id ? (
-                                <div className="flex gap-2">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={assignmentDraftTargets[`${client.id}-${assignment.sdr_id}-set`] ?? assignment.monthly_set_target}
-                                    onChange={e => {
-                                      const v = parseInt(e.target.value) || 0;
-                                      setAssignmentDraftTargets(prev => ({
-                                        ...prev,
-                                        [`${client.id}-${assignment.sdr_id}-set`]: v
-                                      }));
-                                    }}
-                                    className="w-16 px-1 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                  />
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={assignmentDraftTargets[`${client.id}-${assignment.sdr_id}-hold`] ?? assignment.monthly_hold_target}
-                                    onChange={e => {
-                                      const v = parseInt(e.target.value) || 0;
-                                      setAssignmentDraftTargets(prev => ({
-                                        ...prev,
-                                        [`${client.id}-${assignment.sdr_id}-hold`]: v
-                                      }));
-                                    }}
-                                    className="w-16 px-1 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="flex flex-col w-32 text-center">
-                                  <span className="font-medium text-gray-800">
-                                    Set: {assignment.monthly_set_target}
-                                  </span>
-                                  <span className="text-sm text-gray-500">
-                                    Held: {assignment.monthly_hold_target}
-                                  </span>
-                                </div>
-                              )}
-                              <span className="text-sm text-gray-500">
-                                (Set: {assignmentSetPercentage.toFixed(1)}%, Hold: {assignmentHoldPercentage.toFixed(1)}%)
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${colorScheme.bg} ${colorScheme.border} border`}>
+                              <Users className={`w-5 h-5 ${colorScheme.icon}`} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className={`text-sm font-bold ${colorScheme.text}`}>
+                                {sdr?.full_name}
                               </span>
+                              <span className="text-xs text-gray-500">SDR</span>
+                            </div>
+                          </div>
+                                                      <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-full ${colorScheme.bg} ${colorScheme.border} border`}>
+                                  <Target className={`w-4 h-4 ${colorScheme.icon}`} />
+                                </div>
+                                {clientEditMode === client.id ? (
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={assignmentDraftTargets[`${client.id}-${assignment.sdr_id}-set`] ?? assignment.monthly_set_target}
+                                      onChange={e => {
+                                        const v = parseInt(e.target.value) || 0;
+                                        setAssignmentDraftTargets(prev => ({
+                                          ...prev,
+                                          [`${client.id}-${assignment.sdr_id}-set`]: v
+                                        }));
+                                      }}
+                                      className="w-16 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={assignmentDraftTargets[`${client.id}-${assignment.sdr_id}-hold`] ?? assignment.monthly_hold_target}
+                                      onChange={e => {
+                                        const v = parseInt(e.target.value) || 0;
+                                        setAssignmentDraftTargets(prev => ({
+                                          ...prev,
+                                          [`${client.id}-${assignment.sdr_id}-hold`]: v
+                                        }));
+                                      }}
+                                      className="w-16 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-center">
+                                    <div className="flex gap-4">
+                                      <div className="text-center">
+                                        <span className={`text-lg font-bold ${colorScheme.text}`}>
+                                          {assignment.monthly_set_target}
+                                        </span>
+                                        <div className="text-xs text-gray-500">Set Target</div>
+                                      </div>
+                                      <div className="text-center">
+                                        <span className={`text-lg font-bold ${colorScheme.text}`}>
+                                          {assignment.monthly_hold_target}
+                                        </span>
+                                        <div className="text-xs text-gray-500">Held Target</div>
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Set: {assignmentSetPercentage.toFixed(1)}% | Hold: {assignmentHoldPercentage.toFixed(1)}%
+                                    </div>
+                                  </div>
+                                )}
                               {clientEditMode === client.id && (
                                 <button
                                   onClick={async () => {
@@ -692,6 +735,12 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                         </div>
                       );
                     })}
+                  </div>
+                ) : (
+                  <div className="mt-6">
+                    <div className="flex items-center gap-2 text-gray-400 text-sm italic p-4 bg-gray-50 rounded-md border border-dashed border-gray-200">
+                      <span>Looks like this client has no SDR assigned yet.</span>
+                    </div>
                   </div>
                 )}
               </div>
