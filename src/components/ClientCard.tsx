@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, Target, Plus, CheckCircle, Edit, User, Mail, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatTimeFromISOString } from '../utils/timeUtils';
+import { MeetingCard } from './MeetingCard';
 
 interface ClientCardProps {
   name: string;
@@ -153,71 +154,15 @@ export default function ClientCard({
           <div className="mt-4 border-t pt-4">
             <h4 className="text-sm font-medium text-gray-900 mb-2">Today's Meetings</h4>
             <div className="space-y-3">
-              {todaysMeetings.map((meeting) => {
-                const formattedTime = formatTimeFromISOString(meeting.scheduled_date);
-                
-                return (
-                  <div
-                    key={meeting.id}
-                    className="bg-gray-50 p-3 rounded-md"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        {formattedTime} EST
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {meeting.status === 'pending' ? (
-                          <button
-                            onClick={() => onConfirmMeeting(meeting.id)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-sm text-green-700 hover:text-green-800 focus:outline-none"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Confirm
-                          </button>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-sm text-green-600">
-                            <CheckCircle className="w-4 h-4" />
-                            Confirmed
-                          </span>
-                        )}
-                        
-                        {onEditMeeting && (
-                          <button
-                            onClick={() => onEditMeeting(meeting)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-sm text-indigo-700 hover:text-indigo-800 focus:outline-none"
-                            title="Edit meeting details"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Contact information */}
-                    {meeting.contact_full_name && (
-                      <div className="text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <User className="w-3.5 h-3.5" />
-                          <span>{meeting.contact_full_name}</span>
-                        </div>
-                        {meeting.contact_email && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Mail className="w-3.5 h-3.5" />
-                            <span className="text-xs">{meeting.contact_email}</span>
-                          </div>
-                        )}
-                        {meeting.contact_phone && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Phone className="w-3.5 h-3.5" />
-                            <span className="text-xs">{meeting.contact_phone}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {todaysMeetings.map((meeting) => (
+                <MeetingCard
+                  key={meeting.id}
+                  meeting={meeting}
+                  onEdit={onEditMeeting}
+                  onUpdateConfirmedDate={onConfirmMeeting ? (id: string, date: string | null) => onConfirmMeeting(id) : undefined}
+                  showDateControls={true}
+                />
+              ))}
             </div>
           </div>
         )}

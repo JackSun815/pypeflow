@@ -8,7 +8,7 @@ interface MeetingContact {
   contact_phone?: string;
 }
 
-export function useMeetings(sdrId?: string | null) {
+export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +16,7 @@ export function useMeetings(sdrId?: string | null) {
   async function fetchMeetings() {
     try {
       // Start base query
-      let query = supabase
+      let query = supabaseClient
         .from('meetings')
         .select('*, clients(name)')
         .order('scheduled_date', { ascending: true });
@@ -36,7 +36,7 @@ export function useMeetings(sdrId?: string | null) {
         
         // If meeting is in the past and still pending, mark as no-show
         if (meetingDateString < todayString && meeting.status === 'pending' && !meeting.no_show && !meeting.held_at) {
-          const { error: updateError } = await supabase
+          const { error: updateError } = await supabaseClient
             .from('meetings')
             .update({
               no_show: true,
@@ -75,7 +75,7 @@ export function useMeetings(sdrId?: string | null) {
     fetchMeetings();
 
     // Subscribe to ALL meeting changes to ensure manager dashboard stays updated
-     const subscription = supabase
+     const subscription = supabaseClient
     .channel('meetings-changes')
     .on(
       'postgres_changes',
@@ -97,9 +97,9 @@ export function useMeetings(sdrId?: string | null) {
     .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabaseClient.removeChannel(subscription);
     };
-  }, [sdrId]);
+  }, [sdrId, supabaseClient]);
 
   async function addMeeting(
     clientId: string,
@@ -110,7 +110,7 @@ export function useMeetings(sdrId?: string | null) {
     try {
       const { status: _, ...cleanDetails } = meetingDetails;
     
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('meetings')
         .insert([{
           client_id: clientId,
@@ -134,7 +134,7 @@ export function useMeetings(sdrId?: string | null) {
   }
   async function updateMeeting(updatedMeeting: Meeting) {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('meetings')
       .update({
         contact_full_name: updatedMeeting.contact_full_name,
@@ -170,7 +170,7 @@ export function useMeetings(sdrId?: string | null) {
       } else {
         updateData.held_at = null;
         
-        const { data: meeting } = await supabase
+        const { data: meeting } = await supabaseClient
           .from('meetings')
           .select('scheduled_date')
           .eq('id', meetingId)
@@ -186,7 +186,7 @@ export function useMeetings(sdrId?: string | null) {
         }
       }
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('meetings')
         .update(updateData)
         .eq('id', meetingId);
@@ -213,7 +213,7 @@ export function useMeetings(sdrId?: string | null) {
         updateData.status = 'pending';
       }
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('meetings')
         .update(updateData)
         .eq('id', meetingId);
@@ -228,7 +228,7 @@ export function useMeetings(sdrId?: string | null) {
 
   async function deleteMeeting(meetingId: string) {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('meetings')
         .delete()
         .eq('id', meetingId);

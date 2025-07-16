@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search } from 'lucide-react';
+import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search, Download } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { MeetingCard } from '../components/MeetingCard';
 import type { Meeting } from '../types/database';
@@ -32,6 +32,65 @@ export default function MeetingsHistory({
     now.toISOString().slice(0, 7)
   );
   const [searchTerm, setSearchTerm] = useState('');
+  // Export modal state
+  const [showExport, setShowExport] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([
+    'client', 'contact', 'email', 'phone', 'date', 'status', 'notes'
+  ]);
+
+  const columnOptions = [
+    { key: 'client', label: 'Client Name' },
+    { key: 'contact', label: 'Contact Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'date', label: 'Date' },
+    { key: 'status', label: 'Status' },
+    { key: 'notes', label: 'Notes' },
+  ];
+
+  function getMeetingField(meeting: Meeting, key: string) {
+    switch (key) {
+      case 'client': return (meeting as any).clients?.name || '';
+      case 'contact': return meeting.contact_full_name || '';
+      case 'email': return meeting.contact_email || '';
+      case 'phone': return meeting.contact_phone || '';
+      case 'date': return meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleString() : '';
+      case 'status':
+        if (meeting.no_show) return 'No Show';
+        if (meeting.held_at) return 'Held';
+        return meeting.status === 'confirmed' ? 'Confirmed' : 'Pending';
+      case 'notes': return meeting.notes || '';
+      default: return '';
+    }
+  }
+
+  function exportCSV() {
+    const header = selectedColumns.map(key => {
+      const col = columnOptions.find(c => c.key === key);
+      return col ? col.label : key;
+    });
+    const rows = filteredMeetings.map(meeting =>
+      selectedColumns.map(key => {
+        let val = getMeetingField(meeting, key);
+        // Escape quotes and commas
+        if (typeof val === 'string') {
+          val = '"' + val.replace(/"/g, '""') + '"';
+        }
+        return val;
+      })
+    );
+    const csvContent = [header, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meetings_export_${selectedMonth}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExport(false);
+  }
 
   if (loading) {
     return (
@@ -55,7 +114,7 @@ export default function MeetingsHistory({
   // Calculate all-time statistics
   const calculateAllTimeStats = (): MeetingStats => {
     const totalBooked = meetings.length;
-    const totalHeld = meetings.filter(m => m.held_at !== null).length;
+    const totalHeld = meetings.filter(m => m.held_at !== null && !m.no_show).length;
     const totalNoShow = meetings.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
     const monthlyTarget = 50; // Example monthly target
@@ -71,10 +130,15 @@ export default function MeetingsHistory({
     };
   };
 
-  // Calculate monthly statistics
+  // Filter meetings for selected month (use only scheduled_date)
+  const monthMeetings = meetings.filter(meeting => 
+    meeting.scheduled_date.startsWith(selectedMonth)
+  );
+
+  // Calculate monthly statistics (align with dashboard)
   const calculateMonthlyStats = (monthMeetings: Meeting[]): MeetingStats => {
     const totalBooked = monthMeetings.length;
-    const totalHeld = monthMeetings.filter(m => m.held_at !== null).length;
+    const totalHeld = monthMeetings.filter(m => m.held_at !== null && !m.no_show).length;
     const totalNoShow = monthMeetings.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
     const monthlyTarget = 50; // Example monthly target
@@ -97,12 +161,6 @@ export default function MeetingsHistory({
       label: format(date, 'MMMM yyyy')
     };
   });
-
-  // Filter meetings for selected month
-  const monthMeetings = meetings.filter(meeting => 
-    meeting.scheduled_date.startsWith(selectedMonth) ||
-    (meeting.held_at && meeting.held_at.startsWith(selectedMonth))
-  );
 
   // Filter meetings based on search term
   const filteredMeetings = monthMeetings.filter(meeting => {
@@ -151,18 +209,72 @@ export default function MeetingsHistory({
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900">{selectedMonthLabel}</h2>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            {monthOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2 items-center">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {monthOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium shadow transition"
+              onClick={() => setShowExport(true)}
+              title="Export meetings"
+            >
+              <Download className="w-4 h-4" /> Export
+            </button>
+          </div>
         </div>
+
+        {/* Export Modal */}
+        {showExport && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Export Meetings</h3>
+              <div className="mb-4">
+                <p className="text-sm text-gray-700 mb-2">Select columns to include:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {columnOptions.map(col => (
+                    <label key={col.key} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedColumns.includes(col.key)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setSelectedColumns([...selectedColumns, col.key]);
+                          } else {
+                            setSelectedColumns(selectedColumns.filter(k => k !== col.key));
+                          }
+                        }}
+                      />
+                      {col.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  onClick={() => setShowExport(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold"
+                  onClick={exportCSV}
+                  disabled={selectedColumns.length === 0}
+                >
+                  Export
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
           <div className="bg-gray-50 rounded-lg p-4">

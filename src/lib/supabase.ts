@@ -104,6 +104,29 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   )
 });
 
+// Stateless, sessionless Supabase client for public SDR dashboard
+export const supabasePublic = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false,
+    storage: undefined
+  },
+  global: {
+    headers: {
+      'apikey': supabaseAnonKey
+    }
+  },
+  fetch: (url, options) => withRetry(
+    () => customFetch(url, options),
+    3,
+    1000,
+    (attempt, error) => {
+      console.warn(`[Public] Retrying failed request (attempt ${attempt}/3):`, error.message);
+    }
+  )
+});
+
 // Add online/offline detection
 if (typeof window !== 'undefined') {
   let reconnectTimeout: number;

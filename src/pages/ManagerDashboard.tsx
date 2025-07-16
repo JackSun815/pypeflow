@@ -9,6 +9,7 @@ import ClientManagement from '../components/ClientManagement';
 import UserManagement from '../components/UserManagement';
 import TeamMeetings from './TeamMeetings';
 import { supabase } from '../lib/supabase';
+import { MeetingCard } from '../components/MeetingCard';
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
@@ -20,6 +21,11 @@ export default function ManagerDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings'>('overview');
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'set' | 'held' | 'pending' | 'sdrs' | 'setTarget' | 'heldTarget' | null>(null);
+  const [modalMeetings, setModalMeetings] = useState<any[]>([]);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalContent, setModalContent] = useState<any>(null);
 
   // Debug: Log raw meetings and loading state
   useEffect(() => {
@@ -88,6 +94,76 @@ export default function ManagerDashboard() {
       console.error('Failed to copy URL:', err);
     }
   }
+
+  const handleCardClick = (type: 'set' | 'held' | 'pending' | 'sdrs' | 'setTarget' | 'heldTarget') => {
+    let filteredMeetings: any[] = [];
+    let title = '';
+    let content = null;
+
+    switch (type) {
+      case 'set':
+        filteredMeetings = monthlyMeetings;
+        title = 'All Meetings Set';
+        break;
+      case 'held':
+        filteredMeetings = monthlyMeetings.filter(m => m.status === 'confirmed' && !m.no_show && m.held_at !== null);
+        title = 'Meetings Held';
+        break;
+      case 'pending':
+        filteredMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show);
+        title = 'Pending Meetings';
+        break;
+      case 'sdrs':
+        title = 'SDR Team Details';
+        content = {
+          type: 'sdrs',
+          data: sdrs
+        };
+        break;
+      case 'setTarget':
+        title = 'Monthly Set Targets by SDR';
+        content = {
+          type: 'setTarget',
+          data: sdrs.map(sdr => ({
+            name: sdr.full_name,
+            totalTarget: sdr.clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0),
+            clients: sdr.clients.map(client => ({
+              name: client.name,
+              target: client.monthly_set_target || 0
+            }))
+          }))
+        };
+        break;
+      case 'heldTarget':
+        title = 'Monthly Held Targets by SDR';
+        content = {
+          type: 'heldTarget',
+          data: sdrs.map(sdr => ({
+            name: sdr.full_name,
+            totalTarget: sdr.clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0),
+            clients: sdr.clients.map(client => ({
+              name: client.name,
+              target: client.monthly_hold_target || 0
+            }))
+          }))
+        };
+        break;
+    }
+
+    setModalMeetings(filteredMeetings);
+    setModalContent(content);
+    setModalTitle(title);
+    setModalType(type);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalType(null);
+    setModalMeetings([]);
+    setModalContent(null);
+    setModalTitle('');
+  };
 
   if (sdrsLoading || meetingsLoading) {
     return (
@@ -262,16 +338,25 @@ export default function ManagerDashboard() {
         {activeTab === 'overview' && (
           <>
             {/* Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {/* Total SDRs Card (clickable for modal) */}
+              <div 
+                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleCardClick('sdrs')}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Total SDRs</h3>
                   <Users className="w-6 h-6 text-indigo-600" />
                 </div>
                 <p className="text-3xl font-bold text-gray-900">{sdrs.length}</p>
+                <p className="text-xs text-indigo-600 mt-2 font-medium">Click to view details →</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
+              {/* Monthly Set Target Card (clickable for modal) */}
+              <div 
+                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleCardClick('setTarget')}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Monthly Set Target</h3>
                   <Target className="w-6 h-6 text-indigo-600" />
@@ -280,9 +365,14 @@ export default function ManagerDashboard() {
                 <p className="text-sm text-gray-500 mt-2">
                   {monthProgress.toFixed(1)}% of month completed
                 </p>
+                <p className="text-xs text-indigo-600 mt-2 font-medium">Click to view details →</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
+              {/* Monthly Held Target Card (clickable for modal) */}
+              <div 
+                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleCardClick('heldTarget')}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Monthly Held Target</h3>
                   <Target className="w-6 h-6 text-indigo-600" />
@@ -291,9 +381,17 @@ export default function ManagerDashboard() {
                 <p className="text-sm text-gray-500 mt-2">
                   {monthProgress.toFixed(1)}% of month completed
                 </p>
+                <p className="text-xs text-indigo-600 mt-2 font-medium">Click to view details →</p>
               </div>
+            </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
+            {/* Meetings Cards - New Line */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {/* Meetings Set Card (clickable for modal) */}
+              <div 
+                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleCardClick('set')}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Meetings Set</h3>
                   <Calendar className="w-6 h-6 text-indigo-600" />
@@ -305,9 +403,14 @@ export default function ManagerDashboard() {
                 <p className="text-sm text-gray-600 mt-1">
                   Cumulative: {totalMeetingsSet}
                 </p>
+                <p className="text-xs text-green-600 mt-2 font-medium">Click to view meetings →</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
+              {/* Meetings Held Card (clickable for modal) */}
+              <div 
+                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleCardClick('held')}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Meetings Held</h3>
                   <CheckCircle className="w-6 h-6 text-green-600" />
@@ -319,9 +422,14 @@ export default function ManagerDashboard() {
                 <p className="text-sm text-gray-600 mt-1">
                   Cumulative: {totalHeldMeetings}
                 </p>
+                <p className="text-xs text-green-600 mt-2 font-medium">Click to view meetings →</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
+              {/* Pending Card (clickable for modal) */}
+              <div 
+                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-yellow-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleCardClick('pending')}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Pending</h3>
                   <Clock className="w-6 h-6 text-yellow-500" />
@@ -333,6 +441,7 @@ export default function ManagerDashboard() {
                 <p className="text-sm text-gray-600 mt-1">
                   Cumulative: {totalPendingMeetings}
                 </p>
+                <p className="text-xs text-yellow-600 mt-2 font-medium">Click to view meetings →</p>
               </div>
             </div>
 
@@ -382,7 +491,8 @@ export default function ManagerDashboard() {
 
                       // Calculate monthly meetings for this SDR
                       const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
-                      const sdrMeetingsSet = sdrMonthlyMeetings.filter(m => !m.no_show).length;
+                      // Meetings set: count all meetings, including no-shows
+                      const sdrMeetingsSet = sdrMonthlyMeetings.length;
                       const sdrHeldMeetings = sdrMonthlyMeetings.filter(m => 
                         m.status === 'confirmed' && 
                         !m.no_show && 
@@ -510,7 +620,8 @@ export default function ManagerDashboard() {
                                     const clientMonthlyMeetings = monthlyMeetings.filter(m => 
                                       m.sdr_id === sdr.id && m.client_id === client.id
                                     );
-                                    const clientMeetingsSet = clientMonthlyMeetings.filter(m => !m.no_show).length;
+                                    // Meetings set: count all meetings, including no-shows
+                                    const clientMeetingsSet = clientMonthlyMeetings.length;
                                     const clientHeldMeetings = clientMonthlyMeetings.filter(m => 
                                       m.status === 'confirmed' && 
                                       !m.no_show && 
@@ -675,6 +786,91 @@ export default function ManagerDashboard() {
 
         {activeTab === 'users' && profile?.super_admin && (
           <UserManagement />
+        )}
+
+        {/* Modal */}
+        {modalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-semibold">{modalTitle}</h2>
+                <button
+                  onClick={closeModal}
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+                {modalContent?.type === 'sdrs' ? (
+                  <div className="space-y-4">
+                    {modalContent.data.map((sdr: any) => (
+                      <div key={sdr.id} className="bg-gray-50 p-4 rounded-md shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{sdr.full_name}</h3>
+                        <p className="text-sm text-gray-700">Email: {sdr.email}</p>
+                        <div className="mt-3">
+                          <h4 className="text-sm font-medium text-gray-900 mb-1">Clients:</h4>
+                          <ul className="list-disc list-inside text-sm text-gray-700">
+                            {sdr.clients.map((client: any) => (
+                              <li key={client.id}>{client.name}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : modalContent?.type === 'setTarget' ? (
+                  <div className="space-y-4">
+                    {modalContent.data.map((sdr: any) => (
+                      <div key={sdr.name} className="bg-gray-50 p-4 rounded-md shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{sdr.name}</h3>
+                        <p className="text-sm text-gray-700">Total Set Target: {sdr.totalTarget}</p>
+                        <div className="mt-3">
+                          <h4 className="text-sm font-medium text-gray-900 mb-1">Clients:</h4>
+                          <ul className="list-disc list-inside text-sm text-gray-700">
+                            {sdr.clients.map((client: any) => (
+                              <li key={client.name}>{client.name}: Set Target {client.target}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : modalContent?.type === 'heldTarget' ? (
+                  <div className="space-y-4">
+                    {modalContent.data.map((sdr: any) => (
+                      <div key={sdr.name} className="bg-gray-50 p-4 rounded-md shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{sdr.name}</h3>
+                        <p className="text-sm text-gray-700">Total Held Target: {sdr.totalTarget}</p>
+                        <div className="mt-3">
+                          <h4 className="text-sm font-medium text-gray-900 mb-1">Clients:</h4>
+                          <ul className="list-disc list-inside text-sm text-gray-700">
+                            {sdr.clients.map((client: any) => (
+                              <li key={client.name}>{client.name}: Held Target {client.target}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : modalMeetings.length > 0 ? (
+                  <div className="space-y-4">
+                    {modalMeetings.map((meeting) => (
+                      <MeetingCard
+                        key={meeting.id}
+                        meeting={meeting}
+                        showSDR={true}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    No information available for this category.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

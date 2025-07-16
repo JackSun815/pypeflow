@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { useMeetings } from '../hooks/useMeetings';
+import { supabasePublic } from '../lib/supabase';
 import ClientCard from '../components/ClientCard';
 import MeetingsList from '../components/MeetingsList';
 import DashboardMetrics from '../components/DashboardMetrics';
@@ -36,7 +37,7 @@ export default function SDRDashboard() {
   const [linkedinPage, setLinkedinPage] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal } = useClients(sdrId);
+  const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal } = useClients(sdrId, supabasePublic);
   const { 
     meetings, 
     loading: meetingsLoading, 
@@ -46,7 +47,7 @@ export default function SDRDashboard() {
     updateMeetingHeldDate,
     updateMeetingConfirmedDate,
     deleteMeeting 
-  } = useMeetings(sdrId);
+  } = useMeetings(sdrId, supabasePublic);
 
   const handleSaveMeeting = async (updatedMeeting: Meeting) => {
   console.log('Saving meeting:', updatedMeeting);
@@ -134,23 +135,53 @@ export default function SDRDashboard() {
   };
 
   useEffect(() => {
+    function isValidBase64(str: string) {
+      try {
+        // atob throws if not valid base64
+        return btoa(atob(str)) === str;
+      } catch (err) {
+        return false;
+      }
+    }
+
     async function validateToken() {
-      if (!token) {
-        setError('No access token provided');
+      if (!token || typeof token !== 'string' || !isValidBase64(token)) {
+        setError('No or invalid access token provided');
+        setSdrId(null);
+        setSdrName(null);
+        return;
+      }
+
+      let decodedToken: any;
+      try {
+        decodedToken = JSON.parse(atob(token));
+      } catch (err) {
+        setError('Malformed access token');
+        setSdrId(null);
+        setSdrName(null);
+        return;
+      }
+
+      if (
+        !decodedToken.id ||
+        !decodedToken.timestamp ||
+        decodedToken.type !== 'sdr_access'
+      ) {
+        setError('Invalid access token structure');
+        setSdrId(null);
+        setSdrName(null);
+        return;
+      }
+
+      // 30 days expiration
+      if (Date.now() - decodedToken.timestamp > 30 * 24 * 60 * 60 * 1000) {
+        setError('Access token has expired');
+        setSdrId(null);
+        setSdrName(null);
         return;
       }
 
       try {
-        const decodedToken = JSON.parse(atob(token));
-        
-        if (!decodedToken.id || !decodedToken.timestamp || decodedToken.type !== 'sdr_access') {
-          throw new Error('Invalid access token');
-        }
-
-        if (Date.now() - decodedToken.timestamp > 30 * 24 * 60 * 60 * 1000) {
-          throw new Error('Access token has expired');
-        }
-
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${decodedToken.id}&role=eq.sdr&active=eq.true&select=id,full_name`, {
           headers: {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -172,7 +203,6 @@ export default function SDRDashboard() {
         setSdrName(sdrProfile.full_name);
         setError(null);
       } catch (err) {
-        console.error('Token validation error:', err);
         setError(err instanceof Error ? err.message : 'Invalid or expired access token');
         setSdrId(null);
         setSdrName(null);
@@ -181,6 +211,15 @@ export default function SDRDashboard() {
 
     validateToken();
   }, [token]);
+
+  // Debug: Show SDR ID and decoded token in dev mode
+  const isDev = import.meta.env.MODE === 'development';
+  let decodedTokenDebug: any = null;
+  if (isDev && token) {
+    try {
+      decodedTokenDebug = JSON.parse(atob(token));
+    } catch {}
+  }
 
   const findMeeting = (meetingId: string) => {
     return meetings.find(m => m.id === meetingId);
@@ -245,6 +284,12 @@ export default function SDRDashboard() {
             <AlertCircle className="w-6 h-6 flex-shrink-0" />
             <p className="text-sm">{error}</p>
           </div>
+          {isDev && decodedTokenDebug && (
+            <div className="mt-4 text-xs text-gray-500 break-all">
+              <div><b>Decoded Token:</b></div>
+              <pre>{JSON.stringify(decodedTokenDebug, null, 2)}</pre>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -496,44 +541,41 @@ export default function SDRDashboard() {
             <>
               {(() => {
               const calculateMetrics = () => {
-              // Calculate targets from clients
+                // Calculate targets from clients
                 const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
                 const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                 
-                // Filter meetings for current month only
+                // Filter meetings for current month only (by scheduled_date)
                 const now = new Date();
                 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
                 const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                const monthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+                const monthlyMeetings = meetings.filter(meeting => 
+                  meeting.scheduled_date.startsWith(monthStr)
+                );
 
-                const monthlyMeetings = meetings.filter(meeting => {
-                  const meetingDate = new Date(meeting.scheduled_date);
-                  return meetingDate >= monthStart && meetingDate <= monthEnd;
-                });
+                // Debug: Print out meetings used for dashboard stats
+                console.log('--- DASHBOARD DEBUG ---');
+                console.log('monthlyMeetings:', monthlyMeetings);
+                console.log('held:', monthlyMeetings.filter(m => m.held_at !== null && !m.no_show));
+                console.log('set:', monthlyMeetings);
+                console.log('noShow:', monthlyMeetings.filter(m => m.no_show));
+                // End debug
 
-                // Sum up held meetings from all clients (excluding no-shows)
-                const totalMeetingsHeld = clients.reduce((sum, client) => {
-                  const clientMeetings = monthlyMeetings.filter(m => m.client_id === client.id);
-                  const heldCount = clientMeetings.filter(m => 
-                    m.status === 'confirmed' && 
-                    !m.no_show && 
-                    m.held_at !== null
-                  ).length;
-                  
-                  console.log(`Client ${client.name}: ${heldCount} held meetings`);
-                  return sum + heldCount;
-                }, 0);
-                
-                console.log('Total held meetings calculated:', totalMeetingsHeld);
-                console.log('Monthly meetings:', monthlyMeetings.length);
-                console.log('Meetings with held_at:', monthlyMeetings.filter(m => m.held_at !== null).length);
+                // Use the same logic as MeetingsHistory
+                const totalMeetingsSet = monthlyMeetings.length;
+                const totalMeetingsHeld = monthlyMeetings.filter(m => m.held_at !== null && !m.no_show).length;
+                const totalNoShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
+                const totalPendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length;
 
                 return {
                   totalSetTarget,
                   totalHeldTarget,
-                  totalMeetingsSet: monthlyMeetings.filter(m => !m.no_show).length, // Exclude no-shows from set count
+                  totalMeetingsSet,
                   totalMeetingsHeld,
-                  totalPendingMeetings: monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length,
-                  totalNoShowMeetings: monthlyMeetings.filter(m => m.no_show).length
+                  totalPendingMeetings,
+                  totalNoShowMeetings
                 };
               };
 
@@ -587,6 +629,8 @@ export default function SDRDashboard() {
                 )}
               </div>
 
+              {/* Remove the Today's Meetings section below */}
+              {/*
               <div className="mb-8">
                 <MeetingsList
                   title="Today's Meetings"
@@ -602,6 +646,7 @@ export default function SDRDashboard() {
                   showMeetingStatus={true}
                 />
               </div>
+              */}
 
               <UnifiedMeetingLists
                 pendingMeetings={pendingMeetings}

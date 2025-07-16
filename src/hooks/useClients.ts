@@ -12,7 +12,7 @@ interface ClientWithMetrics extends Client {
   totalMeetingsSet: number;
 }
 
-export function useClients(sdrId?: string | null) {
+export function useClients(sdrId?: string | null, supabaseClient = supabase) {
   const [clients, setClients] = useState<ClientWithMetrics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export function useClients(sdrId?: string | null) {
 
       // Fetch assigned clients with their targets for the current month
       const { data: assignments, error: assignmentsError } = await withRetry(() =>
-        supabase
+        supabaseClient
           .from('assignments')
           .select(`
             monthly_set_target,
@@ -60,7 +60,7 @@ export function useClients(sdrId?: string | null) {
 
       // Fetch meetings for this month
       const { data: meetings, error: meetingsError } = await withRetry(() =>
-        supabase
+        supabaseClient
           .from('meetings')
           .select('*, clients(name)')
           .eq('sdr_id', sdrId)
@@ -163,7 +163,7 @@ export function useClients(sdrId?: string | null) {
     fetchClients();
 
     // Subscribe to changes in meetings and assignments
-    const channel = supabase.channel('client-changes')
+    const channel = supabaseClient.channel('client-changes')
       .on(
         'postgres_changes',
         {
@@ -185,9 +185,9 @@ export function useClients(sdrId?: string | null) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabaseClient.removeChannel(channel);
     };
-  }, [sdrId]);
+  }, [sdrId, supabaseClient]);
 
   return { 
     clients, 

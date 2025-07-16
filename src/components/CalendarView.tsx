@@ -105,15 +105,27 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
 
   // Style events for month/week/day views - no background colors
   const eventStyleGetter = (event: MeetingEvent) => {
-    return { style: { backgroundColor: 'white', borderRadius: '4px', border: '1px solid #E5E7EB' } };
+    return { style: { backgroundColor: 'white', color: '#111827', borderRadius: '4px', border: '1px solid #E5E7EB' } };
   };
 
-  // Custom event component for month/week/day views
-  const CustomEvent = ({ event }: { event: MeetingEvent }) => (
-    <div className="rbc-event-content">
-      {event.client_name || event.contact_full_name || event.title}
-    </div>
-  );
+  // Custom event component for month/week/day views (used for month, week, and day)
+  const CustomEvent = ({ event }: { event: MeetingEvent }) => {
+    let preview = '';
+    if (event.contact_full_name && event.client_name) {
+      preview = `${event.contact_full_name} - ${event.client_name}`;
+    } else if (event.contact_full_name) {
+      preview = event.contact_full_name;
+    } else if (event.client_name) {
+      preview = event.client_name;
+    } else {
+      preview = event.title;
+    }
+    return (
+      <div className="rbc-event-content">
+        {preview}
+      </div>
+    );
+  };
 
   // Custom event component specifically for agenda view
   const CustomAgendaEvent = ({ event }: { event: MeetingEvent }) => {
@@ -310,6 +322,12 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
           agenda: {
             event: CustomAgendaEvent
           }
+        }}
+        formats={{
+          eventTimeRangeFormat: () => '',
+          eventTimeRangeStartFormat: () => '',
+          eventTimeRangeEndFormat: () => '',
+          agendaTimeFormat: 'h:mm a', // keep time in agenda view
         }}
         step={30}
         timeslots={2}
