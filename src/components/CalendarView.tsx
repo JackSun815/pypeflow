@@ -105,7 +105,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
 
   // Style events for month/week/day views - no background colors
   const eventStyleGetter = (event: MeetingEvent) => {
-    return { style: { backgroundColor: 'white', color: '#111827', borderRadius: '4px', border: '1px solid #E5E7EB' } };
+    return { style: { backgroundColor: '#82ed94', color: '#111827', borderRadius: '4px', border: '1px solid #E5E7EB' } };
   };
 
   // Custom event component for month/week/day views (used for month, week, and day)

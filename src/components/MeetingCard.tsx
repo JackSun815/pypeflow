@@ -357,26 +357,23 @@ export function MeetingCard({
                 </div>
               )}
               <div className="flex items-center gap-2 mt-2">
-                {meeting.no_show && (
+                {meeting.no_show ? (
                   <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
                     No Show
                   </span>
-                )}
-                {meeting.held_at && (
+                ) : meeting.held_at ? (
                   <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
                     Meeting Held
                   </span>
-                )}
-                {!meeting.held_at && meeting.status === 'confirmed' && (
+                ) : meeting.status === 'confirmed' ? (
                   <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
                     Confirmed
                   </span>
-                )}
-                {meeting.status === 'pending' && !meeting.held_at && (
+                ) : meeting.status === 'pending' ? (
                   <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
                     Pending
                   </span>
-                )}
+                ) : null}
               </div>
 
               {/* Quick Status Actions */}

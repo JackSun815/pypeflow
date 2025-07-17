@@ -31,3 +31,7 @@
 .rbc-agenda-event-cell {
   width: 100%;
 }
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr {
+  background-color: white !important;
+}
