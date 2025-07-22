@@ -6,6 +6,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { Meeting } from '../types/database';
 import '../index.css';
 import { Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { DateTime } from 'luxon';
 
 // setup locales for date-fns
 const locales = { 'en-US': enUS };
@@ -36,6 +37,7 @@ export interface MeetingEvent {
   company?: string;
   linkedin_url?: string;
   notes?: string;
+  timezone?: string; // Added timezone to MeetingEvent
 }
 
 interface CalendarViewProps {
@@ -51,54 +53,23 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
   console.log('Sample meeting data:', meetings.slice(0, 3));
 
   const events: MeetingEvent[] = meetings.map((m) => {
-    // Parse the scheduled_date properly, handling timezone conversion
+    // Use the meeting's timezone for start/end
+    const timezone = m.timezone || 'America/New_York';
     let start: Date;
     let end: Date;
-    
     if (m.scheduled_date) {
-      // Parse the ISO string and convert to EST
-      const utcDate = new Date(m.scheduled_date);
-      
-      // Convert to EST (UTC-5) or EDT (UTC-4) based on daylight saving
-      const estOffset = utcDate.getTimezoneOffset() + (utcDate.getMonth() >= 3 && utcDate.getMonth() <= 10 ? 240 : 300); // EDT or EST
-      start = new Date(utcDate.getTime() + (estOffset * 60 * 1000));
-      end = new Date(start.getTime() + 30 * 60 * 1000); // 30 minute duration
+      const dt = DateTime.fromISO(m.scheduled_date, { zone: timezone });
+      start = dt.toJSDate();
+      end = dt.plus({ minutes: 30 }).toJSDate();
     } else {
-      // Fallback for meetings without scheduled_date
       start = new Date();
       end = new Date(start.getTime() + 30 * 60 * 1000);
     }
-    
-    const event = {
-      id: m.id,
-      title: m.title || `${m.contact_full_name || 'Meeting'} - ${m.clients?.name || 'Client'}`,
-      start: start,
+    return {
+      ...m,
+      start,
       end,
-      created_at: m.created_at,
-      status: m.status,
-      contact_full_name: m.contact_full_name,
-      contact_email: m.contact_email,
-      contact_phone: m.contact_phone,
-      held_at: m.held_at,
-      no_show: m.no_show,
-      sdr_name: m.sdrs?.full_name,
-      client_name: m.clients?.name,
-      sdr_full_name: m.sdrs?.full_name,
-      scheduled_date: m.scheduled_date,
-      company: m.company,
-      linkedin_url: m.linkedin_page,
-      notes: m.notes
     };
-
-    // Debug logging for date parsing
-    console.log(`Meeting ${m.id}:`, {
-      original: m.scheduled_date,
-      utcDate: new Date(m.scheduled_date),
-      parsed: start,
-      event: event
-    });
-
-    return event;
   });
 
   console.log('Calendar events created:', events.length);
@@ -155,13 +126,10 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
         backgroundColor = '#F3F4F6'; // Light gray background
     }
 
-    const formatTime = (date: Date) => {
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'America/New_York'
-      });
+    // In CustomAgendaEvent, update formatTime to use event.timezone
+    const formatTime = (date: Date, timezone?: string) => {
+      if (!timezone) timezone = 'America/New_York';
+      return DateTime.fromJSDate(date, { zone: timezone }).toFormat('h:mm a') + ' ' + DateTime.fromJSDate(date, { zone: timezone }).offsetNameShort;
     };
 
     return (
@@ -203,7 +171,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
             <div className="text-sm text-gray-600 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">Time:</span>
-                <span>{formatTime(event.start)} - {formatTime(event.end)}</span>
+                <span>{formatTime(event.start, event.timezone)} - {formatTime(event.end, event.timezone)}</span>
               </div>
               
               {event.contact_full_name && (
@@ -345,7 +313,7 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
             <div className="text-sm text-gray-700 space-y-2">
               <div>
                 <span className="font-medium text-gray-700">Meeting Time: </span>
-                <span className="text-gray-900">{selectedMeeting.start.toLocaleString()}</span>
+                <span className="text-gray-900">{DateTime.fromJSDate(selectedMeeting.start, { zone: selectedMeeting.timezone || 'America/New_York' }).toLocaleString(DateTime.DATETIME_MED)} {DateTime.fromJSDate(selectedMeeting.start, { zone: selectedMeeting.timezone || 'America/New_York' }).offsetNameShort}</span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Created Time: </span>
@@ -396,8 +364,18 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
               </button>
               
               {showDetails && (
-                
                 <div className="mt-2 space-y-2">
+                  {/* Client Timezone row */}
+                  <div>
+                    <span className="font-medium text-gray-700">Client Timezone: </span>
+                    <span className="text-gray-900">
+                      {(() => {
+                        const tz = selectedMeeting.timezone || 'America/New_York';
+                        const dt = DateTime.now().setZone(tz);
+                        return tz + ' (' + dt.offsetNameShort + ')';
+                      })()}
+                    </span>
+                  </div>
                   {selectedMeeting.company && (
                     <div>
                       <span className="font-medium text-gray-700">Company: </span>

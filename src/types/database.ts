@@ -49,4 +49,5 @@ export interface Meeting {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  timezone?: string; // IANA timezone string for meeting (e.g., 'America/New_York')
 }

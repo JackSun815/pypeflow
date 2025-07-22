@@ -36,6 +36,7 @@ export default function SDRDashboard() {
   const [company, setCompany] = useState('');
   const [linkedinPage, setLinkedinPage] = useState('');
   const [notes, setNotes] = useState('');
+  const [meetingTimezone, setMeetingTimezone] = useState('America/New_York'); // Default to EST
 
   const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal } = useClients(sdrId, supabasePublic);
   const { 
@@ -237,11 +238,8 @@ export default function SDRDashboard() {
   }
 
   try {
-    // Use the new EST datetime creation function
-    const { createESTDateTime } = await import('../utils/timeUtils');
-    const scheduledDateTime = createESTDateTime(meetingDate, meetingTime);
-    
-    // Explicitly include status: 'pending' when creating a meeting
+    const { createZonedDateTime } = await import('../utils/timeUtils');
+    const scheduledDateTime = createZonedDateTime(meetingDate, meetingTime, meetingTimezone);
     const meetingData = {
       contact_full_name: contactFullName,
       contact_email: contactEmail,
@@ -250,15 +248,14 @@ export default function SDRDashboard() {
       company: company || null,
       linkedin_page: linkedinPage || null,
       notes: notes || null,
-      status: 'pending'
+      status: 'pending',
+      timezone: meetingTimezone // Save timezone for reference
     };
-
     await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
-    
-    // Reset form
     setShowAddMeeting(false);
     setMeetingDate('');
     setMeetingTime('09:00');
+    setMeetingTimezone('America/New_York');
     setSelectedClientId(null);
     setContactFullName('');
     setContactEmail('');
@@ -269,7 +266,6 @@ export default function SDRDashboard() {
     setNotes('');
     setEditingMeeting(null);
     setAddMeetingError(null);
-    
     triggerConfetti();
   } catch (error) {
     console.error('Failed to add meeting:', error);
@@ -361,13 +357,28 @@ export default function SDRDashboard() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Time</label>
-              <input
-                type="time"
-                value={meetingTime}
-                onChange={(e) => setMeetingTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  type="time"
+                  value={meetingTime}
+                  onChange={(e) => setMeetingTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+                <select
+                  value={meetingTimezone}
+                  onChange={e => setMeetingTimezone(e.target.value)}
+                  className="px-2 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="America/New_York">EST (Eastern)</option>
+                  <option value="America/Chicago">CST (Central)</option>
+                  <option value="America/Denver">MST (Mountain)</option>
+                  <option value="America/Los_Angeles">PST (Pacific)</option>
+                  <option value="America/Phoenix">MST (Arizona)</option>
+                  <option value="America/Anchorage">AKST (Alaska)</option>
+                  <option value="Pacific/Honolulu">HST (Hawaii)</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Contact Full Name</label>

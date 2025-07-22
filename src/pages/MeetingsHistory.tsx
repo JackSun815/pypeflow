@@ -3,6 +3,7 @@ import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search, 
 import { format, subMonths } from 'date-fns';
 import { MeetingCard } from '../components/MeetingCard';
 import type { Meeting } from '../types/database';
+import { DateTime } from 'luxon';
 
 interface MeetingStats {
   totalBooked: number;
@@ -54,7 +55,13 @@ export default function MeetingsHistory({
       case 'contact': return meeting.contact_full_name || '';
       case 'email': return meeting.contact_email || '';
       case 'phone': return meeting.contact_phone || '';
-      case 'date': return meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleString() : '';
+      case 'date':
+        if (meeting.scheduled_date) {
+          const timezone = meeting.timezone || 'America/New_York';
+          const dt = DateTime.fromISO(meeting.scheduled_date, { zone: timezone });
+          return dt.toFormat('ccc, LLL d, h:mm a') + ' ' + (dt.offsetNameShort || timezone);
+        }
+        return '';
       case 'status':
         if (meeting.no_show) return 'No Show';
         if (meeting.held_at) return 'Held';

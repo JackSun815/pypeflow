@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Calendar, CheckCircle, Mail, Phone, Trash2, User, XCircle, AlertCircle, Save, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, CheckCircle, Mail, Phone, Trash2, User, XCircle, AlertCircle, Save, Edit2, ChevronDown, ChevronUp, Clipboard } from 'lucide-react';
 import { formatTimeFromISOString, formatDateToEST } from '../utils/timeUtils';
 import type { Meeting } from '../types/database';
 import TimeSelector from './TimeSelector';
+import { DateTime } from 'luxon';
 
 interface MeetingCardProps {
   meeting: Meeting & { sdr_name?: string; client_name?: string; clients?: { name?: string } | null };
@@ -43,6 +44,7 @@ export function MeetingCard({
   });
 
   const [showDetails, setShowDetails] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Helper functions
   const getDatePart = (isoString: string) => isoString.split('T')[0];
@@ -161,6 +163,35 @@ export function MeetingCard({
 
   const clientName = meeting.client_name || meeting.clients?.name;
   const clientColorClass = clientName ? getClientColor(clientName) : 'bg-gray-100 text-gray-800 border-gray-200';
+
+  // Helper to format the Slack message
+  const getSlackMessage = () => {
+    const tz = meeting.timezone || 'America/New_York';
+    const dt = DateTime.fromISO(meeting.scheduled_date, { zone: tz });
+    const timeStr = dt.isValid ? dt.toFormat('ccc, LLL d, yyyy, h:mm a ') + dt.offsetNameShort : meeting.scheduled_date;
+    return [
+      '***MEETING BOOKED',
+      meeting.contact_full_name || '',
+      meeting.title || '',
+      meeting.company || '',
+      meeting.contact_email || '',
+      meeting.contact_phone || '',
+      meeting.linkedin_page || '',
+      `Talk track: ${meeting.client_name || meeting.clients?.name || ''}`,
+      `Meeting: ${timeStr}`,
+      meeting.notes ? `NOTES: ${meeting.notes}` : '',
+    ].filter(Boolean).join('\n');
+  };
+
+  const handleCopySlack = async () => {
+    try {
+      await navigator.clipboard.writeText(getSlackMessage());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      alert('Failed to copy to clipboard');
+    }
+  };
 
   return (
     <div className="max-h-[80vh] overflow-y-auto">
@@ -426,7 +457,18 @@ export function MeetingCard({
                 )}
               </button>
               {showDetails && (
-                <div className="mt-2 space-y-2 text-sm text-gray-600">
+                <div className="mt-2 space-y-2 text-sm text-gray-600 relative">
+                  {/* Client Timezone row */}
+                  <div>
+                    <span className="font-medium text-gray-700">Client Timezone: </span>
+                    <span className="text-gray-900">
+                      {(() => {
+                        const tz = meeting.timezone || 'America/New_York';
+                        const dt = DateTime.now().setZone(tz);
+                        return tz + ' (' + dt.offsetNameShort + ')';
+                      })()}
+                    </span>
+                  </div>
                   {meeting.contact_phone && (
                     <div>
                       <span className="font-medium text-gray-700">Phone Number: </span>
@@ -451,12 +493,26 @@ export function MeetingCard({
                       <span className="text-gray-900 whitespace-pre-wrap">{meeting.notes}</span>
                     </div>
                   )}
+                  <button
+                    onClick={handleCopySlack}
+                    className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 border border-indigo-300 text-indigo-600 bg-white rounded-md hover:bg-indigo-50 hover:border-indigo-400 transition text-sm focus:outline-none"
+                    title="Copy meeting info for Slack"
+                    type="button"
+                  >
+                    <Clipboard className="w-4 h-4" />
+                    Copy Meeting Info
+                  </button>
                 </div>
               )}
             </>
           )}
         </div>
       </div>
+      {copied && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded shadow text-sm animate-fade-in-out z-50">
+          Copied to clipboard!
+        </div>
+      )}
       </div>
     </div>
   );

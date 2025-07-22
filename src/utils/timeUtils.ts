@@ -7,6 +7,8 @@
  * - Comprehensive error handling
  */
 
+import { DateTime } from 'luxon';
+
 interface TimeFormatOptions {
   showSeconds?: boolean;
   showTimezone?: boolean;
@@ -295,6 +297,29 @@ export function getTimeRemaining(isoString: string): string {
   } catch (error) {
     console.error('Error calculating time remaining:', error);
     return 'N/A';
+  }
+}
+
+/**
+ * Creates an ISO string for a given date, time, and IANA timezone (e.g., America/New_York)
+ * @param dateString Date string (YYYY-MM-DD)
+ * @param timeString Time string (HH:MM)
+ * @param timezone IANA timezone string (e.g., America/New_York)
+ * @returns ISO string in the specified timezone
+ */
+export function createZonedDateTime(dateString: string, timeString: string, timezone: string): string {
+  if (!dateString || !timeString || !timezone) {
+    throw new Error('Date, time, and timezone are required');
+  }
+  try {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const [hour, minute] = timeString.split(':').map(Number);
+    const dt = DateTime.fromObject({ year, month, day, hour, minute }, { zone: timezone });
+    if (!dt.isValid) throw new Error('Invalid date/time/timezone');
+    return dt.toISO();
+  } catch (error) {
+    console.error('Error creating zoned datetime:', error);
+    throw new Error('Invalid date, time, or timezone format');
   }
 }
 
