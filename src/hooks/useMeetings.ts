@@ -146,6 +146,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
         company: updatedMeeting.company,
         linkedin_page: updatedMeeting.linkedin_page,
         notes: updatedMeeting.notes,
+        timezone: updatedMeeting.timezone, // Save prospect's timezone
         updated_at: new Date().toISOString()
       })
       .eq('id', updatedMeeting.id);

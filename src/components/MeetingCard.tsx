@@ -40,7 +40,8 @@ export function MeetingCard({
     no_show: meeting.no_show,
     company: meeting.company || '',
     linkedin_page: meeting.linkedin_page || '',
-    notes: meeting.notes || ''
+    notes: meeting.notes || '',
+    timezone: meeting.timezone || 'America/New_York'
   });
 
   const [showDetails, setShowDetails] = useState(false);
@@ -84,7 +85,8 @@ export function MeetingCard({
       no_show: editedData.no_show,
       company: editedData.company,
       linkedin_page: editedData.linkedin_page,
-      notes: editedData.notes
+      notes: editedData.notes,
+      timezone: editedData.timezone
     };
     
     onSave(updatedMeeting);
@@ -294,8 +296,8 @@ export function MeetingCard({
                 />
               </div>
 
-              <div className="flex space-x-2">
-                <div className="w-1/2">
+              <div className="space-y-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                   <input
                     type="date"
@@ -304,11 +306,12 @@ export function MeetingCard({
                     onChange={handleDateChange}
                   />
                 </div>
-                <div className="w-1/2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
                   <TimeSelector
                     value={editedData.scheduled_date}
                     onChange={handleTimeChange}
+                    className="w-full"
                   />
                 </div>
               </div>
@@ -340,6 +343,22 @@ export function MeetingCard({
                   value={editedData.linkedin_page}
                   onChange={e => setEditedData({ ...editedData, linkedin_page: e.target.value })}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prospect's Timezone</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  value={editedData.timezone || 'America/New_York'}
+                  onChange={e => setEditedData({ ...editedData, timezone: e.target.value })}
+                >
+                  <option value="America/New_York">EST (Eastern)</option>
+                  <option value="America/Chicago">CST (Central)</option>
+                  <option value="America/Denver">MST (Mountain)</option>
+                  <option value="America/Los_Angeles">PST (Pacific)</option>
+                  <option value="America/Phoenix">MST (Arizona)</option>
+                  <option value="America/Anchorage">AKST (Alaska)</option>
+                  <option value="Pacific/Honolulu">HST (Hawaii)</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -460,7 +479,7 @@ export function MeetingCard({
                 <div className="mt-2 space-y-2 text-sm text-gray-600 relative">
                   {/* Client Timezone row */}
                   <div>
-                    <span className="font-medium text-gray-700">Client Timezone: </span>
+                    <span className="font-medium text-gray-700">Prospect's Timezone: </span>
                     <span className="text-gray-900">
                       {(() => {
                         const tz = meeting.timezone || 'America/New_York';

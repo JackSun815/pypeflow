@@ -36,7 +36,7 @@ export default function SDRDashboard() {
   const [company, setCompany] = useState('');
   const [linkedinPage, setLinkedinPage] = useState('');
   const [notes, setNotes] = useState('');
-  const [meetingTimezone, setMeetingTimezone] = useState('America/New_York'); // Default to EST
+  const [prospectTimezone, setProspectTimezone] = useState('America/New_York'); // Default to EST
 
   const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal } = useClients(sdrId, supabasePublic);
   const { 
@@ -239,7 +239,7 @@ export default function SDRDashboard() {
 
   try {
     const { createZonedDateTime } = await import('../utils/timeUtils');
-    const scheduledDateTime = createZonedDateTime(meetingDate, meetingTime, meetingTimezone);
+    const scheduledDateTime = createZonedDateTime(meetingDate, meetingTime, 'America/New_York'); // Always EST
     const meetingData = {
       contact_full_name: contactFullName,
       contact_email: contactEmail,
@@ -249,13 +249,13 @@ export default function SDRDashboard() {
       linkedin_page: linkedinPage || null,
       notes: notes || null,
       status: 'pending',
-      timezone: meetingTimezone // Save timezone for reference
+      timezone: prospectTimezone, // Save prospect's timezone for reference
     };
     await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
     setShowAddMeeting(false);
     setMeetingDate('');
     setMeetingTime('09:00');
-    setMeetingTimezone('America/New_York');
+    setProspectTimezone('America/New_York');
     setSelectedClientId(null);
     setContactFullName('');
     setContactEmail('');
@@ -357,28 +357,13 @@ export default function SDRDashboard() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Time</label>
-              <div className="flex gap-2">
-                <input
-                  type="time"
-                  value={meetingTime}
-                  onChange={(e) => setMeetingTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-                <select
-                  value={meetingTimezone}
-                  onChange={e => setMeetingTimezone(e.target.value)}
-                  className="px-2 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="America/New_York">EST (Eastern)</option>
-                  <option value="America/Chicago">CST (Central)</option>
-                  <option value="America/Denver">MST (Mountain)</option>
-                  <option value="America/Los_Angeles">PST (Pacific)</option>
-                  <option value="America/Phoenix">MST (Arizona)</option>
-                  <option value="America/Anchorage">AKST (Alaska)</option>
-                  <option value="Pacific/Honolulu">HST (Hawaii)</option>
-                </select>
-              </div>
+              <input
+                type="time"
+                value={meetingTime}
+                onChange={(e) => setMeetingTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Contact Full Name</label>
@@ -436,6 +421,22 @@ export default function SDRDashboard() {
                 onChange={(e) => setLinkedinPage(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prospect's Timezone</label>
+              <select
+                value={prospectTimezone}
+                onChange={e => setProspectTimezone(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="America/New_York">EST (Eastern)</option>
+                <option value="America/Chicago">CST (Central)</option>
+                <option value="America/Denver">MST (Mountain)</option>
+                <option value="America/Los_Angeles">PST (Pacific)</option>
+                <option value="America/Phoenix">MST (Arizona)</option>
+                <option value="America/Anchorage">AKST (Alaska)</option>
+                <option value="Pacific/Honolulu">HST (Hawaii)</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
