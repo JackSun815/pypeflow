@@ -38,13 +38,37 @@ export interface MeetingEvent {
   linkedin_url?: string;
   notes?: string;
   timezone?: string; // Added timezone to MeetingEvent
+  sdr_id?: string; // Added sdr_id to MeetingEvent
 }
 
 interface CalendarViewProps {
   meetings: Meeting[];
+  colorByStatus?: boolean;
 }
 
-export default function CalendarView({ meetings }: CalendarViewProps) {
+// Add a color palette for SDRs
+const SDR_COLORS = [
+  '#6366f1', // indigo
+  '#3b82f6', // blue
+  '#10b981', // green
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+  '#f59e0b', // yellow
+  '#ef4444', // red
+  '#14b8a6', // teal
+  '#f97316', // orange
+  '#06b6d4'  // cyan
+];
+function getSDRColor(sdrId: string) {
+  let hash = 0;
+  for (let i = 0; i < sdrId.length; i++) {
+    hash = ((hash << 5) - hash) + sdrId.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return SDR_COLORS[Math.abs(hash) % SDR_COLORS.length];
+}
+
+export default function CalendarView({ meetings, colorByStatus = false }: CalendarViewProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingEvent | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -74,9 +98,26 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
 
   console.log('Calendar events created:', events.length);
 
-  // Style events for month/week/day views - no background colors
+  // Status color palette
+  const STATUS_COLORS: Record<string, string> = {
+    pending: '#f59e0b',
+    confirmed: '#10b981',
+    held: '#3b82f6',
+    no_show: '#ef4444',
+  };
+
+  // Style events for month/week/day views
   const eventStyleGetter = (event: MeetingEvent) => {
-    return { style: { backgroundColor: '#82ed94', color: '#111827', borderRadius: '4px', border: '1px solid #E5E7EB' } };
+    if (colorByStatus) {
+      let status = event.status;
+      if (status === 'confirmed' && event.held_at) status = 'held';
+      if (event.no_show) status = 'no_show';
+      const color = STATUS_COLORS[status] || '#6366f1';
+      return { style: { backgroundColor: color, color: '#fff', borderRadius: '4px', border: '1px solid #E5E7EB' } };
+    } else {
+      const color = event.sdr_id ? getSDRColor(event.sdr_id) : '#82ed94';
+      return { style: { backgroundColor: color, color: '#fff', borderRadius: '4px', border: '1px solid #E5E7EB' } };
+    }
   };
 
   // Custom event component for month/week/day views (used for month, week, and day)
@@ -91,9 +132,13 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
     } else {
       preview = event.title;
     }
+    // Add SDR name
     return (
-      <div className="rbc-event-content">
-        {preview}
+      <div className="rbc-event-content flex flex-col">
+        <span>{preview}</span>
+        {event.sdr_name && (
+          <span className="text-xs" style={{ color: '#e0e7ff' }}>SDR: {event.sdr_name}</span>
+        )}
       </div>
     );
   };
@@ -166,6 +211,11 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
             
             <h4 className="font-semibold text-gray-900 mb-1">
               {event.client_name || event.contact_full_name || 'Untitled Meeting'}
+              {event.sdr_name && (
+                <span className="ml-2 text-xs font-normal" style={{ color: getSDRColor(event.sdr_id || '') }}>
+                  SDR: {event.sdr_name}
+                </span>
+              )}
             </h4>
             
             <div className="text-sm text-gray-600 space-y-1">
@@ -222,8 +272,38 @@ export default function CalendarView({ meetings }: CalendarViewProps) {
     console.log('Selected meeting:', event);
   };
 
+  // Legend logic
+  let legend = null;
+  if (!colorByStatus) {
+    const uniqueSDRs = Array.from(new Set(events.map(e => e.sdr_id + '|' + (e.sdr_name || 'Unknown SDR'))))
+      .map(str => {
+        const [id, name] = str.split('|');
+        return { id, name };
+      });
+    legend = (
+      <div className="flex flex-wrap gap-4 mb-4">
+        {uniqueSDRs.map(sdr => (
+          <div key={sdr.id} className="flex items-center gap-2">
+            <span style={{ backgroundColor: getSDRColor(sdr.id), width: 16, height: 16, display: 'inline-block', borderRadius: 4 }} />
+            <span className="text-sm text-gray-700">{sdr.name}</span>
+          </div>
+        ))}
+      </div>
+    );
+  } else {
+    legend = (
+      <div className="flex flex-wrap gap-4 mb-4">
+        <div className="flex items-center gap-2"><span style={{ backgroundColor: STATUS_COLORS.pending, width: 16, height: 16, display: 'inline-block', borderRadius: 4 }} /> <span className="text-sm text-gray-700">Pending</span></div>
+        <div className="flex items-center gap-2"><span style={{ backgroundColor: STATUS_COLORS.confirmed, width: 16, height: 16, display: 'inline-block', borderRadius: 4 }} /> <span className="text-sm text-gray-700">Confirmed</span></div>
+        <div className="flex items-center gap-2"><span style={{ backgroundColor: STATUS_COLORS.held, width: 16, height: 16, display: 'inline-block', borderRadius: 4 }} /> <span className="text-sm text-gray-700">Held</span></div>
+        <div className="flex items-center gap-2"><span style={{ backgroundColor: STATUS_COLORS.no_show, width: 16, height: 16, display: 'inline-block', borderRadius: 4 }} /> <span className="text-sm text-gray-700">No Show</span></div>
+      </div>
+    );
+  }
+
   return (
     <div className="calendar-wrapper" style={{ height: '700px' }}>
+      {legend}
       <style>
         {`
           .rbc-agenda-view {

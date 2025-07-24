@@ -137,9 +137,9 @@ export default function MeetingsHistory({
     };
   };
 
-  // Filter meetings for selected month (use only scheduled_date)
+  // Filter meetings for selected month (use created_at instead of scheduled_date)
   const monthMeetings = meetings.filter(meeting => 
-    meeting.scheduled_date.startsWith(selectedMonth)
+    meeting.created_at.startsWith(selectedMonth)
   );
 
   // Calculate monthly statistics (align with dashboard)
@@ -161,13 +161,22 @@ export default function MeetingsHistory({
   };
 
   // Generate month options for the last 12 months
-  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+  let monthOptions = Array.from({ length: 12 }, (_, i) => {
     const date = subMonths(now, i);
     return {
       value: format(date, 'yyyy-MM'),
       label: format(date, 'MMMM yyyy')
     };
   });
+  // Always add the next month as an option at the start
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  monthOptions = [
+    {
+      value: format(nextMonth, 'yyyy-MM'),
+      label: format(nextMonth, 'MMMM yyyy')
+    },
+    ...monthOptions
+  ];
 
   // Filter meetings based on search term
   const filteredMeetings = monthMeetings.filter(meeting => {

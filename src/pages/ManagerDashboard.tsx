@@ -193,10 +193,10 @@ export default function ManagerDashboard() {
   const monthStart = new Date(currentYear, currentMonth, 1);
   const monthEnd = new Date(currentYear, currentMonth + 1, 0);
 
-  // Filter meetings for current month only
+  // Filter meetings for current month only (by created_at)
   const monthlyMeetings = meetings.filter(meeting => {
-    const meetingDate = new Date(meeting.scheduled_date);
-    return meetingDate >= monthStart && meetingDate <= monthEnd;
+    const createdDate = new Date(meeting.created_at);
+    return createdDate >= monthStart && createdDate <= monthEnd;
   });
 
   // Calculate total targets from all SDRs (separate set and held targets)

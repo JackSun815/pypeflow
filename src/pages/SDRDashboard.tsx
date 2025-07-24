@@ -37,8 +37,9 @@ export default function SDRDashboard() {
   const [linkedinPage, setLinkedinPage] = useState('');
   const [notes, setNotes] = useState('');
   const [prospectTimezone, setProspectTimezone] = useState('America/New_York'); // Default to EST
+  const [allSDRs, setAllSDRs] = useState<{ id: string; full_name: string | null }[]>([]);
 
-  const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal } = useClients(sdrId, supabasePublic);
+  const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal, fetchClients } = useClients(sdrId, supabasePublic);
   const { 
     meetings, 
     loading: meetingsLoading, 
@@ -213,6 +214,24 @@ export default function SDRDashboard() {
     validateToken();
   }, [token]);
 
+  useEffect(() => {
+    // Fetch all SDRs for color coding and name mapping
+    async function fetchAllSDRs() {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?role=eq.sdr&active=eq.true&select=id,full_name`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          }
+        });
+        if (!response.ok) return;
+        const sdrs = await response.json();
+        setAllSDRs(sdrs);
+      } catch {}
+    }
+    fetchAllSDRs();
+  }, []);
+
   // Debug: Show SDR ID and decoded token in dev mode
   const isDev = import.meta.env.MODE === 'development';
   let decodedTokenDebug: any = null;
@@ -252,6 +271,7 @@ export default function SDRDashboard() {
       timezone: prospectTimezone, // Save prospect's timezone for reference
     };
     await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
+    await fetchClients(); // Refresh client stats after adding a meeting
     setShowAddMeeting(false);
     setMeetingDate('');
     setMeetingTime('09:00');
@@ -337,6 +357,12 @@ export default function SDRDashboard() {
       console.error('Failed to update meeting confirmed date:', error);
     }
   };
+
+  // Map sdr_id to full_name for meetings
+  const meetingsWithSDR = meetings.map(m => ({
+    ...m,
+    sdr_name: allSDRs.find(s => s.id === m.sdr_id)?.full_name || 'Unknown SDR',
+  }));
 
   return (
     <>
@@ -557,15 +583,16 @@ export default function SDRDashboard() {
                 const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
                 const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                 
-                // Filter meetings for current month only (by scheduled_date)
+                // Filter meetings for current month only (by created_at)
                 const now = new Date();
                 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
                 const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                 const pad = (n: number) => n.toString().padStart(2, '0');
                 const monthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
-                const monthlyMeetings = meetings.filter(meeting => 
-                  meeting.scheduled_date.startsWith(monthStr)
-                );
+                const monthlyMeetings = meetings.filter(meeting => {
+                  const createdDate = new Date(meeting.created_at);
+                  return createdDate >= monthStart && createdDate <= monthEnd;
+                });
 
                 // Debug: Print out meetings used for dashboard stats
                 console.log('--- DASHBOARD DEBUG ---');
@@ -690,7 +717,7 @@ export default function SDRDashboard() {
           } 
         />
         <Route path="commissions" element={<Commissions sdrId={sdrId || ''} />} />
-        <Route path="calendar" element={<CalendarView meetings={meetings} />} />
+        <Route path="calendar" element={<CalendarView meetings={meetingsWithSDR} colorByStatus={true} />} />
       </Routes>
     </main>
   </div>

@@ -34,7 +34,7 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
       // Fetch assigned clients with their targets for the current month
-      const { data: assignments, error: assignmentsError } = await withRetry(() =>
+      const assignmentsResult = await (async () => await withRetry(() =>
         supabaseClient
           .from('assignments')
           .select(`
@@ -44,81 +44,91 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
               id,
               name,
               monthly_set_target,
-              monthly_hold_target
+              monthly_hold_target,
+              created_at,
+              updated_at
             )
           `)
-          .eq('sdr_id', sdrId)
-          .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`)
-      );
-
+          .eq('sdr_id', sdrId as any)
+          .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any)
+      ))();
+      const assignmentsData = (typeof assignmentsResult === 'object' && assignmentsResult !== null && 'data' in assignmentsResult) ? assignmentsResult.data : [];
+      const assignmentsError = (typeof assignmentsResult === 'object' && assignmentsResult !== null && 'error' in assignmentsResult) ? assignmentsResult.error : null;
       if (assignmentsError) throw assignmentsError;
+      const assignments = assignmentsData || [];
 
       // Calculate total meeting goal from assignments (using set target)
-      const totalGoal = assignments?.reduce((sum, assignment: any) => 
-        sum + (assignment.monthly_set_target || 0), 0) || 0;
+      const totalGoal = Array.isArray(assignments) ? assignments.reduce((sum: any, assignment: any) => 
+        sum + (assignment.monthly_set_target || 0), 0) : 0;
       setTotalMeetingGoal(totalGoal);
 
-      // Fetch meetings for this month
-      const { data: meetings, error: meetingsError } = await withRetry(() =>
+      // Fetch all meetings for this SDR (filter by created_at in JS)
+      const meetingsResult = await (async () => await withRetry(() =>
         supabaseClient
           .from('meetings')
           .select('*, clients(name)')
-          .eq('sdr_id', sdrId)
-          .gte('scheduled_date', monthStart.toISOString())
-          .lte('scheduled_date', monthEnd.toISOString())
-      );
-
+          .eq('sdr_id', sdrId as any)
+      ))();
+      const meetingsData = (typeof meetingsResult === 'object' && meetingsResult !== null && 'data' in meetingsResult) ? meetingsResult.data : [];
+      const meetingsError = (typeof meetingsResult === 'object' && meetingsResult !== null && 'error' in meetingsResult) ? meetingsResult.error : null;
       if (meetingsError) throw meetingsError;
+      const meetings = meetingsData || [];
 
-      // Update the counting logic in your map function:
-      const clientsWithMetrics = (assignments || []).map((assignment: any) => {
-      const clientMeetings = meetings?.filter(
-        (meeting) => meeting.client_id === assignment.clients.id
-      ) || [];
+      // After fetching meetings and assignments, ensure they are arrays
+      const safeMeetings = Array.isArray(meetings) ? meetings : [];
+      const safeAssignments = Array.isArray(assignments) ? assignments : [];
 
-      // Pending meetings (status = pending, not no-show, not held)
-      const pendingMeetings = clientMeetings.filter(
-        meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.held_at
-      ).length;
+      // After fetching meetings, filter clientMeetings by created_at in the current month
+      const clientsWithMetrics = safeAssignments.map((assignment: any) => {
+        // Only include meetings created this month
+        const clientMeetings = safeMeetings.filter(
+          (meeting) => meeting.client_id === assignment.clients.id &&
+            new Date(meeting.created_at) >= monthStart &&
+            new Date(meeting.created_at) <= monthEnd
+        );
 
-      // Confirmed but not yet held meetings
-      const confirmedMeetings = clientMeetings.filter(
-        meeting => meeting.status === 'confirmed' && !meeting.no_show && !meeting.held_at
-      ).length;
+        // Confirmed meetings (status = confirmed, not no-show)
+        const confirmedMeetings = clientMeetings.filter(
+          meeting => meeting.status === 'confirmed' && !meeting.no_show
+        ).length;
 
-      // Held meetings (must have held_at date and be confirmed, exclude no-shows)
-      const heldMeetings = clientMeetings.filter(
-        (meeting) =>
-          meeting.status === 'confirmed' &&
-          !meeting.no_show &&
-          meeting.held_at !== null
-      ).length;
-      
-      console.log(`Client ${assignment.clients.name} held meetings:`, heldMeetings);
-      console.log(`Client ${assignment.clients.name} meetings with held_at:`, clientMeetings.filter(m => m.held_at !== null).length);
-      console.log(`Client ${assignment.clients.name} confirmed meetings:`, clientMeetings.filter(m => m.status === 'confirmed').length);
+        // Pending meetings (status = pending, not no-show, not held)
+        const pendingMeetings = clientMeetings.filter(
+          meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.held_at
+        ).length;
 
-      // Total meetings set (pending + confirmed, whether held or not)
-      const totalMeetingsSet = clientMeetings.filter(
-        meeting => !meeting.no_show
-      ).length;
+        // Held meetings (must have held_at date and be confirmed, exclude no-shows)
+        const heldMeetings = clientMeetings.filter(
+          (meeting) =>
+            meeting.status === 'confirmed' &&
+            !meeting.no_show &&
+            meeting.held_at !== null
+        ).length;
 
-      return {
-        id: assignment.clients.id,
-        name: assignment.clients.name,
-        monthly_set_target: assignment.monthly_set_target || 0,
-        monthly_hold_target: assignment.monthly_hold_target || 0,
-        confirmedMeetings,
-        pendingMeetings,
-        heldMeetings,
-        todaysMeetings: clientMeetings.filter(
-          meeting => new Date(meeting.scheduled_date).toDateString() === new Date().toDateString()
-        ),
-        totalMeetingsSet
-      };
-    });
+        // Total meetings set (all except no-shows)
+        const totalMeetingsSet = clientMeetings.filter(
+          meeting => !meeting.no_show
+        ).length;
+        
+        console.log(`Client ${assignment.clients.name} held meetings:`, heldMeetings);
+        console.log(`Client ${assignment.clients.name} meetings with held_at:`, clientMeetings.filter(m => m.held_at !== null).length);
+        console.log(`Client ${assignment.clients.name} confirmed meetings:`, clientMeetings.filter(m => m.status === 'confirmed').length);
+
+        return {
+          ...assignment.clients, // Spread all client properties (including created_at, updated_at)
+          monthly_set_target: assignment.monthly_set_target || 0,
+          monthly_hold_target: assignment.monthly_hold_target || 0,
+          confirmedMeetings,
+          pendingMeetings,
+          heldMeetings,
+          todaysMeetings: clientMeetings.filter(
+            meeting => new Date(meeting.scheduled_date).toDateString() === new Date().toDateString()
+          ),
+          totalMeetingsSet
+        };
+      });
       // Then update your total counts to match:
-      const monthlyMeetings = meetings || [];
+      const monthlyMeetings = safeMeetings;
 
       // Total confirmed (status = confirmed and not no-show)
       const totalConfirmed = monthlyMeetings.filter(

@@ -256,7 +256,11 @@ export function MeetingCard({
               )}
               {editable && onDelete && (
                 <button
-                  onClick={() => onDelete(meeting.id)}
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this meeting?')) {
+                      onDelete(meeting.id);
+                    }
+                  }}
                   className="p-1 text-red-600 hover:text-red-700 focus:outline-none"
                   title="Delete meeting"
                 >
