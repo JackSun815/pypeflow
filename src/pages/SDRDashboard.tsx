@@ -632,6 +632,7 @@ export default function SDRDashboard() {
                       totalMeetingsSet={metrics.totalMeetingsSet}
                       totalPendingMeetings={metrics.totalPendingMeetings}
                       totalNoShowMeetings={metrics.totalNoShowMeetings}
+                      meetings={meetings}
                     />
                   </div>
                 );
@@ -713,6 +714,7 @@ export default function SDRDashboard() {
               error={meetingsError} 
               onUpdateHeldDate={handleMeetingHeldDateUpdate} 
               onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate} 
+              sdrId={sdrId || ''}
             />
           } 
         />

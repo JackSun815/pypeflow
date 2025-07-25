@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search, Download, Users } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
-import { MeetingCard } from '../components/MeetingCard';
+import { MeetingCard } from './MeetingCard';
 import type { Meeting } from '../types/database';
 import { DateTime } from 'luxon';
 import { supabase } from '../lib/supabase';
@@ -15,47 +15,39 @@ interface MeetingStats {
   percentToGoal: number;
 }
 
-interface MeetingsHistoryProps {
+interface ManagerMeetingHistoryProps {
   meetings: Meeting[];
   loading: boolean;
   error: string | null;
-  onUpdateHeldDate: (meetingId: string, heldDate: string | null) => void;
-  onUpdateConfirmedDate: (meetingId: string, confirmedDate: string | null) => void;
-  sdrId: string; // <-- Accept sdrId as a prop
+  onUpdateHeldDate: (meetingId: string, heldDate: string | null) => Promise<void>;
+  onUpdateConfirmedDate: (meetingId: string, confirmedDate: string | null) => Promise<void>;
 }
 
-export default function MeetingsHistory({ 
+export default function ManagerMeetingHistory({ 
   meetings, 
   loading, 
   error,
   onUpdateHeldDate,
-  onUpdateConfirmedDate,
-  sdrId
-}: MeetingsHistoryProps) {
+  onUpdateConfirmedDate
+}: ManagerMeetingHistoryProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>(
     now.toISOString().slice(0, 7)
   );
   const [searchTerm, setSearchTerm] = useState('');
-  // Export modal state
   const [showExport, setShowExport] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([
-    'client', 'contact', 'email', 'phone', 'date', 'status', 'notes'
+    'sdr', 'client', 'contact', 'email', 'phone', 'date', 'status', 'notes'
   ]);
 
-  // Assignment and modal state
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
-  const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
+  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'set' | 'held' | 'booked' | 'held' | 'noShows' | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [clientsLoading, setClientsLoading] = useState(false);
-  const [clientsError, setClientsError] = useState<string | null>(null);
-  const [allClients, setAllClients] = useState<Client[]>([]);
-  const [allClientsLoading, setAllClientsLoading] = useState(false);
+  const [modalType, setModalType] = useState<'set' | 'held' | 'booked' | 'noShows' | 'bySDR' | null>(null);
+  const [modalMeetings, setModalMeetings] = useState<Meeting[]>([]);
+  const [modalTitle, setModalTitle] = useState('');
 
   const columnOptions = [
+    { key: 'sdr', label: 'SDR Name' },
     { key: 'client', label: 'Client Name' },
     { key: 'contact', label: 'Contact Name' },
     { key: 'email', label: 'Email' },
@@ -67,6 +59,7 @@ export default function MeetingsHistory({
 
   function getMeetingField(meeting: Meeting, key: string) {
     switch (key) {
+      case 'sdr': return (meeting as any).sdr_name || 'Unknown SDR';
       case 'client': return (meeting as any).clients?.name || '';
       case 'contact': return meeting.contact_full_name || '';
       case 'email': return meeting.contact_email || '';
@@ -107,7 +100,7 @@ export default function MeetingsHistory({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `meetings_export_${selectedMonth}.csv`;
+    a.download = `manager_meetings_export_${selectedMonth}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -115,122 +108,8 @@ export default function MeetingsHistory({
     setShowExport(false);
   }
 
-  // Fetch assignments for the selected month and sdrId
-  React.useEffect(() => {
-    if (!sdrId || !selectedMonth) {
-      console.log('[DEBUG] Missing required data:', { sdrId, selectedMonth });
-      return;
-    }
-    setAssignmentsLoading(true);
-    setAssignmentsError(null);
-    console.log('[DEBUG] Fetching assignments for:', { sdrId, selectedMonth });
-    
-    // First, let's check if there are any assignments at all for this SDR
-    supabase
-      .from('assignments')
-      .select('*')
-      .eq('sdr_id', sdrId as any)
-      .then(({ data: allAssignments, error: allError }) => {
-        console.log('[DEBUG] All assignments for SDR:', allAssignments);
-        if (allError) console.log('[DEBUG] Error fetching all assignments:', allError);
-      });
-
-    // Now fetch assignments for the specific month with client targets
-    supabase
-      .from('assignments')
-      .select(`
-        id,
-        sdr_id,
-        client_id,
-        monthly_target,
-        month,
-        clients (
-          id,
-          name,
-          monthly_set_target,
-          monthly_hold_target
-        )
-      `)
-      .eq('sdr_id', sdrId as any)
-      .eq('month', selectedMonth as any)
-      .then(({ data, error }) => {
-        if (error) {
-          console.log('[DEBUG] Error fetching assignments:', error);
-          setAssignmentsError(error.message);
-        } else {
-          console.log('[DEBUG] Assignments data for month:', data);
-          setAssignments((data ?? []) as unknown as Assignment[]);
-        }
-        setAssignmentsLoading(false);
-      });
-  }, [sdrId, selectedMonth]);
-
-  // Fetch all clients if no assignments exist (fallback)
-  React.useEffect(() => {
-    if (assignments.length === 0 && !assignmentsLoading && sdrId) {
-      console.log('[DEBUG] No assignments found, fetching all clients as fallback');
-      setAllClientsLoading(true);
-      supabase
-        .from('clients')
-        .select('*')
-        .then(({ data, error }) => {
-          if (error) {
-            console.log('[DEBUG] Error fetching all clients:', error);
-          } else {
-            console.log('[DEBUG] All clients data:', data);
-            setAllClients((data ?? []) as unknown as Client[]);
-          }
-          setAllClientsLoading(false);
-        });
-    }
-  }, [assignments.length, assignmentsLoading, sdrId]);
-
-  // Fetch clients for assignments (when modal opens)
-  React.useEffect(() => {
-    if (!modalOpen || assignments.length === 0) return;
-    setClientsLoading(true);
-    setClientsError(null);
-    const clientIds = assignments.map(a => a.client_id);
-    if (clientIds.length === 0) {
-      setClients([]);
-      setClientsLoading(false);
-      return;
-    }
-    supabase
-      .from('clients')
-      .select('*')
-      .in('id', clientIds as any)
-      .then(({ data, error }) => {
-        if (error) setClientsError(error.message);
-        else setClients((data ?? []) as unknown as Client[]);
-        setClientsLoading(false);
-      });
-  }, [modalOpen, assignments]);
-
-  // Calculate targets from assignments (with client targets)
-  const totalSetTarget = assignments.length > 0 
-    ? assignments.reduce((sum, a) => {
-        const client = (a as any).clients;
-        return sum + (client?.monthly_set_target || 0);
-      }, 0)
-    : allClients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
-  
-  const totalHeldTarget = assignments.length > 0
-    ? assignments.reduce((sum, a) => {
-        const client = (a as any).clients;
-        return sum + (client?.monthly_hold_target || 0);
-      }, 0)
-    : allClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
-  
-  console.log('[DEBUG] totalSetTarget:', totalSetTarget, 'totalHeldTarget:', totalHeldTarget, 'assignments:', assignments, 'allClients:', allClients);
-
   // Modal open helpers
-  const openTargetModal = (type: 'set' | 'held') => {
-    setModalType(type);
-    setModalOpen(true);
-  };
-  
-  const openMeetingsModal = (type: 'booked' | 'held' | 'noShows') => {
+  const openMeetingsModal = (type: 'booked' | 'held' | 'noShows' | 'bySDR') => {
     setModalType(type);
     setModalOpen(true);
   };
@@ -238,6 +117,8 @@ export default function MeetingsHistory({
   const closeModal = () => {
     setModalOpen(false);
     setModalType(null);
+    setModalMeetings([]);
+    setModalTitle('');
   };
 
   if (loading) {
@@ -283,7 +164,7 @@ export default function MeetingsHistory({
     meeting.created_at.startsWith(selectedMonth)
   );
 
-  // Calculate monthly statistics (align with dashboard)
+  // Calculate monthly statistics
   const calculateMonthlyStats = (monthMeetings: Meeting[]): MeetingStats => {
     const totalBooked = monthMeetings.length;
     const totalHeld = monthMeetings.filter(m => m.held_at !== null && !m.no_show).length;
@@ -321,7 +202,7 @@ export default function MeetingsHistory({
 
   // Filter meetings based on search term
   const filteredMeetings = monthMeetings.filter(meeting => {
-    const searchString = `${(meeting as any).clients?.name || ''} ${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''}`.toLowerCase();
+    const searchString = `${(meeting as any).sdr_name || ''} ${(meeting as any).clients?.name || ''} ${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });
 
@@ -329,11 +210,21 @@ export default function MeetingsHistory({
   const monthlyStats = calculateMonthlyStats(monthMeetings);
   const selectedMonthLabel = monthOptions.find(m => m.value === selectedMonth)?.label;
 
+  // Group meetings by SDR for the modal
+  const meetingsBySDR = monthMeetings.reduce((acc, meeting) => {
+    const sdrName = (meeting as any).sdr_name || 'Unknown SDR';
+    if (!acc[sdrName]) {
+      acc[sdrName] = [];
+    }
+    acc[sdrName].push(meeting);
+    return acc;
+  }, {} as Record<string, Meeting[]>);
+
   return (
     <div className="space-y-6">
       {/* All-time Stats */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">All-time Performance</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">All-time Team Performance</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
           <div>
             <p className="text-sm text-gray-500">Total Meetings Booked</p>
@@ -433,31 +324,8 @@ export default function MeetingsHistory({
           </div>
         )}
 
-        {/* NEW TARGETS TO BE ADDED HERE */}
+        {/* Monthly Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
-          {/* Monthly Set Target Card */}
-          <div
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-indigo-50 transition"
-            onClick={() => openTargetModal('set')}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Monthly Set Target</h3>
-              <Target className="w-5 h-5 text-indigo-600" />
-            </div>
-            <p className="text-2xl font-bold text-indigo-600">{totalSetTarget}</p>
-          </div>
-          {/* Monthly Held Target Card */}
-          <div
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-green-50 transition"
-            onClick={() => openTargetModal('held')}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Monthly Held Target</h3>
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <p className="text-2xl font-bold text-green-600">{totalHeldTarget}</p>
-          </div>
-          {/* Existing monthly stats cards */}
           <div 
             className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-indigo-50 transition-all duration-200 border-2 border-transparent hover:border-indigo-200"
             onClick={() => openMeetingsModal('booked')}
@@ -467,7 +335,6 @@ export default function MeetingsHistory({
               <Calendar className="w-5 h-5 text-indigo-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{monthlyStats.totalBooked}</p>
-
           </div>
 
           <div 
@@ -479,7 +346,6 @@ export default function MeetingsHistory({
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
             <p className="text-2xl font-bold text-green-600">{monthlyStats.totalHeld}</p>
-
           </div>
 
           <div 
@@ -503,14 +369,16 @@ export default function MeetingsHistory({
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div 
+            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-blue-50 transition-all duration-200 border-2 border-transparent hover:border-blue-200"
+            onClick={() => openMeetingsModal('bySDR')}
+          >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">% to Goal</h3>
-              <TrendingUp className="w-5 h-5 text-gray-600" />
+              <h3 className="text-sm font-medium text-gray-500">By SDR</h3>
+              <Users className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">
-              {monthlyStats.percentToGoal.toFixed(1)}%
-            </p>
+            <p className="text-2xl font-bold text-blue-600">{Object.keys(meetingsBySDR).length}</p>
+            <p className="text-xs text-gray-500">SDRs</p>
           </div>
         </div>
 
@@ -518,7 +386,7 @@ export default function MeetingsHistory({
         <div className="relative mb-6">
           <input
             type="text"
-            placeholder="Search meetings..."
+            placeholder="Search meetings by SDR, client, contact..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
@@ -535,6 +403,7 @@ export default function MeetingsHistory({
               onUpdateHeldDate={onUpdateHeldDate}
               onUpdateConfirmedDate={onUpdateConfirmedDate}
               showDateControls={true}
+              showSDR={true}
             />
           ))}
           {filteredMeetings.length === 0 && (
@@ -544,105 +413,107 @@ export default function MeetingsHistory({
           )}
         </div>
       </div>
-      {/* Modal for assigned clients and meetings */}
+
+      {/* Modal for meetings breakdown */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">
-                {modalType === 'set' ? 'Monthly Set Target Clients' : 
-                 modalType === 'held' ? 'Monthly Held Target Clients' :
-                 modalType === 'booked' ? 'Meetings Booked This Month' :
-                 modalType === 'noShows' ? 'No-Show Meetings This Month' : 'Modal'}
+                {modalType === 'booked' ? 'All Meetings Booked This Month' :
+                 modalType === 'held' ? 'Meetings Held This Month' :
+                 modalType === 'noShows' ? 'No-Show Meetings This Month' :
+                 modalType === 'bySDR' ? 'Meetings by SDR This Month' : 'Modal'}
               </h3>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
             </div>
             
-            {/* Target modals (existing functionality) */}
-            {(modalType === 'set' || modalType === 'held') && (
-              <>
-                {assignmentsLoading || clientsLoading ? (
-                  <div className="flex justify-center items-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-                  </div>
-                ) : assignmentsError || clientsError ? (
-                  <div className="text-red-600">{assignmentsError || clientsError}</div>
-                ) : (
-                  <div>
-                    {assignments.length === 0 && allClients.length === 0 ? (
-                      <p className="text-gray-500">No assignments or clients for this month.</p>
-                    ) : (
-                      <ul className="divide-y divide-gray-200">
-                        {assignments.length > 0 ? (
-                          // Show assignments with client targets
-                          assignments.map(a => {
-                            const clientName = (a as any).clients?.name || clients.find(c => c.id === a.client_id)?.name || 'Client';
-                            const target = modalType === 'set' ? (a as any).clients?.monthly_set_target : (a as any).clients?.monthly_hold_target;
-                            return (
-                              <li key={a.id} className="py-2 flex justify-between items-center">
-                                <span className="font-medium text-gray-900">{clientName}</span>
-                                <span className="text-gray-600">Target: {target}</span>
-                              </li>
-                            );
-                          })
-                        ) : (
-                          // Show all clients as fallback
-                          allClients.map(client => {
-                            const target = modalType === 'set' ? client.monthly_set_target : client.monthly_hold_target;
-                            return (
-                              <li key={client.id} className="py-2 flex justify-between items-center">
-                                <span className="font-medium text-gray-900">{client.name}</span>
-                                <span className="text-gray-600">Target: {target}</span>
-                              </li>
-                            );
-                          })
-                        )}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Meetings modals (new functionality) */}
-            {(modalType === 'booked' || modalType === 'held' || modalType === 'noShows') && (
-              <div className="space-y-4">
-                {/* Summary section */}
-                <div className={`p-4 rounded-lg ${
-                  modalType === 'booked' ? 'bg-indigo-50' :
-                  modalType === 'held' ? 'bg-green-50' :
-                  'bg-red-50'
+            <div className="space-y-4">
+              {/* Summary section */}
+              <div className={`p-4 rounded-lg ${
+                modalType === 'booked' ? 'bg-indigo-50' :
+                modalType === 'held' ? 'bg-green-50' :
+                modalType === 'noShows' ? 'bg-red-50' :
+                'bg-blue-50'
+              }`}>
+                <h4 className={`text-lg font-semibold mb-2 ${
+                  modalType === 'booked' ? 'text-indigo-900' :
+                  modalType === 'held' ? 'text-green-900' :
+                  modalType === 'noShows' ? 'text-red-900' :
+                  'text-blue-900'
                 }`}>
-                  <h4 className={`text-lg font-semibold mb-2 ${
-                    modalType === 'booked' ? 'text-indigo-900' :
-                    modalType === 'held' ? 'text-green-900' :
-                    'text-red-900'
-                  }`}>
-                    {modalType === 'booked' ? 'Meetings Booked This Month' :
-                     modalType === 'held' ? 'Meetings Held This Month' :
-                     'No-Show Meetings This Month'}
-                  </h4>
-                  <p className={`text-2xl font-bold ${
-                    modalType === 'booked' ? 'text-indigo-700' :
-                    modalType === 'held' ? 'text-green-700' :
-                    'text-red-700'
-                  }`}>
-                    {modalType === 'booked' ? monthlyStats.totalBooked :
-                     modalType === 'held' ? monthlyStats.totalHeld :
-                     monthlyStats.totalNoShow}
-                  </p>
-                  <p className={`text-sm ${
-                    modalType === 'booked' ? 'text-indigo-600' :
-                    modalType === 'held' ? 'text-green-600' :
-                    'text-red-600'
-                  }`}>
-                    {modalType === 'booked' ? 'Total meetings scheduled' :
-                     modalType === 'held' ? 'Successfully completed meetings' :
-                     'Meetings marked as no-shows'}
-                  </p>
-                </div>
+                  {modalType === 'booked' ? 'All Meetings Booked This Month' :
+                   modalType === 'held' ? 'Meetings Held This Month' :
+                   modalType === 'noShows' ? 'No-Show Meetings This Month' :
+                   'Meetings by SDR This Month'}
+                </h4>
+                <p className={`text-2xl font-bold ${
+                  modalType === 'booked' ? 'text-indigo-700' :
+                  modalType === 'held' ? 'text-green-700' :
+                  modalType === 'noShows' ? 'text-red-700' :
+                  'text-blue-700'
+                }`}>
+                  {modalType === 'booked' ? monthlyStats.totalBooked :
+                   modalType === 'held' ? monthlyStats.totalHeld :
+                   modalType === 'noShows' ? monthlyStats.totalNoShow :
+                   Object.keys(meetingsBySDR).length}
+                </p>
+                <p className={`text-sm ${
+                  modalType === 'booked' ? 'text-indigo-600' :
+                  modalType === 'held' ? 'text-green-600' :
+                  modalType === 'noShows' ? 'text-red-600' :
+                  'text-blue-600'
+                }`}>
+                  {modalType === 'booked' ? 'Total meetings scheduled' :
+                   modalType === 'held' ? 'Successfully completed meetings' :
+                   modalType === 'noShows' ? 'Meetings marked as no-shows' :
+                   'Number of SDRs with meetings'}
+                </p>
+              </div>
 
-                {/* Meetings list */}
+              {/* Content based on modal type */}
+              {modalType === 'bySDR' ? (
+                <div className="space-y-4">
+                  {Object.entries(meetingsBySDR).map(([sdrName, sdrMeetings]) => {
+                    const sdrStats = calculateMonthlyStats(sdrMeetings);
+                    return (
+                      <div key={sdrName} className="border border-gray-200 rounded-lg p-4">
+                        <h5 className="text-lg font-semibold text-gray-900 mb-3">{sdrName}</h5>
+                        <div className="grid grid-cols-4 gap-4 mb-4">
+                          <div>
+                            <p className="text-sm text-gray-500">Booked</p>
+                            <p className="text-lg font-bold text-gray-900">{sdrStats.totalBooked}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Held</p>
+                            <p className="text-lg font-bold text-green-600">{sdrStats.totalHeld}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">No Shows</p>
+                            <p className="text-lg font-bold text-red-600">{sdrStats.totalNoShow}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Show Rate</p>
+                            <p className="text-lg font-bold text-indigo-600">{sdrStats.showRate.toFixed(1)}%</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {sdrMeetings.map((meeting) => (
+                            <MeetingCard
+                              key={meeting.id}
+                              meeting={meeting}
+                              onUpdateHeldDate={onUpdateHeldDate}
+                              onUpdateConfirmedDate={onUpdateConfirmedDate}
+                              showDateControls={true}
+                              showSDR={false}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
                 <div className="space-y-3">
                   {(() => {
                     let filteredMeetings: Meeting[] = [];
@@ -662,6 +533,7 @@ export default function MeetingsHistory({
                           onUpdateHeldDate={onUpdateHeldDate}
                           onUpdateConfirmedDate={onUpdateConfirmedDate}
                           showDateControls={true}
+                          showSDR={true}
                         />
                       ))
                     ) : (
@@ -676,11 +548,11 @@ export default function MeetingsHistory({
                     );
                   })()}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+} 

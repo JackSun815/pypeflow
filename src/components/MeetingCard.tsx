@@ -15,6 +15,7 @@ interface MeetingCardProps {
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
   showDateControls?: boolean;
+  showSDR?: boolean;
   editingMeetingId?: string | null;
 }
 
@@ -29,6 +30,7 @@ export function MeetingCard({
   onUpdateHeldDate,
   onUpdateConfirmedDate,
   showDateControls = false,
+  showSDR = false,
 }: MeetingCardProps) {
   const isEditing = editingMeetingId === meeting.id;
   const [editedData, setEditedData] = useState({
@@ -223,7 +225,7 @@ export function MeetingCard({
           <div className="flex justify-between items-start">
             <div>
               <p className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</p>
-              {meeting.sdr_name && (
+              {showSDR && meeting.sdr_name && (
                 <p className="text-sm text-gray-500">Booked by {meeting.sdr_name}</p>
               )}
             </div>

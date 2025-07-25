@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History } from 'lucide-react';
 import CalendarView from '../components/CalendarView';
 import SDRManagement from '../components/SDRManagement';
 import ClientManagement from '../components/ClientManagement';
 import UserManagement from '../components/UserManagement';
 import TeamMeetings from './TeamMeetings';
+import ManagerMeetingHistory from '../components/ManagerMeetingHistory';
 import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
 
@@ -16,9 +17,9 @@ export default function ManagerDashboard() {
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
   // Ensures useMeetings fetches all meetings (SDR ID: null)
   console.log('[DEBUG] useMeetings called with SDR ID:', null);
-  const { meetings, loading: meetingsLoading } = useMeetings(null);
+  const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null);
   const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings' | 'history'>('overview');
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -332,6 +333,17 @@ export default function ManagerDashboard() {
                 User Management
               </button>
             )}
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`${
+                activeTab === 'history'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <History className="w-4 h-4" />
+              Meeting History
+            </button>
           </nav>
         </div>
 
@@ -786,6 +798,16 @@ export default function ManagerDashboard() {
 
         {activeTab === 'users' && profile?.super_admin && (
           <UserManagement />
+        )}
+
+        {activeTab === 'history' && (
+          <ManagerMeetingHistory
+            meetings={meetings}
+            loading={meetingsLoading}
+            error={null}
+            onUpdateHeldDate={updateMeetingHeldDate}
+            onUpdateConfirmedDate={updateMeetingConfirmedDate}
+          />
         )}
 
         {/* Modal */}

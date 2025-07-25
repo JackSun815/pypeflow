@@ -54,13 +54,21 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   const currentMonth = format(now, 'yyyy-MM');
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
-  const monthOptions = Array.from({ length: 12 }, (_, i) => {
-    const date = subMonths(now, i);
-    return {
-      value: format(date, 'yyyy-MM'),
-      label: format(date, 'MMMM yyyy')
-    };
-  });
+  // Generate month options: next month + previous 12 months
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const monthOptions = [
+    {
+      value: format(nextMonth, 'yyyy-MM'),
+      label: format(nextMonth, 'MMMM yyyy')
+    },
+    ...Array.from({ length: 12 }, (_, i) => {
+      const date = subMonths(now, i);
+      return {
+        value: format(date, 'yyyy-MM'),
+        label: format(date, 'MMMM yyyy')
+      };
+    })
+  ];
 
   const [clientDraftTargets, setClientDraftTargets] = useState<Record<string, number>>({});
   const [assignmentDraftTargets, setAssignmentDraftTargets] = useState<Record<string, number>>({});
@@ -82,7 +90,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
         .select('*')
-        .eq('month', selectedMonth);
+        .eq('month', String(selectedMonth));
 
       if (assignmentsError) throw assignmentsError;
 
@@ -123,10 +131,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { error: updateError } = await supabase
         .from('clients')
         .update({ 
-          monthly_set_target: newSetTarget,
-          monthly_hold_target: newHoldTarget
+          name: newClientName,
+          monthly_target: newClientTarget
         })
-        .eq('id', clientId);
+        .eq('id', String(clientId));
 
       if (updateError) throw updateError;
 
@@ -159,9 +167,9 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { data: existingAssignment, error: checkError } = await supabase
         .from('assignments')
         .select('id')
-        .eq('sdr_id', sdrId)
-        .eq('client_id', clientId)
-        .eq('month', currentMonth)
+        .eq('sdr_id', String(sdrId))
+        .eq('client_id', String(clientId))
+        .eq('month', String(currentMonth))
         .maybeSingle();
 
       if (checkError) throw checkError;
@@ -170,12 +178,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         const { error: updateError } = await supabase
           .from('assignments')
           .update({
-            monthly_set_target: newSetTarget,
-            monthly_hold_target: newHoldTarget,
-            month: currentMonth,
+            monthly_target: monthlySetTarget,
+            month: String(currentMonth),
           })
-          .eq('id', existingAssignment.id)
-          .eq('month', currentMonth);
+          .eq('id', String(existingAssignment.id))
+          .eq('month', String(currentMonth));
 
         if (updateError) throw updateError;
       }
@@ -215,8 +222,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       .from('clients')
       .insert([{ 
         name: newClientName,
-        monthly_set_target: newClientSetTarget,
-        monthly_hold_target: newClientHoldTarget
+        monthly_target: newClientTarget
       }]);
 
     if (insertError) throw insertError;
@@ -248,9 +254,9 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     const { data: existingAssignment, error: checkError } = await supabase
       .from('assignments')
       .select('*')
-      .eq('client_id', selectedClient)
-      .eq('sdr_id', selectedSDR)
-      .eq('month', currentMonth)
+      .eq('client_id', String(selectedClient))
+      .eq('sdr_id', String(selectedSDR))
+      .eq('month', String(currentMonth))
       .maybeSingle();
 
     if (checkError) throw checkError;
@@ -259,23 +265,21 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { error: updateError } = await supabase
         .from('assignments')
         .update({
-          monthly_set_target: monthlySetTarget,
-          monthly_hold_target: monthlyHoldTarget,
-          month: currentMonth,
+          monthly_target: monthlySetTarget,
+          month: String(currentMonth),
         })
-        .eq('id', existingAssignment.id)
-        .eq('month', currentMonth);
+        .eq('id', String(existingAssignment.id))
+        .eq('month', String(currentMonth));
 
       if (updateError) throw updateError;
     } else {
       const { error: insertError } = await supabase
         .from('assignments')
         .insert([{
-          client_id: selectedClient,
-          sdr_id: selectedSDR,
-          monthly_set_target: monthlySetTarget,
-          monthly_hold_target: monthlyHoldTarget,
-          month: currentMonth,
+          client_id: String(selectedClient),
+          sdr_id: String(selectedSDR),
+          monthly_target: monthlySetTarget,
+          month: String(currentMonth),
         }]);
 
       if (insertError) throw insertError;
