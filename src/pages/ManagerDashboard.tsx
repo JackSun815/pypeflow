@@ -224,7 +224,7 @@ export default function ManagerDashboard() {
   });
 
   // Calculate monthly metrics
-  const monthlyMeetingsSet = monthlyMeetings.filter(m => !m.no_show).length; // Exclude no-shows from set count
+  const monthlyMeetingsSet = monthlyMeetings.length; // Include all meetings (including no-shows) in set count
   const monthlyHeldMeetings = monthlyMeetings.filter(m => 
     m.status === 'confirmed' && 
     !m.no_show && 
@@ -234,7 +234,7 @@ export default function ManagerDashboard() {
   const monthlyNoShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
 
   // Calculate cumulative metrics (all time)
-  const totalMeetingsSet = meetings.filter(m => !m.no_show).length;
+  const totalMeetingsSet = meetings.length;
   const totalHeldMeetings = meetings.filter(m => 
     m.status === 'confirmed' && 
     !m.no_show && 
@@ -457,6 +457,43 @@ export default function ManagerDashboard() {
               </div>
             </div>
 
+            {/* Cumulative Performance Section */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Cumulative Performance (All Time)</h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900">{totalMeetingsSet}</p>
+                  <p className="text-sm text-gray-600">Total Meetings Set</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-600">{totalHeldMeetings}</p>
+                  <p className="text-sm text-gray-600">Total Meetings Held</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-yellow-600">{totalPendingMeetings}</p>
+                  <p className="text-sm text-gray-600">Total Pending</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-red-600">{totalNoShowMeetings}</p>
+                  <p className="text-sm text-gray-600">Total No-Shows</p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Held Rate (All Time):</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {totalMeetingsSet > 0 ? ((totalHeldMeetings / totalMeetingsSet) * 100).toFixed(1) : '0.0'}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-sm text-gray-600">No-Show Rate (All Time):</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {totalMeetingsSet > 0 ? ((totalNoShowMeetings / totalMeetingsSet) * 100).toFixed(1) : '0.0'}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* SDR Performance Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -503,7 +540,7 @@ export default function ManagerDashboard() {
 
                       // Calculate monthly meetings for this SDR
                       const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
-                      // Meetings set: count all meetings, including no-shows
+                      // Meetings set: include all meetings (including no-shows) in set count
                       const sdrMeetingsSet = sdrMonthlyMeetings.length;
                       const sdrHeldMeetings = sdrMonthlyMeetings.filter(m => 
                         m.status === 'confirmed' && 
@@ -632,7 +669,7 @@ export default function ManagerDashboard() {
                                     const clientMonthlyMeetings = monthlyMeetings.filter(m => 
                                       m.sdr_id === sdr.id && m.client_id === client.id
                                     );
-                                    // Meetings set: count all meetings, including no-shows
+                                    // Meetings set: include all meetings (including no-shows) in set count
                                     const clientMeetingsSet = clientMonthlyMeetings.length;
                                     const clientHeldMeetings = clientMonthlyMeetings.filter(m => 
                                       m.status === 'confirmed' && 

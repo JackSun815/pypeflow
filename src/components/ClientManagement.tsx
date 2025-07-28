@@ -131,8 +131,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { error: updateError } = await supabase
         .from('clients')
         .update({ 
-          name: newClientName,
-          monthly_target: newClientTarget
+          monthly_set_target: newSetTarget,
+          monthly_hold_target: newHoldTarget
         })
         .eq('id', String(clientId));
 
@@ -178,7 +178,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         const { error: updateError } = await supabase
           .from('assignments')
           .update({
-            monthly_target: monthlySetTarget,
+            monthly_set_target: newSetTarget,
+            monthly_hold_target: newHoldTarget,
             month: String(currentMonth),
           })
           .eq('id', String(existingAssignment.id))
@@ -241,7 +242,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   }
 }
 
- async function handleAssignClient(e: React.FormEvent) {
+   async function handleAssignClient(e: React.FormEvent) {
   e.preventDefault();
   if (!selectedClient || !selectedSDR) return;
 
@@ -265,7 +266,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { error: updateError } = await supabase
         .from('assignments')
         .update({
-          monthly_target: monthlySetTarget,
+          monthly_set_target: monthlySetTarget,
+          monthly_hold_target: monthlyHoldTarget,
           month: String(currentMonth),
         })
         .eq('id', String(existingAssignment.id))
@@ -278,7 +280,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         .insert([{
           client_id: String(selectedClient),
           sdr_id: String(selectedSDR),
-          monthly_target: monthlySetTarget,
+          monthly_set_target: monthlySetTarget,
+          monthly_hold_target: monthlyHoldTarget,
           month: String(currentMonth),
         }]);
 

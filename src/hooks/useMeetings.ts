@@ -28,6 +28,24 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
 
       if (error) throw error;
 
+      // Debug: Log query results in development
+      if (import.meta.env.MODE === 'development' && sdrId) {
+        console.log('🔍 useMeetings Debug:');
+        console.log('SDR ID filter:', sdrId);
+        console.log('Raw data count:', data?.length || 0);
+        console.log('All SDR IDs in raw data:', [...new Set((data || []).map((m: any) => m.sdr_id))]);
+        
+        // Check if filtering is working
+        const filteredData = (data || []).filter((m: any) => m.sdr_id === sdrId);
+        console.log('Filtered data count:', filteredData.length);
+        
+        if (data && data.length !== filteredData.length) {
+          console.warn('⚠️ Data filtering issue detected!');
+          console.warn('Expected only SDR ID:', sdrId);
+          console.warn('Found SDR IDs:', [...new Set((data || []).map((m: any) => m.sdr_id))]);
+        }
+      }
+
       // Check for past meetings that haven't been marked as held/no-show
       const now = new Date();
       const todayString = now.toISOString().split('T')[0];

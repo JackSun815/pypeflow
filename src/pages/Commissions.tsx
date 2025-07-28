@@ -18,11 +18,19 @@ interface CommissionStructure {
 
 export default function Commissions({ sdrId }: { sdrId: string }) {
   const { meetings } = useMeetings(sdrId);
-  const { totalMeetingGoal, totalBookedMeetings, totalPendingMeetings } = useClients(sdrId);
+  const { clients } = useClients(sdrId);
   const [structure, setStructure] = useState<CommissionStructure | null>(null);
   const [mockMeetings, setMockMeetings] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Calculate held goal and held meetings for commissions
+  const heldGoal = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+  const heldMeetings = meetings.filter(m => 
+    m.status === 'confirmed' && 
+    !m.no_show && 
+    m.held_at !== null
+  ).length;
 
   useEffect(() => {
     async function loadCompensation() {
@@ -112,10 +120,9 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
       const heldCommission = meetingsCount * structure.meeting_rates.held;
       return bookedCommission + heldCommission;
     } else {
-      // Calculate progress based on booked meetings minus pending
-      const effectiveMeetings = totalBookedMeetings - totalPendingMeetings;
-      const percentageAchieved = totalMeetingGoal > 0 
-        ? (effectiveMeetings / totalMeetingGoal) * 100 
+      // Calculate progress based on held meetings vs held goal
+      const percentageAchieved = heldGoal > 0 
+        ? (heldMeetings / heldGoal) * 100 
         : 0;
 
       const sortedTiers = [...structure.goal_tiers].sort((a, b) => b.percentage - a.percentage);
@@ -129,26 +136,25 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
   };
 
   const confirmedMeetings = meetings.filter(m => m.status === 'confirmed').length;
-  const actualCommission = calculateCommission(confirmedMeetings);
+  const actualCommission = calculateCommission(heldMeetings);
   const mockCommission = calculateCommission(mockMeetings);
 
-  // Calculate progress based on booked meetings minus pending
-  const effectiveMeetings = totalBookedMeetings - totalPendingMeetings;
-  const progressPercentage = totalMeetingGoal > 0 
-    ? (effectiveMeetings / totalMeetingGoal) * 100 
+  // Calculate progress based on held meetings vs held goal
+  const progressPercentage = heldGoal > 0 
+    ? (heldMeetings / heldGoal) * 100 
     : 0;
 
   // Calculate meetings needed for next tier
   const calculateNextTierInfo = () => {
-    if (structure.commission_type !== 'goal_based' || !totalMeetingGoal) return null;
+    if (structure.commission_type !== 'goal_based' || !heldGoal) return null;
 
     const sortedTiers = [...structure.goal_tiers].sort((a, b) => a.percentage - b.percentage);
     const currentPercentage = progressPercentage;
 
     for (const tier of sortedTiers) {
       if (tier.percentage > currentPercentage) {
-        const targetMeetings = Math.ceil((tier.percentage / 100) * totalMeetingGoal);
-        const meetingsNeeded = targetMeetings - effectiveMeetings;
+        const targetMeetings = Math.ceil((tier.percentage / 100) * heldGoal);
+        const meetingsNeeded = targetMeetings - heldMeetings;
         return {
           percentage: tier.percentage,
           bonus: tier.bonus,
@@ -176,21 +182,21 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
               ${actualCommission.toLocaleString()}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Based on {confirmedMeetings} confirmed meetings
+              Based on {heldMeetings} held meetings
             </p>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Meeting Goal</h3>
+              <h3 className="text-sm font-medium text-gray-500">Meeting Held Goal</h3>
               <Target className="w-5 h-5 text-indigo-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{totalMeetingGoal}</p>
+            <p className="text-2xl font-bold text-gray-900">{heldGoal}</p>
             <div className="mt-2">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-500">Progress</span>
                 <span className="font-medium text-gray-900">
-                  {effectiveMeetings}/{totalMeetingGoal} meetings
+                  {heldMeetings}/{heldGoal} meetings
                 </span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -259,7 +265,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
                     <div
                       className="h-full bg-indigo-600 transition-all duration-300"
                       style={{
-                        width: `${(effectiveMeetings / nextTierInfo.targetMeetings) * 100}%`
+                        width: `${(heldMeetings / nextTierInfo.targetMeetings) * 100}%`
                       }}
                     />
                   </div>
@@ -271,8 +277,8 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
                 {structure.goal_tiers
                   .sort((a, b) => b.percentage - a.percentage)
                   .map((tier, index) => {
-                    const targetMeetings = Math.ceil((tier.percentage / 100) * totalMeetingGoal);
-                    const isAchieved = effectiveMeetings >= targetMeetings;
+                    const targetMeetings = Math.ceil((tier.percentage / 100) * heldGoal);
+                    const isAchieved = heldMeetings >= targetMeetings;
                     const isNext = nextTierInfo?.percentage === tier.percentage;
 
                     return (
@@ -319,7 +325,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
                                   ? 'bg-indigo-600'
                                   : 'bg-gray-300'
                               }`}
-                              style={{ width: `${(effectiveMeetings / targetMeetings) * 100}%` }}
+                              style={{ width: `${(heldMeetings / targetMeetings) * 100}%` }}
                             />
                           </div>
                           <div className="mt-1 flex justify-between text-xs">
@@ -333,7 +339,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
                                 ? 'text-indigo-600'
                                 : 'text-gray-600'
                             }`}>
-                              {effectiveMeetings}/{targetMeetings} booked
+                              {heldMeetings}/{targetMeetings} held
                             </span>
                           </div>
                         </div>
@@ -381,7 +387,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Goal Progress</span>
                       <span className="font-medium text-gray-900">
-                        {mockMeetings}/{totalMeetingGoal} meetings
+                        {mockMeetings}/{heldGoal} meetings
                       </span>
                     </div>
                   )}

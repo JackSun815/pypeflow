@@ -57,6 +57,24 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
       if (assignmentsError) throw assignmentsError;
       const assignments = assignmentsData || [];
 
+      // Debug: Log assignments data in development
+      if (import.meta.env.MODE === 'development' && sdrId) {
+        console.log('🔍 useClients Debug:');
+        console.log('SDR ID filter:', sdrId);
+        console.log('Assignments count:', assignments.length);
+        console.log('All SDR IDs in assignments:', [...new Set(assignments.map((a: any) => a.sdr_id))]);
+        
+        // Check if assignments filtering is working
+        const filteredAssignments = assignments.filter((a: any) => a.sdr_id === sdrId);
+        console.log('Filtered assignments count:', filteredAssignments.length);
+        
+        if (assignments.length !== filteredAssignments.length) {
+          console.warn('⚠️ Assignments filtering issue detected!');
+          console.warn('Expected only SDR ID:', sdrId);
+          console.warn('Found SDR IDs:', [...new Set(assignments.map((a: any) => a.sdr_id))]);
+        }
+      }
+
       // Calculate total meeting goal from assignments (using set target)
       const totalGoal = Array.isArray(assignments) ? assignments.reduce((sum: any, assignment: any) => 
         sum + (assignment.monthly_set_target || 0), 0) : 0;
@@ -105,10 +123,8 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
             meeting.held_at !== null
         ).length;
 
-        // Total meetings set (all except no-shows)
-        const totalMeetingsSet = clientMeetings.filter(
-          meeting => !meeting.no_show
-        ).length;
+        // Total meetings set (include all meetings, including no-shows)
+        const totalMeetingsSet = clientMeetings.length;
         
         console.log(`Client ${assignment.clients.name} held meetings:`, heldMeetings);
         console.log(`Client ${assignment.clients.name} meetings with held_at:`, clientMeetings.filter(m => m.held_at !== null).length);

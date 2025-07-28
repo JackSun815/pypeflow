@@ -51,6 +51,24 @@ export default function SDRDashboard() {
     deleteMeeting 
   } = useMeetings(sdrId, supabasePublic);
 
+  // Debug: Log SDR ID and meeting counts in development
+  useEffect(() => {
+    if (import.meta.env.MODE === 'development' && sdrId) {
+      console.log('🔍 SDR Dashboard Debug:');
+      console.log('SDR ID:', sdrId);
+      console.log('Total meetings:', meetings.length);
+      console.log('Meetings by SDR ID:', meetings.filter(m => m.sdr_id === sdrId).length);
+      console.log('All SDR IDs in meetings:', [...new Set(meetings.map(m => m.sdr_id))]);
+      
+      // Check if any meetings belong to other SDRs
+      const otherSDRMeetings = meetings.filter(m => m.sdr_id !== sdrId);
+      if (otherSDRMeetings.length > 0) {
+        console.warn('⚠️ Found meetings from other SDRs:', otherSDRMeetings.length);
+        console.warn('Other SDR IDs:', [...new Set(otherSDRMeetings.map(m => m.sdr_id))]);
+      }
+    }
+  }, [sdrId, meetings]);
+
   const handleSaveMeeting = async (updatedMeeting: Meeting) => {
   console.log('Saving meeting:', updatedMeeting);
   try {
@@ -240,6 +258,20 @@ export default function SDRDashboard() {
       decodedTokenDebug = JSON.parse(atob(token));
     } catch {}
   }
+
+  // Debug: Show environment info in development
+  useEffect(() => {
+    if (isDev) {
+      console.log('🔧 Environment Debug:');
+      console.log('Mode:', import.meta.env.MODE);
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('Supabase Anon Key (first 10 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10) + '...');
+      console.log('Token:', token);
+      console.log('Decoded Token:', decodedTokenDebug);
+      console.log('SDR ID:', sdrId);
+      console.log('SDR Name:', sdrName);
+    }
+  }, [isDev, token, sdrId, sdrName]);
 
   const findMeeting = (meetingId: string) => {
     return meetings.find(m => m.id === meetingId);
