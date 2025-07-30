@@ -135,7 +135,7 @@ export default function MeetingsHistory({
         if (allError) console.log('[DEBUG] Error fetching all assignments:', allError);
       });
 
-    // Now fetch assignments for the specific month with client targets
+    // Now fetch assignments for the specific month with assignment targets
     supabase
       .from('assignments')
       .select(`
@@ -143,6 +143,8 @@ export default function MeetingsHistory({
         sdr_id,
         client_id,
         monthly_target,
+        monthly_set_target,
+        monthly_hold_target,
         month,
         clients (
           id,
@@ -207,18 +209,16 @@ export default function MeetingsHistory({
       });
   }, [modalOpen, assignments]);
 
-  // Calculate targets from assignments (with client targets)
+  // Calculate targets from assignments (sum up assignment targets, not client targets)
   const totalSetTarget = assignments.length > 0 
     ? assignments.reduce((sum, a) => {
-        const client = (a as any).clients;
-        return sum + (client?.monthly_set_target || 0);
+        return sum + ((a as any).monthly_set_target || 0);
       }, 0)
     : allClients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
   
   const totalHeldTarget = assignments.length > 0
     ? assignments.reduce((sum, a) => {
-        const client = (a as any).clients;
-        return sum + (client?.monthly_hold_target || 0);
+        return sum + ((a as any).monthly_hold_target || 0);
       }, 0)
     : allClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
   
@@ -574,10 +574,10 @@ export default function MeetingsHistory({
                     ) : (
                       <ul className="divide-y divide-gray-200">
                         {assignments.length > 0 ? (
-                          // Show assignments with client targets
+                          // Show assignments with assignment targets
                           assignments.map(a => {
                             const clientName = (a as any).clients?.name || clients.find(c => c.id === a.client_id)?.name || 'Client';
-                            const target = modalType === 'set' ? (a as any).clients?.monthly_set_target : (a as any).clients?.monthly_hold_target;
+                            const target = modalType === 'set' ? (a as any).monthly_set_target : (a as any).monthly_hold_target;
                             return (
                               <li key={a.id} className="py-2 flex justify-between items-center">
                                 <span className="font-medium text-gray-900">{clientName}</span>

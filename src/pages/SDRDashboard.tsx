@@ -611,7 +611,7 @@ export default function SDRDashboard() {
             <>
               {(() => {
               const calculateMetrics = () => {
-                // Calculate targets from clients
+                // Calculate targets from clients (which are already assignment targets from useClients hook)
                 const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
                 const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                 
