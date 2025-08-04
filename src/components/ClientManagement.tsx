@@ -52,7 +52,12 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   // Month selector state
   const now = new Date();
   const currentMonth = format(now, 'yyyy-MM');
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  
+  // Initialize selectedMonth from localStorage or default to current month
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = localStorage.getItem('clientManagementSelectedMonth');
+    return saved || currentMonth;
+  });
 
   // Generate month options: next month + previous 12 months
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -69,6 +74,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       };
     })
   ];
+
+  // Save selectedMonth to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('clientManagementSelectedMonth', selectedMonth);
+  }, [selectedMonth]);
 
   const [clientDraftTargets, setClientDraftTargets] = useState<Record<string, number>>({});
   const [assignmentDraftTargets, setAssignmentDraftTargets] = useState<Record<string, number>>({});
@@ -371,6 +381,9 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   </option>
                 ))}
               </select>
+              {selectedMonth === currentMonth && (
+                <span className="text-xs text-gray-500">(Current)</span>
+              )}
             </div>
             <button
               onClick={() => setShowAddClient(true)}

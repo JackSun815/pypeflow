@@ -52,8 +52,6 @@ export default function MeetingsHistory({
   const [clients, setClients] = useState<Client[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsError, setClientsError] = useState<string | null>(null);
-  const [allClients, setAllClients] = useState<Client[]>([]);
-  const [allClientsLoading, setAllClientsLoading] = useState(false);
 
   const columnOptions = [
     { key: 'client', label: 'Client Name' },
@@ -167,25 +165,7 @@ export default function MeetingsHistory({
       });
   }, [sdrId, selectedMonth]);
 
-  // Fetch all clients if no assignments exist (fallback)
-  React.useEffect(() => {
-    if (assignments.length === 0 && !assignmentsLoading && sdrId) {
-      console.log('[DEBUG] No assignments found, fetching all clients as fallback');
-      setAllClientsLoading(true);
-      supabase
-        .from('clients')
-        .select('*')
-        .then(({ data, error }) => {
-          if (error) {
-            console.log('[DEBUG] Error fetching all clients:', error);
-          } else {
-            console.log('[DEBUG] All clients data:', data);
-            setAllClients((data ?? []) as unknown as Client[]);
-          }
-          setAllClientsLoading(false);
-        });
-    }
-  }, [assignments.length, assignmentsLoading, sdrId]);
+
 
   // Fetch clients for assignments (when modal opens)
   React.useEffect(() => {
@@ -214,15 +194,15 @@ export default function MeetingsHistory({
     ? assignments.reduce((sum, a) => {
         return sum + ((a as any).monthly_set_target || 0);
       }, 0)
-    : allClients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
+    : 0; // Show 0 if no assignments for this month/SDR
   
   const totalHeldTarget = assignments.length > 0
     ? assignments.reduce((sum, a) => {
         return sum + ((a as any).monthly_hold_target || 0);
       }, 0)
-    : allClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+    : 0; // Show 0 if no assignments for this month/SDR
   
-  console.log('[DEBUG] totalSetTarget:', totalSetTarget, 'totalHeldTarget:', totalHeldTarget, 'assignments:', assignments, 'allClients:', allClients);
+  console.log('[DEBUG] totalSetTarget:', totalSetTarget, 'totalHeldTarget:', totalHeldTarget, 'assignments:', assignments);
 
   // Modal open helpers
   const openTargetModal = (type: 'set' | 'held') => {
@@ -569,34 +549,20 @@ export default function MeetingsHistory({
                   <div className="text-red-600">{assignmentsError || clientsError}</div>
                 ) : (
                   <div>
-                    {assignments.length === 0 && allClients.length === 0 ? (
-                      <p className="text-gray-500">No assignments or clients for this month.</p>
+                    {assignments.length === 0 ? (
+                      <p className="text-gray-500">No assignments for this month.</p>
                     ) : (
                       <ul className="divide-y divide-gray-200">
-                        {assignments.length > 0 ? (
-                          // Show assignments with assignment targets
-                          assignments.map(a => {
-                            const clientName = (a as any).clients?.name || clients.find(c => c.id === a.client_id)?.name || 'Client';
-                            const target = modalType === 'set' ? (a as any).monthly_set_target : (a as any).monthly_hold_target;
-                            return (
-                              <li key={a.id} className="py-2 flex justify-between items-center">
-                                <span className="font-medium text-gray-900">{clientName}</span>
-                                <span className="text-gray-600">Target: {target}</span>
-                              </li>
-                            );
-                          })
-                        ) : (
-                          // Show all clients as fallback
-                          allClients.map(client => {
-                            const target = modalType === 'set' ? client.monthly_set_target : client.monthly_hold_target;
-                            return (
-                              <li key={client.id} className="py-2 flex justify-between items-center">
-                                <span className="font-medium text-gray-900">{client.name}</span>
-                                <span className="text-gray-600">Target: {target}</span>
-                              </li>
-                            );
-                          })
-                        )}
+                        {assignments.map(a => {
+                          const clientName = (a as any).clients?.name || clients.find(c => c.id === a.client_id)?.name || 'Client';
+                          const target = modalType === 'set' ? (a as any).monthly_set_target : (a as any).monthly_hold_target;
+                          return (
+                            <li key={a.id} className="py-2 flex justify-between items-center">
+                              <span className="font-medium text-gray-900">{clientName}</span>
+                              <span className="text-gray-600">Target: {target}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
