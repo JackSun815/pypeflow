@@ -3,6 +3,7 @@ import { Calculator, DollarSign, TrendingUp, Target, AlertCircle, ChevronRight }
 import { useMeetings } from '../hooks/useMeetings';
 import { useClients } from '../hooks/useClients';
 import { supabase } from '../lib/supabase';
+import type { CommissionGoalOverride } from '../types/database';
 
 interface CommissionStructure {
   commission_type: 'per_meeting' | 'goal_based';
@@ -23,9 +24,11 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
   const [mockMeetings, setMockMeetings] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [commissionGoalOverride, setCommissionGoalOverride] = useState<CommissionGoalOverride | null>(null);
 
   // Calculate held goal and held meetings for commissions
-  const heldGoal = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+  const calculatedGoal = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+  const heldGoal = commissionGoalOverride ? commissionGoalOverride.commission_goal : calculatedGoal;
   const heldMeetings = meetings.filter(m => 
     m.status === 'confirmed' && 
     !m.no_show && 
@@ -41,6 +44,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
       }
 
       try {
+        // Load compensation structure
         const { data, error: fetchError } = await supabase
           .from('compensation_structures')
           .select('*')
@@ -63,6 +67,22 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
         } else {
           setStructure(data);
         }
+
+        // Load commission goal override
+        const { data: overrideData, error: overrideError } = await supabase
+          .from('commission_goal_overrides')
+          .select('*')
+          .eq('sdr_id', sdrId)
+          .maybeSingle();
+
+        if (overrideError && overrideError.code !== 'PGRST116') {
+          console.error('Load override error:', overrideError);
+        }
+
+        if (overrideData) {
+          setCommissionGoalOverride(overrideData);
+        }
+
         setError(null);
       } catch (err) {
         console.error('Load compensation error:', err);
@@ -120,9 +140,9 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
       const heldCommission = meetingsCount * structure.meeting_rates.held;
       return bookedCommission + heldCommission;
     } else {
-      // Calculate progress based on held meetings vs held goal
+      // Calculate progress based on input meetings vs held goal
       const percentageAchieved = heldGoal > 0 
-        ? (heldMeetings / heldGoal) * 100 
+        ? (meetingsCount / heldGoal) * 100 
         : 0;
 
       const sortedTiers = [...structure.goal_tiers].sort((a, b) => b.percentage - a.percentage);
@@ -192,6 +212,16 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
               <Target className="w-5 h-5 text-indigo-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{heldGoal}</p>
+            {commissionGoalOverride && (
+              <div className="mt-1">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Overridden
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  Calculated goal: {calculatedGoal} meetings
+                </p>
+              </div>
+            )}
             <div className="mt-2">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-500">Progress</span>

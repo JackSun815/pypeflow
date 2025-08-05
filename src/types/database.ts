@@ -51,3 +51,11 @@ export interface Meeting {
   updated_at: string;
   timezone?: string; // IANA timezone string for meeting (e.g., 'America/New_York')
 }
+
+export interface CommissionGoalOverride {
+  id: string;
+  sdr_id: string;
+  commission_goal: number;
+  created_at: string;
+  updated_at: string;
+}

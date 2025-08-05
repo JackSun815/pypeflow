@@ -217,6 +217,29 @@ export interface Database {
           updated_at?: string
         }
       }
+      commission_goal_overrides: {
+        Row: {
+          id: string
+          sdr_id: string
+          commission_goal: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          sdr_id: string
+          commission_goal?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          sdr_id?: string
+          commission_goal?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

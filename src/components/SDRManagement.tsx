@@ -226,6 +226,7 @@ export default function SDRManagement({ sdrs, onInviteSent }: SDRManagementProps
           sdrId={selectedSDR}
           fullName={sdrs.find(sdr => sdr.id === selectedSDR)?.full_name || ''}
           onUpdate={onInviteSent}
+          onHide={() => setSelectedSDR(null)}
         />
       )}
 

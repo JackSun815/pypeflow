@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { DollarSign, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { DollarSign, Plus, Trash2, AlertCircle, Target } from 'lucide-react';
+import type { CommissionGoalOverride } from '../types/database';
 
 interface MeetingRates {
   booked: number;
@@ -16,9 +17,10 @@ interface CompensationManagementProps {
   sdrId: string;
   fullName: string;
   onUpdate: () => void;
+  onHide?: () => void;
 }
 
-export default function CompensationManagement({ sdrId, fullName, onUpdate }: CompensationManagementProps) {
+export default function CompensationManagement({ sdrId, fullName, onUpdate, onHide }: CompensationManagementProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -43,10 +45,16 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
     { percentage: 60, bonus: 200 }
   ]);
 
-  // Load existing compensation structure
+  // Commission goal override state
+  const [commissionGoalOverride, setCommissionGoalOverride] = useState<number>(0);
+  const [hasOverride, setHasOverride] = useState<boolean>(false);
+  const [calculatedGoal, setCalculatedGoal] = useState<number>(0);
+
+  // Load existing compensation structure and commission goal override
   useEffect(() => {
     async function loadCompensation() {
       try {
+        // Load compensation structure
         const { data, error } = await supabase
           .from('compensation_structures')
           .select('*')
@@ -64,6 +72,42 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
             setGoalTiers(data.goal_tiers);
           }
         }
+
+        // Load commission goal override
+        const { data: overrideData, error: overrideError } = await supabase
+          .from('commission_goal_overrides')
+          .select('*')
+          .eq('sdr_id', sdrId)
+          .maybeSingle();
+
+        if (overrideError && overrideError.code !== 'PGRST116') {
+          console.error('Load override error:', overrideError);
+        }
+
+        if (overrideData) {
+          setCommissionGoalOverride(overrideData.commission_goal);
+          setHasOverride(true);
+        }
+
+        // Calculate the current goal from assignments
+        const { data: assignmentsData, error: assignmentsError } = await supabase
+          .from('assignments')
+          .select(`
+            monthly_hold_target,
+            clients (
+              monthly_hold_target
+            )
+          `)
+          .eq('sdr_id', sdrId);
+
+        if (assignmentsError) {
+          console.error('Load assignments error:', assignmentsError);
+        } else {
+          const calculatedGoal = assignmentsData?.reduce((sum, assignment) => {
+            return sum + (assignment.monthly_hold_target || 0);
+          }, 0) || 0;
+          setCalculatedGoal(calculatedGoal);
+        }
       } catch (err) {
         console.error('Load compensation error:', err);
         // Don't show error for initial load
@@ -79,11 +123,18 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
     setSuccess(null);
 
     try {
-      // Delete existing structure first to avoid conflicts
-      await supabase
-        .from('compensation_structures')
-        .delete()
-        .eq('sdr_id', sdrId);
+              // Delete existing structure first to avoid conflicts
+        console.log('[DEBUG] Deleting existing compensation structure for SDR:', sdrId);
+        
+        const { error: deleteError } = await supabase
+          .from('compensation_structures')
+          .delete()
+          .eq('sdr_id', sdrId);
+
+        if (deleteError) {
+          console.error('[DEBUG] Delete existing structure error:', deleteError);
+          // Don't throw here as it might not exist
+        }
 
       if (commissionType === 'goal_based') {
         // Validate goal tiers
@@ -104,7 +155,13 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
         }
 
         // Insert new structure
-        const { error: insertError } = await supabase
+        console.log('[DEBUG] Inserting goal-based compensation structure:', {
+          sdr_id: sdrId,
+          commission_type: 'goal_based',
+          goal_tiers: sortedTiers
+        });
+        
+        const { data: insertData, error: insertError } = await supabase
           .from('compensation_structures')
           .insert({
             sdr_id: sdrId,
@@ -113,7 +170,12 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
             meeting_rates: { booked: 0, held: 0 }
           });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('[DEBUG] Insert compensation structure error:', insertError);
+          throw insertError;
+        }
+        
+        console.log('[DEBUG] Compensation structure inserted successfully:', insertData);
       } else {
         // Validate meeting rates
         if (meetingRates.booked < 0 || meetingRates.held < 0) {
@@ -121,7 +183,13 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
         }
 
         // Insert new structure
-        const { error: insertError } = await supabase
+        console.log('[DEBUG] Inserting per-meeting compensation structure:', {
+          sdr_id: sdrId,
+          commission_type: 'per_meeting',
+          meeting_rates: meetingRates
+        });
+        
+        const { data: insertData, error: insertError } = await supabase
           .from('compensation_structures')
           .insert({
             sdr_id: sdrId,
@@ -130,7 +198,65 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
             goal_tiers: []
           });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('[DEBUG] Insert compensation structure error:', insertError);
+          throw insertError;
+        }
+        
+        console.log('[DEBUG] Compensation structure inserted successfully:', insertData);
+      }
+
+      // Save commission goal override
+      if (hasOverride) {
+        console.log('[DEBUG] Saving commission goal override:', {
+          sdr_id: sdrId,
+          commission_goal: commissionGoalOverride
+        });
+        
+        // First, let's check the current user's role
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        console.log('[DEBUG] Current user:', userData);
+        
+        if (userError) {
+          console.error('[DEBUG] User error:', userError);
+        }
+        
+        // Check if the current user is a manager
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userData?.user?.id)
+          .single();
+        
+        console.log('[DEBUG] Profile data:', profileData);
+        console.log('[DEBUG] Profile error:', profileError);
+        
+        const { data: overrideData, error: overrideError } = await supabase
+          .from('commission_goal_overrides')
+          .upsert({
+            sdr_id: sdrId,
+            commission_goal: commissionGoalOverride
+          });
+
+        if (overrideError) {
+          console.error('[DEBUG] Override error:', overrideError);
+          throw overrideError;
+        }
+        
+        console.log('[DEBUG] Override saved successfully:', overrideData);
+      } else {
+        // Remove override if it exists
+        console.log('[DEBUG] Removing commission goal override for SDR:', sdrId);
+        
+        const { error: deleteError } = await supabase
+          .from('commission_goal_overrides')
+          .delete()
+          .eq('sdr_id', sdrId);
+
+        if (deleteError) {
+          console.error('[DEBUG] Delete override error:', deleteError);
+          // Don't throw here as it might not exist
+        }
       }
 
       setSuccess('Compensation structure updated successfully');
@@ -145,10 +271,18 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">
           Compensation Structure for {fullName}
         </h2>
+        {onHide && (
+          <button
+            onClick={onHide}
+            className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          >
+            Hide
+          </button>
+        )}
       </div>
 
       <div className="p-6">
@@ -306,6 +440,64 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate }: Co
               </div>
             </div>
           )}
+
+          {/* Commission Goal Override */}
+          <div className="pt-6 border-t">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-sm font-medium text-gray-700">Commission Goal Override</h3>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Calculated Goal
+                    </label>
+                    <p className="text-lg font-semibold text-gray-900">{calculatedGoal} meetings</p>
+                    <p className="text-xs text-gray-500">Based on client assignments</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={hasOverride}
+                        onChange={(e) => {
+                          setHasOverride(e.target.checked);
+                          if (!e.target.checked) {
+                            setCommissionGoalOverride(0);
+                          }
+                        }}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Override commission goal</span>
+                    </label>
+                  </div>
+                  
+                  {hasOverride && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Custom Commission Goal
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={commissionGoalOverride}
+                        onChange={(e) => setCommissionGoalOverride(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="Enter custom goal"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This will override the calculated goal for commission calculations only
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Save Button */}
           <div className="pt-6 border-t">
