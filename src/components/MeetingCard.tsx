@@ -170,9 +170,9 @@ export function MeetingCard({
 
   // Helper to format the Slack message
   const getSlackMessage = () => {
-    const tz = meeting.timezone || 'America/New_York';
-    const dt = DateTime.fromISO(meeting.scheduled_date, { zone: tz });
-    const timeStr = dt.isValid ? dt.toFormat('ccc, LLL d, yyyy, h:mm a ') + dt.offsetNameShort : meeting.scheduled_date;
+    // Always format time in EST regardless of prospect's timezone
+    const dt = DateTime.fromISO(meeting.scheduled_date, { zone: 'America/New_York' });
+    const timeStr = dt.isValid ? dt.toFormat('ccc, LLL d, yyyy, h:mm a') + ' EST' : meeting.scheduled_date;
     return [
       '***MEETING BOOKED',
       meeting.contact_full_name || '',
