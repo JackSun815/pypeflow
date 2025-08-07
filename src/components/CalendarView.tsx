@@ -33,6 +33,7 @@ export interface MeetingEvent {
   sdr_name?: string;
   scheduled_date?: string;
   client_name?: string;
+  clients?: { name?: string } | null;
   sdr_full_name?: string;
   company?: string;
   linkedin_url?: string;
@@ -93,6 +94,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
       ...m,
       start,
       end,
+      title: m.sdr_name ? `SDR: ${m.sdr_name}` : undefined,
     };
   });
 
@@ -209,7 +211,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
               )}
             </div>
             
-            <h4 className="font-semibold text-gray-900 mb-1">
+            <h4 className="font-semibold text-gray-900 mb-1" title={event.sdr_name ? `SDR: ${event.sdr_name}` : undefined}>
               {event.client_name || event.contact_full_name || 'Untitled Meeting'}
               {event.sdr_name && (
                 <span className="ml-2 text-xs font-normal" style={{ color: getSDRColor(event.sdr_id || '') }}>
@@ -386,8 +388,20 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded shadow-lg max-w-md w-full">
             <div className="mb-4">
+              {/* Client indicator badge */}
+              {(selectedMeeting.client_name || selectedMeeting.clients?.name) && (
+                <div className="mb-2">
+                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border bg-blue-100 text-blue-800 border-blue-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 mr-1">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    {selectedMeeting.client_name || selectedMeeting.clients?.name}
+                  </span>
+                </div>
+              )}
               <h2 className="text-xl font-semibold text-gray-900">
-                {selectedMeeting.client_name || selectedMeeting.contact_full_name || selectedMeeting.title}
+                {selectedMeeting.contact_full_name || selectedMeeting.title || 'Untitled Meeting'}
               </h2>
             </div>
             <div className="text-sm text-gray-700 space-y-2">

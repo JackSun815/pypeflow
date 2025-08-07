@@ -92,8 +92,8 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
   useEffect(() => {
     fetchMeetings();
 
-    // Subscribe to ALL meeting changes to ensure manager dashboard stays updated
-     const subscription = supabaseClient
+    // Subscribe to meeting changes, but only trigger refresh if the change affects this SDR
+    const subscription = supabaseClient
     .channel('meetings-changes')
     .on(
       'postgres_changes',
@@ -106,10 +106,24 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
         console.log('Meeting change detected:', {
           event: payload.eventType,
           meetingId: payload.new?.id,
+          sdr_id: payload.new?.sdr_id,
+          currentSdrId: sdrId,
           created_at: payload.new?.created_at,
           timestamp: new Date().toISOString()
         });
-        fetchMeetings();
+        
+        // Only refresh if this change affects the current SDR's meetings
+        const changedMeetingSdrId = payload.new?.sdr_id;
+        if (sdrId && changedMeetingSdrId === sdrId) {
+          console.log('Change affects current SDR, refreshing meetings');
+          fetchMeetings();
+        } else if (!sdrId) {
+          // For manager dashboard (sdrId is null), refresh on any change
+          console.log('Manager dashboard - refreshing on any change');
+          fetchMeetings();
+        } else {
+          console.log('Change does not affect current SDR, skipping refresh');
+        }
       }
     )
     .subscribe();
