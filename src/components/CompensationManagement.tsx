@@ -213,37 +213,52 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           commission_goal: commissionGoalOverride
         });
         
-        // First, let's check the current user's role
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        console.log('[DEBUG] Current user:', userData);
-        
-        if (userError) {
-          console.error('[DEBUG] User error:', userError);
-        }
-        
-        // Check if the current user is a manager
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', userData?.user?.id)
-          .single();
-        
-        console.log('[DEBUG] Profile data:', profileData);
-        console.log('[DEBUG] Profile error:', profileError);
-        
-        const { data: overrideData, error: overrideError } = await supabase
+        // Check if override already exists
+        const { data: existingOverride, error: checkError } = await supabase
           .from('commission_goal_overrides')
-          .upsert({
-            sdr_id: sdrId,
-            commission_goal: commissionGoalOverride
-          });
+          .select('id')
+          .eq('sdr_id', sdrId)
+          .maybeSingle();
 
-        if (overrideError) {
-          console.error('[DEBUG] Override error:', overrideError);
-          throw overrideError;
+        if (checkError) {
+          console.error('[DEBUG] Check existing override error:', checkError);
+          throw checkError;
         }
-        
-        console.log('[DEBUG] Override saved successfully:', overrideData);
+
+        if (existingOverride) {
+          // Update existing override
+          console.log('[DEBUG] Updating existing commission goal override');
+          const { data: overrideData, error: overrideError } = await supabase
+            .from('commission_goal_overrides')
+            .update({
+              commission_goal: commissionGoalOverride,
+              updated_at: new Date().toISOString()
+            })
+            .eq('sdr_id', sdrId);
+
+          if (overrideError) {
+            console.error('[DEBUG] Update override error:', overrideError);
+            throw overrideError;
+          }
+          
+          console.log('[DEBUG] Override updated successfully:', overrideData);
+        } else {
+          // Insert new override
+          console.log('[DEBUG] Inserting new commission goal override');
+          const { data: overrideData, error: overrideError } = await supabase
+            .from('commission_goal_overrides')
+            .insert({
+              sdr_id: sdrId,
+              commission_goal: commissionGoalOverride
+            });
+
+          if (overrideError) {
+            console.error('[DEBUG] Insert override error:', overrideError);
+            throw overrideError;
+          }
+          
+          console.log('[DEBUG] Override inserted successfully:', overrideData);
+        }
       } else {
         // Remove override if it exists
         console.log('[DEBUG] Removing commission goal override for SDR:', sdrId);
