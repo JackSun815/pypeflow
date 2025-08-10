@@ -50,6 +50,10 @@ export interface Meeting {
   created_at: string;
   updated_at: string;
   timezone?: string; // IANA timezone string for meeting (e.g., 'America/New_York')
+  icp_status?: 'pending' | 'approved' | 'denied';
+  icp_checked_at?: string | null;
+  icp_checked_by?: string | null;
+  icp_notes?: string | null;
 }
 
 export interface CommissionGoalOverride {

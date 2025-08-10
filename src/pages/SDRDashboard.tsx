@@ -85,22 +85,27 @@ export default function SDRDashboard() {
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   const pendingMeetings = meetings.filter(
-    meeting => meeting.status === 'pending' && !meeting.no_show
+    meeting => meeting.status === 'pending' && !meeting.no_show && (meeting.icp_status || 'pending') !== 'denied'
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   const confirmedMeetings = meetings.filter(
-    meeting => meeting.status === 'confirmed' && !meeting.held_at
+    meeting => meeting.status === 'confirmed' && !meeting.held_at && (meeting.icp_status || 'pending') !== 'denied'
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   const completedMeetings = meetings.filter(
     meeting => 
       meeting.status === 'confirmed' && 
       meeting.held_at && 
-      !meeting.no_show
+      !meeting.no_show &&
+      (meeting.icp_status || 'pending') !== 'denied'
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const noShowMeetings = meetings.filter(
-    meeting => meeting.no_show
+    meeting => meeting.no_show && (meeting.icp_status || 'pending') !== 'denied'
+  ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+
+  const notIcpQualifiedMeetings = meetings.filter(
+    meeting => (meeting.icp_status || 'pending') === 'denied'
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const heldMeetings = meetings.filter(
@@ -725,6 +730,7 @@ export default function SDRDashboard() {
                 confirmedMeetings={confirmedMeetings}
                 completedMeetings={completedMeetings}
                 noShowMeetings={noShowMeetings}
+                notIcpQualifiedMeetings={notIcpQualifiedMeetings}
                 editable={true}
                 editingMeetingId={editingMeeting}
                 onEdit={handleEditMeeting}

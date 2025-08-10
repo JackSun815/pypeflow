@@ -97,12 +97,29 @@ export function MeetingCard({
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value;
     const currentTime = getTimePart(editedData.scheduled_date);
-    const newDateTime = `${newDate}T${currentTime}:00Z`;
     
-    setEditedData({
-      ...editedData,
-      scheduled_date: newDateTime
-    });
+    // Create a DateTime in EST timezone with the new date and current time
+    const [hours, minutes] = currentTime.split(':').map(Number);
+    const newDateTime = DateTime.fromObject(
+      {
+        year: parseInt(newDate.split('-')[0]),
+        month: parseInt(newDate.split('-')[1]),
+        day: parseInt(newDate.split('-')[2]),
+        hour: hours,
+        minute: minutes,
+        second: 0,
+        millisecond: 0
+      },
+      { zone: 'America/New_York' }
+    );
+    
+    const isoString = newDateTime.toISO();
+    if (isoString) {
+      setEditedData({
+        ...editedData,
+        scheduled_date: isoString
+      });
+    }
   };
 
   const handleTimeChange = (timeString: string) => {
@@ -394,6 +411,21 @@ export function MeetingCard({
                   })}
                 </span>
               </div>
+              {(meeting.icp_status || 'pending') && (
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium text-gray-700">ICP Status: </span>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    (meeting.icp_status || 'pending') === 'approved' 
+                      ? 'bg-green-100 text-green-800' 
+                      : (meeting.icp_status || 'pending') === 'denied'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {(meeting.icp_status || 'pending') === 'approved' ? 'Approved' : 
+                     (meeting.icp_status || 'pending') === 'denied' ? 'Denied' : 'Pending Review'}
+                  </span>
+                </div>
+              )}
               {meeting.contact_full_name && (
                 <div className="text-sm text-gray-600">
                   <span className="font-medium text-gray-700">Contact: </span>

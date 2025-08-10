@@ -13,6 +13,7 @@ interface UnifiedMeetingListsProps {
   confirmedMeetings: Meeting[];
   completedMeetings: Meeting[];
   noShowMeetings: Meeting[];
+  notIcpQualifiedMeetings?: Meeting[];
   onDelete?: (meetingId: string) => void;
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
@@ -23,6 +24,7 @@ export default function UnifiedMeetingLists({
   confirmedMeetings,
   completedMeetings,
   noShowMeetings,
+  notIcpQualifiedMeetings = [],
   onDelete,
   onUpdateHeldDate,
   onUpdateConfirmedDate,
@@ -45,6 +47,7 @@ export default function UnifiedMeetingLists({
   const filteredConfirmedMeetings = filterMeetings(confirmedMeetings);
   const filteredCompletedMeetings = filterMeetings(completedMeetings);
   const filteredNoShowMeetings = filterMeetings(noShowMeetings);
+  const filteredNotIcpQualifiedMeetings = filterMeetings(notIcpQualifiedMeetings);
 
   const MeetingList = ({ title, meetings }: { title: string; meetings: Meeting[] }) => (
     <div className="bg-white rounded-lg shadow-md">
@@ -138,6 +141,40 @@ export default function UnifiedMeetingLists({
           </div>
         </div>
       </div>
+
+      {/* Not ICP Qualified Section - Full Width */}
+      {filteredNotIcpQualifiedMeetings.length > 0 && (
+        <div className="mt-6">
+          <div className="bg-gradient-to-r from-red-100 to-pink-100 rounded-lg shadow-md border-2 border-red-300">
+            <div className="p-4 border-b border-red-300 bg-red-50">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-red-800">Not ICP Qualified</h3>
+                <span className="text-sm text-red-600">{filteredNotIcpQualifiedMeetings.length} meetings</span>
+              </div>
+            </div>
+            <div className="p-4 max-h-[800px] overflow-y-auto bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredNotIcpQualifiedMeetings.map((meeting) => (
+                  <div key={meeting.id} className="border border-red-200 rounded-lg bg-white shadow-sm">
+                    <MeetingCard
+                      meeting={meeting}
+                      onDelete={onDelete}
+                      onUpdateHeldDate={onUpdateHeldDate}
+                      onUpdateConfirmedDate={onUpdateConfirmedDate}
+                      editable={editable}
+                      editingMeetingId={editingMeetingId}
+                      onEdit={onEdit}
+                      onSave={onSave}
+                      onCancel={onCancel}
+                      showDateControls={true}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

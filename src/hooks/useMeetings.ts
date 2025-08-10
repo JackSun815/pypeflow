@@ -142,23 +142,48 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
     try {
       const { status: _, ...cleanDetails } = meetingDetails;
     
-      const { data, error } = await supabaseClient
-        .from('meetings')
-        .insert([{
-          client_id: clientId,
-          sdr_id: sdrId,
-          scheduled_date: scheduledDate,
-          status: 'pending',  // Hardcoded to pending
-          no_show: false,     // Explicit defaults
-          held_at: null,
-          created_at: new Date().toISOString(),
-          ...cleanDetails
-        }])
-        .select('*');
+      // Create the insert data without ICP fields first
+      const insertData: any = {
+        client_id: clientId,
+        sdr_id: sdrId,
+        scheduled_date: scheduledDate,
+        status: 'pending',  // Hardcoded to pending
+        no_show: false,     // Explicit defaults
+        held_at: null,
+        created_at: new Date().toISOString(),
+        ...cleanDetails
+      };
 
-      if (error) throw error;
+      // Try to add ICP status if the column exists
+      try {
+        insertData.icp_status = 'pending';
+      } catch (err) {
+        // If ICP column doesn't exist, continue without it
+        console.log('ICP status column not available, skipping');
+      }
+
+      const { error } = await supabaseClient
+        .from('meetings')
+        .insert([insertData]);
+
+      if (error) {
+        // If the error is about missing ICP column, try again without it
+        if (error.message && error.message.includes('icp_status')) {
+          console.log('Retrying without ICP status field');
+          delete insertData.icp_status;
+          
+          const { error: retryError } = await supabaseClient
+            .from('meetings')
+            .insert([insertData]);
+            
+          if (retryError) throw retryError;
+        } else {
+          throw error;
+        }
+      }
+      
       await fetchMeetings();
-      return data?.[0];
+      return null; // We don't need the returned data since we refresh the list
     } catch (err) {
       console.error('Error adding meeting:', err);
       throw err;

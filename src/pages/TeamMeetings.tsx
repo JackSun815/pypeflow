@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, CheckCircle, Clock, XCircle, Edit2, Trash2 } from 'lucide-react';
 import { useSDRs } from '../hooks/useSDRs';
+import { useAllClients } from '../hooks/useAllClients';
 import { useMeetings } from '../hooks/useMeetings';
 import { supabase } from '../lib/supabase';
 import ScrollableMeetingList from '../components/ScrollableMeetingList';
@@ -21,7 +22,9 @@ export default function TeamMeetings({
     return () => clearTimeout(timer);
   }, []);
   const { sdrs, loading: sdrsLoading } = useSDRs();
+  const { clients, loading: clientsLoading } = useAllClients();
   const [selectedSDR, setSelectedSDR] = useState<string | 'all'>('all');
+  const [selectedClient, setSelectedClient] = useState<string | 'all'>('all');
   const [allMeetings, setAllMeetings] = useState<(Meeting & { sdr_name?: string })[]>([]);
   const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null);
   const [draftMeeting, setDraftMeeting] = useState<Partial<Meeting>>({});
@@ -58,6 +61,12 @@ export default function TeamMeetings({
 
     fetchAllMeetings();
   }, [selectedSDR, sdrs, selectedSDRMeetings]);
+
+  // Filter meetings by selected client
+  const filteredMeetings = allMeetings.filter(meeting => {
+    if (selectedClient === 'all') return true;
+    return meeting.client_id === selectedClient;
+  });
 
   const handleDeleteMeeting = async (meetingId: string) => {
     const { error } = await supabase
@@ -116,11 +125,11 @@ export default function TeamMeetings({
   const todayString = new Date().toISOString().split('T')[0];
 
   // Filter and sort meetings into categories
-  const todaysMeetings = allMeetings.filter(
+  const todaysMeetings = filteredMeetings.filter(
     meeting => meeting.scheduled_date.split('T')[0] === todayString
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
-  const pendingMeetings = allMeetings
+  const pendingMeetings = filteredMeetings
     .filter(meeting => meeting.status === 'pending' && !meeting.no_show)
     .sort((a, b) => {
       const dateA = new Date(a.scheduled_date);
@@ -134,15 +143,15 @@ export default function TeamMeetings({
       return diffA - diffB;
     });
 
-  const confirmedMeetings = allMeetings
+  const confirmedMeetings = filteredMeetings
     .filter(meeting => meeting.status === 'confirmed')
     .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
-  const noShowMeetings = allMeetings
+  const noShowMeetings = filteredMeetings
     .filter(meeting => meeting.no_show)
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  if (sdrsLoading) {
+  if (sdrsLoading || clientsLoading) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
@@ -152,27 +161,53 @@ export default function TeamMeetings({
 
   return (
     <div className="space-y-6">
-      {/* SDR Filter */}
+      {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Team's Meetings</h2>
-          <select
-            value={selectedSDR}
-            onChange={(e) => setSelectedSDR(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="all">All SDRs</option>
-            {sdrs.map((sdr) => (
-              <option key={sdr.id} value={sdr.id}>
-                {sdr.full_name}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label htmlFor="sdr-filter" className="text-sm font-medium text-gray-700">
+                SDR:
+              </label>
+              <select
+                id="sdr-filter"
+                value={selectedSDR}
+                onChange={(e) => setSelectedSDR(e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="all">All SDRs</option>
+                {sdrs.map((sdr) => (
+                  <option key={sdr.id} value={sdr.id}>
+                    {sdr.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="client-filter" className="text-sm font-medium text-gray-700">
+                Client:
+              </label>
+              <select
+                id="client-filter"
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="all">All Clients</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       </div>
       {/* Manager Calendar View */}
       <div className="mb-8">
-        <CalendarView meetings={allMeetings} />
+        <CalendarView meetings={filteredMeetings} />
       </div>
 
   

@@ -78,12 +78,12 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
   console.log('Sample meeting data:', meetings.slice(0, 3));
 
   const events: MeetingEvent[] = meetings.map((m) => {
-    // Use the meeting's timezone for start/end
-    const timezone = m.timezone || 'America/New_York';
+    // Always use EST for calendar display since all meetings are booked in EST
     let start: Date;
     let end: Date;
     if (m.scheduled_date) {
-      const dt = DateTime.fromISO(m.scheduled_date, { zone: timezone });
+      // Parse the meeting time as EST and convert to local Date objects for the calendar
+      const dt = DateTime.fromISO(m.scheduled_date, { zone: 'America/New_York' });
       start = dt.toJSDate();
       end = dt.plus({ minutes: 30 }).toJSDate();
     } else {
@@ -173,10 +173,9 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
         backgroundColor = '#F3F4F6'; // Light gray background
     }
 
-    // In CustomAgendaEvent, update formatTime to use event.timezone
-    const formatTime = (date: Date, timezone?: string) => {
-      if (!timezone) timezone = 'America/New_York';
-      return DateTime.fromJSDate(date, { zone: timezone }).toFormat('h:mm a') + ' ' + DateTime.fromJSDate(date, { zone: timezone }).offsetNameShort;
+    // Always format time in EST for calendar display
+    const formatTime = (date: Date) => {
+      return DateTime.fromJSDate(date, { zone: 'America/New_York' }).toFormat('h:mm a') + ' EST';
     };
 
     return (
@@ -223,7 +222,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
             <div className="text-sm text-gray-600 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">Time:</span>
-                <span>{formatTime(event.start, event.timezone)} - {formatTime(event.end, event.timezone)}</span>
+                <span>{formatTime(event.start)} - {formatTime(event.end)}</span>
               </div>
               
               {event.contact_full_name && (
@@ -407,7 +406,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
             <div className="text-sm text-gray-700 space-y-2">
               <div>
                 <span className="font-medium text-gray-700">Meeting Time: </span>
-                <span className="text-gray-900">{DateTime.fromJSDate(selectedMeeting.start, { zone: selectedMeeting.timezone || 'America/New_York' }).toLocaleString(DateTime.DATETIME_MED)} {DateTime.fromJSDate(selectedMeeting.start, { zone: selectedMeeting.timezone || 'America/New_York' }).offsetNameShort}</span>
+                <span className="text-gray-900">{DateTime.fromJSDate(selectedMeeting.start, { zone: 'America/New_York' }).toLocaleString(DateTime.DATETIME_MED)} EST</span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Created Time: </span>
@@ -459,6 +458,11 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
               
               {showDetails && (
                 <div className="mt-2 space-y-2">
+                  {/* Calendar Display Timezone */}
+                  <div>
+                    <span className="font-medium text-gray-700">Calendar Display: </span>
+                    <span className="text-gray-900">All times shown in EST</span>
+                  </div>
                   {/* Client Timezone row */}
                   <div>
                     <span className="font-medium text-gray-700">Client Timezone: </span>
