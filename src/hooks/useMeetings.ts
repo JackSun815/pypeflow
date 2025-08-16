@@ -14,6 +14,11 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
   const [error, setError] = useState<string | null>(null);
 
   async function fetchMeetings() {
+    if (!sdrId) {
+      setMeetings([]);
+      setLoading(false);
+      return;
+    }
     try {
       // Start base query
       let query = supabaseClient
@@ -27,58 +32,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
       const { data, error } = await query;
 
       if (error) throw error;
-
-      // Debug: Log query results in development
-      if (import.meta.env.MODE === 'development' && sdrId) {
-        console.log('🔍 useMeetings Debug:');
-        console.log('SDR ID filter:', sdrId);
-        console.log('Raw data count:', data?.length || 0);
-        console.log('All SDR IDs in raw data:', [...new Set((data || []).map((m: any) => m.sdr_id))]);
-        
-        // Check if filtering is working
-        const filteredData = (data || []).filter((m: any) => m.sdr_id === sdrId);
-        console.log('Filtered data count:', filteredData.length);
-        
-        if (data && data.length !== filteredData.length) {
-          console.warn('⚠️ Data filtering issue detected!');
-          console.warn('Expected only SDR ID:', sdrId);
-          console.warn('Found SDR IDs:', [...new Set((data || []).map((m: any) => m.sdr_id))]);
-        }
-      }
-
-      // Check for past meetings that haven't been marked as held/no-show
-      const now = new Date();
-      const todayString = now.toISOString().split('T')[0];
-      const updatedMeetings = await Promise.all((data || []).map(async (meeting) => {
-        const meetingDateString = meeting.scheduled_date.split('T')[0];
-        
-        // If meeting is in the past and still pending, mark as no-show
-        if (meetingDateString < todayString && meeting.status === 'pending' && !meeting.no_show && !meeting.held_at) {
-          const { error: updateError } = await supabaseClient
-            .from('meetings')
-            .update({
-              no_show: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', meeting.id);
-
-          if (updateError) {
-            console.error('Failed to update past meeting:', updateError);
-            return meeting;
-          }
-
-          return {
-            ...meeting,
-            no_show: true,
-            updated_at: new Date().toISOString()
-          };
-        }
-
-        return meeting;
-      }));
-      
-
-      setMeetings(updatedMeetings);
+      setMeetings(data || []);
       setError(null);
     } catch (err) {
       console.error('Meetings fetch error:', err);
@@ -90,43 +44,34 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
   }
 
   useEffect(() => {
+    // Reset meetings state when sdrId changes
+    setMeetings([]);
+    setLoading(true);
+    setError(null);
+    if (!sdrId) {
+      setLoading(false);
+      return;
+    }
     fetchMeetings();
 
     // Subscribe to meeting changes, but only trigger refresh if the change affects this SDR
     const subscription = supabaseClient
-    .channel('meetings-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'meetings'
-      },
-      (payload) => {
-        console.log('Meeting change detected:', {
-          event: payload.eventType,
-          meetingId: payload.new?.id,
-          sdr_id: payload.new?.sdr_id,
-          currentSdrId: sdrId,
-          created_at: payload.new?.created_at,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Only refresh if this change affects the current SDR's meetings
-        const changedMeetingSdrId = payload.new?.sdr_id;
-        if (sdrId && changedMeetingSdrId === sdrId) {
-          console.log('Change affects current SDR, refreshing meetings');
-          fetchMeetings();
-        } else if (!sdrId) {
-          // For manager dashboard (sdrId is null), refresh on any change
-          console.log('Manager dashboard - refreshing on any change');
-          fetchMeetings();
-        } else {
-          console.log('Change does not affect current SDR, skipping refresh');
+      .channel('meetings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'meetings'
+        },
+        (payload) => {
+          const changedMeetingSdrId = payload.new?.sdr_id;
+          if (sdrId && changedMeetingSdrId === sdrId) {
+            fetchMeetings();
+          }
         }
-      }
-    )
-    .subscribe();
+      )
+      .subscribe();
 
     return () => {
       supabaseClient.removeChannel(subscription);

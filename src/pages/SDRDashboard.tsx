@@ -39,17 +39,113 @@ export default function SDRDashboard() {
   const [prospectTimezone, setProspectTimezone] = useState('America/New_York'); // Default to EST
   const [allSDRs, setAllSDRs] = useState<{ id: string; full_name: string | null }[]>([]);
 
-  const { clients, loading: clientsLoading, error: clientsError, totalMeetingGoal, fetchClients } = useClients(sdrId, supabasePublic);
-  const { 
-    meetings, 
-    loading: meetingsLoading, 
-    error: meetingsError, 
-    addMeeting, 
-    updateMeeting,
-    updateMeetingHeldDate,
-    updateMeetingConfirmedDate,
-    deleteMeeting 
-  } = useMeetings(sdrId, supabasePublic);
+  useEffect(() => {
+    function isValidBase64(str: string) {
+      try {
+        // atob throws if not valid base64
+        return btoa(atob(str)) === str;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    async function validateToken() {
+      if (!token || typeof token !== 'string' || !isValidBase64(token)) {
+        setError('No or invalid access token provided');
+        setSdrId(null);
+        setSdrName(null);
+        return;
+      }
+
+      let decodedToken: any;
+      try {
+        decodedToken = JSON.parse(atob(token));
+      } catch (err) {
+        setError('Malformed access token');
+        setSdrId(null);
+        setSdrName(null);
+        return;
+      }
+
+      if (
+        !decodedToken.id ||
+        !decodedToken.timestamp ||
+        decodedToken.type !== 'sdr_access'
+      ) {
+        setError('Invalid access token structure');
+        setSdrId(null);
+        setSdrName(null);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${decodedToken.id}&role=eq.sdr&active=eq.true&select=id,full_name`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch SDR profile');
+        }
+
+        const [sdrProfile] = await response.json();
+
+        if (!sdrProfile) {
+          throw new Error('Invalid or inactive SDR account');
+        }
+
+        setSdrId(decodedToken.id);
+        setSdrName(sdrProfile.full_name);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Invalid or expired access token');
+        setSdrId(null);
+        setSdrName(null);
+      }
+    }
+
+    validateToken();
+  }, [token]);
+
+  useEffect(() => {
+    // Fetch all SDRs for color coding and name mapping
+    async function fetchAllSDRs() {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?role=eq.sdr&active=eq.true&select=id,full_name`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          }
+        });
+        if (!response.ok) return;
+        const sdrs = await response.json();
+        setAllSDRs(sdrs);
+      } catch {}
+    }
+    fetchAllSDRs();
+  }, []);
+
+  // Always call hooks at the top level
+  const meetingsHook = useMeetings(sdrId, supabasePublic);
+  const clientsHook = useClients(sdrId, supabasePublic);
+
+  // Destructure safely
+  const meetings = meetingsHook?.meetings || [];
+  const loading = meetingsHook?.loading || false;
+  const meetingsError = meetingsHook?.error || null;
+  const addMeeting = meetingsHook?.addMeeting;
+  const updateMeeting = meetingsHook?.updateMeeting;
+  const updateMeetingHeldDate = meetingsHook?.updateMeetingHeldDate;
+  const updateMeetingConfirmedDate = meetingsHook?.updateMeetingConfirmedDate;
+  const deleteMeeting = meetingsHook?.deleteMeeting;
+
+  const clients = clientsHook?.clients || [];
+  const clientsLoading = clientsHook?.loading || false;
+  const clientsError = clientsHook?.error || null;
+  const totalMeetingGoal = clientsHook?.totalMeetingGoal || 0;
+  const fetchClients = clientsHook?.fetchClients;
 
   // Debug: Log SDR ID and meeting counts in development
   useEffect(() => {
@@ -88,8 +184,23 @@ export default function SDRDashboard() {
     meeting => meeting.status === 'pending' && !meeting.no_show && (meeting.icp_status || 'pending') !== 'denied'
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
+  // Past Due Pending: confirmed, not held, not no_show, scheduled_date < now
+  const nowDate = new Date();
+  const pastDuePendingMeetings = meetings.filter(
+    meeting =>
+      meeting.status === 'confirmed' &&
+      !meeting.held_at &&
+      !meeting.no_show &&
+      new Date(meeting.scheduled_date) < nowDate
+  ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+
+  // Confirmed Meetings: confirmed, not held, not no_show, scheduled_date >= now
   const confirmedMeetings = meetings.filter(
-    meeting => meeting.status === 'confirmed' && !meeting.held_at && (meeting.icp_status || 'pending') !== 'denied'
+    meeting =>
+      meeting.status === 'confirmed' &&
+      !meeting.held_at &&
+      !meeting.no_show &&
+      new Date(meeting.scheduled_date) >= nowDate
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   const completedMeetings = meetings.filter(
@@ -160,99 +271,28 @@ export default function SDRDashboard() {
   };
 
   useEffect(() => {
-    function isValidBase64(str: string) {
-      try {
-        // atob throws if not valid base64
-        return btoa(atob(str)) === str;
-      } catch (err) {
-        return false;
+    async function fetchSDRProfile() {
+      const { data: { user } } = await supabasePublic.auth.getUser();
+      if (!user) {
+        setError('Not authenticated. Please log in.');
+        setSdrId(null);
+        setSdrName(null);
+        return;
+      }
+      setSdrId(user.id);
+      // Fetch SDR profile for name
+      const { data, error } = await supabasePublic
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id as any)
+        .maybeSingle();
+      if (error || !data) {
+        setSdrName('SDR');
+      } else {
+        setSdrName((data as { full_name: string | null }).full_name || 'SDR');
       }
     }
-
-    async function validateToken() {
-      if (!token || typeof token !== 'string' || !isValidBase64(token)) {
-        setError('No or invalid access token provided');
-        setSdrId(null);
-        setSdrName(null);
-        return;
-      }
-
-      let decodedToken: any;
-      try {
-        decodedToken = JSON.parse(atob(token));
-      } catch (err) {
-        setError('Malformed access token');
-        setSdrId(null);
-        setSdrName(null);
-        return;
-      }
-
-      if (
-        !decodedToken.id ||
-        !decodedToken.timestamp ||
-        decodedToken.type !== 'sdr_access'
-      ) {
-        setError('Invalid access token structure');
-        setSdrId(null);
-        setSdrName(null);
-        return;
-      }
-
-      // 30 days expiration
-      if (Date.now() - decodedToken.timestamp > 30 * 24 * 60 * 60 * 1000) {
-        setError('Access token has expired');
-        setSdrId(null);
-        setSdrName(null);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${decodedToken.id}&role=eq.sdr&active=eq.true&select=id,full_name`, {
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch SDR profile');
-        }
-
-        const [sdrProfile] = await response.json();
-
-        if (!sdrProfile) {
-          throw new Error('Invalid or inactive SDR account');
-        }
-
-        setSdrId(decodedToken.id);
-        setSdrName(sdrProfile.full_name);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Invalid or expired access token');
-        setSdrId(null);
-        setSdrName(null);
-      }
-    }
-
-    validateToken();
-  }, [token]);
-
-  useEffect(() => {
-    // Fetch all SDRs for color coding and name mapping
-    async function fetchAllSDRs() {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?role=eq.sdr&active=eq.true&select=id,full_name`, {
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          }
-        });
-        if (!response.ok) return;
-        const sdrs = await response.json();
-        setAllSDRs(sdrs);
-      } catch {}
-    }
-    fetchAllSDRs();
+    fetchSDRProfile();
   }, []);
 
   // Debug: Show SDR ID and decoded token in dev mode
@@ -348,7 +388,19 @@ export default function SDRDashboard() {
     );
   }
 
-  if (clientsLoading || meetingsLoading) {
+  // If sdrId is not set, show loading spinner
+  if (!sdrId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (clientsLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -392,6 +444,24 @@ export default function SDRDashboard() {
       }
     } catch (error) {
       console.error('Failed to update meeting confirmed date:', error);
+    }
+  };
+
+  // Handler to mark as held
+  const handleMarkHeld = async (meetingId: string) => {
+    try {
+      await updateMeetingHeldDate(meetingId, new Date().toISOString());
+    } catch (error) {
+      alert('Failed to mark as held');
+    }
+  };
+
+  // Handler to mark as no show
+  const handleMarkNoShow = async (meetingId: string) => {
+    try {
+      await updateMeeting({ ...meetings.find(m => m.id === meetingId)!, no_show: true });
+    } catch (error) {
+      alert('Failed to mark as no show');
     }
   };
 
@@ -740,6 +810,46 @@ export default function SDRDashboard() {
                 onUpdateHeldDate={handleMeetingHeldDateUpdate}
                 onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
               />
+              {/* Past Due Pending Section */}
+              {pastDuePendingMeetings.length > 0 && (
+                <div className="mt-6">
+                  <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg shadow-md border-2 border-yellow-300">
+                    <div className="p-4 border-b border-yellow-300 bg-yellow-50">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-yellow-800">Past Due Pending</h3>
+                        <span className="text-sm text-yellow-600">{pastDuePendingMeetings.length} meetings</span>
+                      </div>
+                    </div>
+                    <div className="p-4 max-h-[800px] overflow-y-auto bg-white">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {pastDuePendingMeetings.map((meeting) => (
+                          <div key={meeting.id} className="border border-yellow-200 rounded-lg bg-white shadow-sm p-4">
+                            <div className="mb-2">
+                              <b>{meeting.contact_full_name}</b> <br/>
+                              {meeting.company && <span>{meeting.company} <br/></span>}
+                              <span>{new Date(meeting.scheduled_date).toLocaleString()}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                                onClick={() => handleMarkHeld(meeting.id)}
+                              >
+                                Mark as Held
+                              </button>
+                              <button
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                                onClick={() => handleMarkNoShow(meeting.id)}
+                              >
+                                Mark as No Show
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           }
         />
@@ -748,7 +858,7 @@ export default function SDRDashboard() {
           element={
             <MeetingsHistory 
               meetings={meetings} 
-              loading={meetingsLoading} 
+              loading={loading} 
               error={meetingsError} 
               onUpdateHeldDate={handleMeetingHeldDateUpdate} 
               onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate} 
