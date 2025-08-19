@@ -8,31 +8,47 @@ interface MeetingContact {
   contact_phone?: string;
 }
 
-export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
+export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fetchAll: boolean = false) {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function fetchMeetings() {
-    if (!sdrId) {
+    // Only fetch all meetings if fetchAll is true (manager dashboard)
+    if (fetchAll) {
+      try {
+        let query = supabaseClient
+          .from('meetings')
+          .select('*, clients(name)')
+          .order('scheduled_date', { ascending: true });
+        const { data, error } = await query;
+        if (error) throw error;
+        setMeetings((data || []) as unknown as Meeting[]);
+        setError(null);
+      } catch (err) {
+        console.error('Meetings fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch meetings');
+        setMeetings([]);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    // For SDR dashboard: only fetch if sdrId is a valid, non-empty string
+    if (typeof sdrId !== 'string' || sdrId.length === 0) {
       setMeetings([]);
       setLoading(false);
       return;
     }
     try {
-      // Start base query
       let query = supabaseClient
         .from('meetings')
         .select('*, clients(name)')
-        .order('scheduled_date', { ascending: true });
-      // Apply SDR filter only when sdrId is provided
-      if (sdrId) {
-        query = query.eq('sdr_id', sdrId);
-      }
+        .order('scheduled_date', { ascending: true })
+        .eq('sdr_id', sdrId as any);
       const { data, error } = await query;
-
       if (error) throw error;
-      setMeetings(data || []);
+      setMeetings((data || []) as unknown as Meeting[]);
       setError(null);
     } catch (err) {
       console.error('Meetings fetch error:', err);
@@ -48,10 +64,6 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase) {
     setMeetings([]);
     setLoading(true);
     setError(null);
-    if (!sdrId) {
-      setLoading(false);
-      return;
-    }
     fetchMeetings();
 
     // Subscribe to meeting changes, but only trigger refresh if the change affects this SDR

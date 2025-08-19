@@ -801,6 +801,7 @@ export default function SDRDashboard() {
                 completedMeetings={completedMeetings}
                 noShowMeetings={noShowMeetings}
                 notIcpQualifiedMeetings={notIcpQualifiedMeetings}
+                pastDuePendingMeetings={pastDuePendingMeetings}
                 editable={true}
                 editingMeetingId={editingMeeting}
                 onEdit={handleEditMeeting}
@@ -810,46 +811,6 @@ export default function SDRDashboard() {
                 onUpdateHeldDate={handleMeetingHeldDateUpdate}
                 onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
               />
-              {/* Past Due Pending Section */}
-              {pastDuePendingMeetings.length > 0 && (
-                <div className="mt-6">
-                  <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg shadow-md border-2 border-yellow-300">
-                    <div className="p-4 border-b border-yellow-300 bg-yellow-50">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-yellow-800">Past Due Pending</h3>
-                        <span className="text-sm text-yellow-600">{pastDuePendingMeetings.length} meetings</span>
-                      </div>
-                    </div>
-                    <div className="p-4 max-h-[800px] overflow-y-auto bg-white">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {pastDuePendingMeetings.map((meeting) => (
-                          <div key={meeting.id} className="border border-yellow-200 rounded-lg bg-white shadow-sm p-4">
-                            <div className="mb-2">
-                              <b>{meeting.contact_full_name}</b> <br/>
-                              {meeting.company && <span>{meeting.company} <br/></span>}
-                              <span>{new Date(meeting.scheduled_date).toLocaleString()}</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                                onClick={() => handleMarkHeld(meeting.id)}
-                              >
-                                Mark as Held
-                              </button>
-                              <button
-                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                                onClick={() => handleMarkNoShow(meeting.id)}
-                              >
-                                Mark as No Show
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           }
         />

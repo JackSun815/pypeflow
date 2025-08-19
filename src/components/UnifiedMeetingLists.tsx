@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Clock, CheckCircle, XCircle, AlertCircle, Ban, ChevronDown } from 'lucide-react';
 import type { Meeting } from '../types/database';
 import { MeetingCard } from './MeetingCard';
 
@@ -25,6 +25,7 @@ export default function UnifiedMeetingLists({
   completedMeetings,
   noShowMeetings,
   notIcpQualifiedMeetings = [],
+  pastDuePendingMeetings = [], // Add this prop for Past Due Pending
   onDelete,
   onUpdateHeldDate,
   onUpdateConfirmedDate,
@@ -33,8 +34,19 @@ export default function UnifiedMeetingLists({
   onEdit,
   onSave,
   onCancel,
-}: UnifiedMeetingListsProps) {
+}: UnifiedMeetingListsProps & { pastDuePendingMeetings?: Meeting[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [openSections, setOpenSections] = useState({
+    pending: true,
+    confirmed: true,
+    pastDue: true,
+    completed: true,
+    noShow: true,
+    notIcp: true,
+  });
+  const toggleSection = (key: keyof typeof openSections) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const filterMeetings = (meetings: Meeting[]) => {
     return meetings.filter(meeting => {
@@ -48,6 +60,8 @@ export default function UnifiedMeetingLists({
   const filteredCompletedMeetings = filterMeetings(completedMeetings);
   const filteredNoShowMeetings = filterMeetings(noShowMeetings);
   const filteredNotIcpQualifiedMeetings = filterMeetings(notIcpQualifiedMeetings);
+  // Add filteredPastDuePendingMeetings
+  const filteredPastDuePendingMeetings = filterMeetings(pastDuePendingMeetings);
 
   const MeetingList = ({ title, meetings }: { title: string; meetings: Meeting[] }) => (
     <div className="bg-white rounded-lg shadow-md">
@@ -84,7 +98,7 @@ export default function UnifiedMeetingLists({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="relative max-w-2xl mx-auto">
           <input
@@ -98,26 +112,21 @@ export default function UnifiedMeetingLists({
         </div>
       </div>
 
+      {/* Pending, Confirmed, Past Due Pending */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <MeetingList title="Pending Meetings" meetings={filteredPendingMeetings} />
-        <MeetingList title="Confirmed Meetings" meetings={filteredConfirmedMeetings} />
-        <MeetingList title="No Shows" meetings={filteredNoShowMeetings} />
-      </div>
-
-      {/* Completed Meetings Section - Full Width */}
-      <div className="mt-6">
-        <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg shadow-md border-2 border-green-300">
-          <div className="p-4 border-b border-green-300 bg-green-50">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-green-800">Completed Meetings</h3>
-              <span className="text-sm text-green-600">{filteredCompletedMeetings.length} meetings</span>
-            </div>
+        {/* Pending Meetings */}
+        <div className="bg-white rounded-lg shadow-md border-t-4 border-yellow-400">
+          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-yellow-50 cursor-pointer select-none" onClick={() => toggleSection('pending')}>
+            <Clock className="w-5 h-5 text-yellow-500" />
+            <h3 className="text-lg font-semibold text-yellow-800 flex-1">Pending Meetings</h3>
+            <span className="text-sm text-yellow-600">{filteredPendingMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.pending ? '' : 'rotate-180'}`} />
           </div>
-          <div className="p-4 max-h-[800px] overflow-y-auto bg-white">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCompletedMeetings.length > 0 ? (
-                filteredCompletedMeetings.map((meeting) => (
-                  <div key={meeting.id} className="border border-green-200 rounded-lg bg-white shadow-sm">
+          {openSections.pending && (
+            <div className="p-4 max-h-[600px] overflow-y-auto">
+              {filteredPendingMeetings.length > 0 ? (
+                filteredPendingMeetings.map((meeting) => (
+                  <div key={meeting.id} className="mb-4 border border-yellow-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -133,29 +142,24 @@ export default function UnifiedMeetingLists({
                   </div>
                 ))
               ) : (
-                <div className="col-span-full">
-                  <p className="text-green-600 text-sm text-center">No completed meetings to display</p>
-                </div>
+                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
               )}
             </div>
-          </div>
+          )}
         </div>
-      </div>
-
-      {/* Not ICP Qualified Section - Full Width */}
-      {filteredNotIcpQualifiedMeetings.length > 0 && (
-        <div className="mt-6">
-          <div className="bg-gradient-to-r from-red-100 to-pink-100 rounded-lg shadow-md border-2 border-red-300">
-            <div className="p-4 border-b border-red-300 bg-red-50">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-red-800">Not ICP Qualified</h3>
-                <span className="text-sm text-red-600">{filteredNotIcpQualifiedMeetings.length} meetings</span>
-              </div>
-            </div>
-            <div className="p-4 max-h-[800px] overflow-y-auto bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredNotIcpQualifiedMeetings.map((meeting) => (
-                  <div key={meeting.id} className="border border-red-200 rounded-lg bg-white shadow-sm">
+        {/* Confirmed Meetings */}
+        <div className="bg-white rounded-lg shadow-md border-t-4 border-blue-400">
+          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-blue-50 cursor-pointer select-none" onClick={() => toggleSection('confirmed')}>
+            <CheckCircle className="w-5 h-5 text-blue-500" />
+            <h3 className="text-lg font-semibold text-blue-800 flex-1">Confirmed Meetings</h3>
+            <span className="text-sm text-blue-600">{filteredConfirmedMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.confirmed ? '' : 'rotate-180'}`} />
+          </div>
+          {openSections.confirmed && (
+            <div className="p-4 max-h-[600px] overflow-y-auto">
+              {filteredConfirmedMeetings.length > 0 ? (
+                filteredConfirmedMeetings.map((meeting) => (
+                  <div key={meeting.id} className="mb-4 border border-blue-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -169,12 +173,155 @@ export default function UnifiedMeetingLists({
                       showDateControls={true}
                     />
                   </div>
-                ))}
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+              )}
+            </div>
+          )}
+        </div>
+        {/* Past Due Pending */}
+        <div className="bg-white rounded-lg shadow-md border-t-4 border-orange-400">
+          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-orange-50 cursor-pointer select-none" onClick={() => toggleSection('pastDue')}>
+            <AlertCircle className="w-5 h-5 text-orange-500" />
+            <h3 className="text-lg font-semibold text-orange-800 flex-1">Past Due Pending</h3>
+            <span className="text-sm text-orange-600">{filteredPastDuePendingMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.pastDue ? '' : 'rotate-180'}`} />
+          </div>
+          {openSections.pastDue && (
+            <div className="p-4 max-h-[600px] overflow-y-auto">
+              {filteredPastDuePendingMeetings.length > 0 ? (
+                filteredPastDuePendingMeetings.map((meeting) => (
+                  <div key={meeting.id} className="mb-4 border border-orange-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                    <MeetingCard
+                      meeting={meeting}
+                      onDelete={onDelete}
+                      onUpdateHeldDate={onUpdateHeldDate}
+                      onUpdateConfirmedDate={onUpdateConfirmedDate}
+                      editable={editable}
+                      editingMeetingId={editingMeetingId}
+                      onEdit={onEdit}
+                      onSave={onSave}
+                      onCancel={onCancel}
+                      showDateControls={true}
+                    />
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Completed Meetings and No Shows - Side by Side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        {/* Completed Meetings */}
+        <div className="bg-white rounded-lg shadow-md border-2 border-green-300">
+          <div className="p-4 border-b border-green-300 bg-white flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('completed')}>
+            <CheckCircle className="w-5 h-5 text-green-700" />
+            <h3 className="text-lg font-semibold text-green-800 flex-1">Completed Meetings</h3>
+            <span className="text-sm text-green-600">{filteredCompletedMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.completed ? '' : 'rotate-180'}`} />
+          </div>
+          {openSections.completed && (
+            <div className="p-4 max-h-[600px] overflow-y-auto bg-white">
+              <div className="grid grid-cols-1 gap-4">
+                {filteredCompletedMeetings.length > 0 ? (
+                  filteredCompletedMeetings.map((meeting) => (
+                    <div key={meeting.id} className="border border-green-200 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                      <MeetingCard
+                        meeting={meeting}
+                        onDelete={onDelete}
+                        onUpdateHeldDate={onUpdateHeldDate}
+                        onUpdateConfirmedDate={onUpdateConfirmedDate}
+                        editable={editable}
+                        editingMeetingId={editingMeetingId}
+                        onEdit={onEdit}
+                        onSave={onSave}
+                        onCancel={onCancel}
+                        showDateControls={true}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                )}
               </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
+        {/* No Shows */}
+        <div className="bg-white rounded-lg shadow-md border-2 border-red-300">
+          <div className="p-4 border-b border-red-300 bg-white flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('noShow')}>
+            <XCircle className="w-5 h-5 text-red-700" />
+            <h3 className="text-lg font-semibold text-red-800 flex-1">No Shows</h3>
+            <span className="text-sm text-red-600">{filteredNoShowMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.noShow ? '' : 'rotate-180'}`} />
+          </div>
+          {openSections.noShow && (
+            <div className="p-4 max-h-[600px] overflow-y-auto bg-white">
+              <div className="grid grid-cols-1 gap-4">
+                {filteredNoShowMeetings.length > 0 ? (
+                  filteredNoShowMeetings.map((meeting) => (
+                    <div key={meeting.id} className="border border-red-200 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                      <MeetingCard
+                        meeting={meeting}
+                        onDelete={onDelete}
+                        onUpdateHeldDate={onUpdateHeldDate}
+                        onUpdateConfirmedDate={onUpdateConfirmedDate}
+                        editable={editable}
+                        editingMeetingId={editingMeetingId}
+                        onEdit={onEdit}
+                        onSave={onSave}
+                        onCancel={onCancel}
+                        showDateControls={true}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Not ICP Qualified - Full Width */}
+      <div className="bg-white rounded-lg shadow-md border-2 border-gray-300 mt-6">
+        <div className="p-4 border-b border-gray-300 bg-white flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleSection('notIcp')}>
+          <Ban className="w-5 h-5 text-gray-700" />
+          <h3 className="text-lg font-semibold text-gray-800 flex-1">Not ICP Qualified</h3>
+          <span className="ml-auto text-sm text-gray-600">{filteredNotIcpQualifiedMeetings.length}</span>
+          <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.notIcp ? '' : 'rotate-180'}`} />
+        </div>
+        {openSections.notIcp && (
+          <div className="p-4 max-h-[600px] overflow-y-auto bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredNotIcpQualifiedMeetings.length > 0 ? (
+                filteredNotIcpQualifiedMeetings.map((meeting) => (
+                  <div key={meeting.id} className="border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                    <MeetingCard
+                      meeting={meeting}
+                      onDelete={onDelete}
+                      onUpdateHeldDate={onUpdateHeldDate}
+                      onUpdateConfirmedDate={onUpdateConfirmedDate}
+                      editable={editable}
+                      editingMeetingId={editingMeetingId}
+                      onEdit={onEdit}
+                      onSave={onSave}
+                      onCancel={onCancel}
+                      showDateControls={true}
+                    />
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

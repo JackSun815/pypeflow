@@ -46,7 +46,7 @@ export function MeetingCard({
     timezone: meeting.timezone || 'America/New_York'
   });
 
-  const [showDetails, setShowDetails] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [copied, setCopied] = useState(false);
 
   // Helper functions
@@ -223,353 +223,370 @@ export function MeetingCard({
       } ${clientName ? 'border-l-4' : ''}`} style={{
         borderLeftColor: clientName ? getBorderColor(clientName) : undefined
       }}>
-      <div className="flex justify-between items-start">
-        <div className="space-y-1 w-full">
-          {/* Client indicator */}
-          <div className="mb-2">
-            <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${clientColorClass}`}>
-              <User className="w-3 h-3 mr-1" />
-              {clientName || 'Unknown Client'}
-            </span>
-          </div>
-
-          {needsConfirmation && (
-            <div className="flex items-center gap-2 text-amber-600 mb-2">
-              <span className="text-sm font-medium">Needs confirmation for tomorrow!</span>
+        {/* Collapsed summary row */}
+        {!isEditing && collapsed && (
+          <div className="flex items-center justify-between cursor-pointer hover:bg-gray-100 rounded-md p-2 -m-2" onClick={() => setCollapsed(false)}>
+            <div className="flex flex-col gap-1">
+              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${clientColorClass} mb-1`}>
+                <User className="w-3 h-3 mr-1" />
+                {clientName || 'Unknown Client'}
+              </span>
+              <span className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</span>
+              <span className="text-xs text-gray-500">{meetingDate} {formattedTime} EST</span>
             </div>
-          )}
-
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</p>
-              {showSDR && meeting.sdr_name && (
-                <p className="text-sm text-gray-500">Booked by {meeting.sdr_name}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleInternalSave}
-                    className="p-1 text-green-600 hover:text-green-700 focus:outline-none"
-                    title="Save changes"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={onCancel}
-                    className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
-                    title="Cancel"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => onEdit?.(meeting)}
-                  className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
-                  title="Edit meeting"
-                >
-                  <Edit2 className="w-5 h-5" />
-                </button>
-              )}
-              {editable && onDelete && (
-                <button
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this meeting?')) {
-                      onDelete(meeting.id);
-                    }
-                  }}
-                  className="p-1 text-red-600 hover:text-red-700 focus:outline-none"
-                  title="Delete meeting"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {isEditing ? (
-            <div className="space-y-3 mt-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.contact_full_name}
-                  onChange={e => setEditedData({ ...editedData, contact_full_name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.contact_email}
-                  onChange={e => setEditedData({ ...editedData, contact_email: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.contact_phone}
-                  onChange={e => setEditedData({ ...editedData, contact_phone: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    value={getDatePart(editedData.scheduled_date)}
-                    onChange={handleDateChange}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <TimeSelector
-                    value={editedData.scheduled_date}
-                    onChange={handleTimeChange}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.status}
-                  onChange={e => setEditedData({ ...editedData, status: e.target.value as 'pending' | 'confirmed' })}
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.company}
-                  onChange={e => setEditedData({ ...editedData, company: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.linkedin_page}
-                  onChange={e => setEditedData({ ...editedData, linkedin_page: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prospect's Timezone</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.timezone || 'America/New_York'}
-                  onChange={e => setEditedData({ ...editedData, timezone: e.target.value })}
-                >
-                  <option value="America/New_York">EST (Eastern)</option>
-                  <option value="America/Chicago">CST (Central)</option>
-                  <option value="America/Denver">MST (Mountain)</option>
-                  <option value="America/Los_Angeles">PST (Pacific)</option>
-                  <option value="America/Phoenix">MST (Arizona)</option>
-                  <option value="America/Anchorage">AKST (Alaska)</option>
-                  <option value="Pacific/Honolulu">HST (Hawaii)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={editedData.notes}
-                  onChange={e => setEditedData({ ...editedData, notes: e.target.value })}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="text-sm text-gray-600">
-                <span className="font-medium text-gray-700">Meeting Time: </span>
-                <span className="text-gray-900">{meetingDate} {formattedTime} EST</span>
-              </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-medium text-gray-700">Created Time (EST): </span>
-                <span className="text-gray-900">
-                  {formatDateToEST(meeting.created_at, {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  })}
-                </span>
-              </div>
-              {(meeting.icp_status || 'pending') && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-700">ICP Status: </span>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    (meeting.icp_status || 'pending') === 'approved' 
-                      ? 'bg-green-100 text-green-800' 
-                      : (meeting.icp_status || 'pending') === 'denied'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {(meeting.icp_status || 'pending') === 'approved' ? 'Approved' : 
-                     (meeting.icp_status || 'pending') === 'denied' ? 'Denied' : 'Pending Review'}
-                  </span>
-                </div>
-              )}
-              {meeting.contact_full_name && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-700">Contact: </span>
-                  <span className="text-gray-900">{meeting.contact_full_name}</span>
-                </div>
-              )}
-              {meeting.contact_email && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-700">Email: </span>
-                  <span className="text-gray-900">{meeting.contact_email}</span>
-                </div>
-              )}
-              
-              {showDateControls && (
-                <div className="space-y-2 mt-3">
-                  {/* Quick action buttons are handled below */}
-                </div>
-              )}
-              <div className="flex items-center gap-2 mt-2">
-                {meeting.no_show ? (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
-                    No Show
-                  </span>
-                ) : meeting.held_at ? (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                    Meeting Held
-                  </span>
-                ) : meeting.status === 'confirmed' ? (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-                    Confirmed
-                  </span>
-                ) : meeting.status === 'pending' ? (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
-                    Pending
-                  </span>
-                ) : null}
-              </div>
-
-              {/* Quick Status Actions */}
-              <div className="flex items-center gap-2 mt-3">
-                {meeting.status === 'pending' && !meeting.held_at && (
-                  <button
-                    onClick={() => onUpdateConfirmedDate?.(meeting.id, new Date().toISOString())}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Confirm
-                  </button>
-                )}
-                {meeting.status === 'confirmed' && !meeting.held_at && (
-                  <button
-                    onClick={() => onUpdateHeldDate?.(meeting.id, new Date().toISOString())}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Mark as Held
-                  </button>
-                )}
-                {meeting.held_at && (
-                  <button
-                    onClick={() => onUpdateHeldDate?.(meeting.id, null)}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    <XCircle className="w-3 h-3 mr-1" />
-                    Unmark as Held
-                  </button>
-                )}
-                {meeting.status === 'confirmed' && !meeting.held_at && (
-                  <button
-                    onClick={() => onUpdateConfirmedDate?.(meeting.id, null)}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
-                  >
-                    <XCircle className="w-3 h-3 mr-1" />
-                    Mark as Pending
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="mt-2 text-sm text-indigo-600 hover:underline"
-              >
-                {showDetails ? (
-                  <><ChevronUp className="inline-block w-4 h-4 mr-1" /> Hide Details</>
-                ) : (
-                  <><ChevronDown className="inline-block w-4 h-4 mr-1" /> Show Details</>
-                )}
+            <div className="flex flex-col items-end gap-2">
+              <button className="text-gray-500 hover:text-indigo-600" title="Expand details">
+                <ChevronDown className="w-5 h-5" />
               </button>
-              {showDetails && (
-                <div className="mt-2 space-y-2 text-sm text-gray-600 relative">
-                  {/* Client Timezone row */}
-                  <div>
-                    <span className="font-medium text-gray-700">Prospect's Timezone: </span>
-                    <span className="text-gray-900">
-                      {(() => {
-                        const tz = meeting.timezone || 'America/New_York';
-                        const dt = DateTime.now().setZone(tz);
-                        return tz + ' (' + dt.offsetNameShort + ')';
-                      })()}
-                    </span>
-                  </div>
-                  {meeting.contact_phone && (
-                    <div>
-                      <span className="font-medium text-gray-700">Phone Number: </span>
-                      <span className="text-gray-900">{meeting.contact_phone}</span>
-                    </div>
-                  )}
-                  {meeting.company && (
-                    <div>
-                      <span className="font-medium text-gray-700">Company: </span>
-                      <span className="text-gray-900">{meeting.company}</span>
-                    </div>
-                  )}
-                  {meeting.linkedin_page && (
-                    <div>
-                      <span className="font-medium text-gray-700">LinkedIn: </span>
-                      <span className="text-gray-900">{meeting.linkedin_page}</span>
-                    </div>
-                  )}
-                  {meeting.notes && (
-                    <div>
-                      <span className="font-medium text-gray-700">Notes: </span>
-                      <span className="text-gray-900 whitespace-pre-wrap">{meeting.notes}</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={handleCopySlack}
-                    className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 border border-indigo-300 text-indigo-600 bg-white rounded-md hover:bg-indigo-50 hover:border-indigo-400 transition text-sm focus:outline-none"
-                    title="Copy meeting info for Slack"
-                    type="button"
-                  >
-                    <Clipboard className="w-4 h-4" />
-                    Copy Meeting Info
-                  </button>
+            </div>
+          </div>
+        )}
+        {/* Expanded details (or always expanded if editing) */}
+        {isEditing || !collapsed ? (
+          <>
+            <div className="flex justify-between items-start">
+              <div className="space-y-1 w-full">
+                {/* Client indicator */}
+                <div className="mb-2">
+                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${clientColorClass}`}>
+                    <User className="w-3 h-3 mr-1" />
+                    {clientName || 'Unknown Client'}
+                  </span>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-      {copied && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded shadow text-sm animate-fade-in-out z-50">
-          Copied to clipboard!
-        </div>
-      )}
+                {needsConfirmation && (
+                  <div className="flex items-center gap-2 text-amber-600 mb-2">
+                    <span className="text-sm font-medium">Needs confirmation for tomorrow!</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</p>
+                    {showSDR && meeting.sdr_name && (
+                      <p className="text-sm text-gray-500">Booked by {meeting.sdr_name}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={handleInternalSave}
+                          className="p-1 text-green-600 hover:text-green-700 focus:outline-none"
+                          title="Save changes"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={onCancel}
+                          className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
+                          title="Cancel"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => onEdit?.(meeting)}
+                        className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
+                        title="Edit meeting"
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                    )}
+                    {editable && onDelete && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this meeting?')) {
+                            onDelete(meeting.id);
+                          }
+                        }}
+                        className="p-1 text-red-600 hover:text-red-700 focus:outline-none"
+                        title="Delete meeting"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                    {!isEditing && (
+                      <button className="text-gray-500 hover:text-indigo-600" title="Collapse details" onClick={() => setCollapsed(true)}>
+                        <ChevronUp className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-3 mt-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.contact_full_name}
+                        onChange={e => setEditedData({ ...editedData, contact_full_name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.contact_email}
+                        onChange={e => setEditedData({ ...editedData, contact_email: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.contact_phone}
+                        onChange={e => setEditedData({ ...editedData, contact_phone: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          value={getDatePart(editedData.scheduled_date)}
+                          onChange={handleDateChange}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                        <TimeSelector
+                          value={editedData.scheduled_date}
+                          onChange={handleTimeChange}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.status}
+                        onChange={e => setEditedData({ ...editedData, status: e.target.value as 'pending' | 'confirmed' })}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.company}
+                        onChange={e => setEditedData({ ...editedData, company: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.linkedin_page}
+                        onChange={e => setEditedData({ ...editedData, linkedin_page: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Prospect's Timezone</label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.timezone || 'America/New_York'}
+                        onChange={e => setEditedData({ ...editedData, timezone: e.target.value })}
+                      >
+                        <option value="America/New_York">EST (Eastern)</option>
+                        <option value="America/Chicago">CST (Central)</option>
+                        <option value="America/Denver">MST (Mountain)</option>
+                        <option value="America/Los_Angeles">PST (Pacific)</option>
+                        <option value="America/Phoenix">MST (Arizona)</option>
+                        <option value="America/Anchorage">AKST (Alaska)</option>
+                        <option value="Pacific/Honolulu">HST (Hawaii)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                      <textarea
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.notes}
+                        onChange={e => setEditedData({ ...editedData, notes: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Meeting Time: </span>
+                      <span className="text-gray-900">{meetingDate} {formattedTime} EST</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-700">Created Time (EST): </span>
+                      <span className="text-gray-900">
+                        {formatDateToEST(meeting.created_at, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </span>
+                    </div>
+                    {(meeting.icp_status || 'pending') && (
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium text-gray-700">ICP Status: </span>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          (meeting.icp_status || 'pending') === 'approved' 
+                            ? 'bg-green-100 text-green-800' 
+                            : (meeting.icp_status || 'pending') === 'denied'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {(meeting.icp_status || 'pending') === 'approved' ? 'Approved' : 
+                           (meeting.icp_status || 'pending') === 'denied' ? 'Denied' : 'Pending Review'}
+                        </span>
+                      </div>
+                    )}
+                    {meeting.contact_full_name && (
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium text-gray-700">Contact: </span>
+                        <span className="text-gray-900">{meeting.contact_full_name}</span>
+                      </div>
+                    )}
+                    {meeting.contact_email && (
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium text-gray-700">Email: </span>
+                        <span className="text-gray-900">{meeting.contact_email}</span>
+                      </div>
+                    )}
+                    
+                    {showDateControls && (
+                      <div className="space-y-2 mt-3">
+                        {/* Quick action buttons are handled below */}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      {meeting.no_show ? (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                          No Show
+                        </span>
+                      ) : meeting.held_at ? (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                          Meeting Held
+                        </span>
+                      ) : meeting.status === 'confirmed' ? (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                          Confirmed
+                        </span>
+                      ) : meeting.status === 'pending' ? (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                          Pending
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Quick Status Actions */}
+                    <div className="flex items-center gap-2 mt-3">
+                      {meeting.status === 'pending' && !meeting.held_at && (
+                        <button
+                          onClick={() => onUpdateConfirmedDate?.(meeting.id, new Date().toISOString())}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Confirm
+                        </button>
+                      )}
+                      {meeting.status === 'confirmed' && !meeting.held_at && (
+                        <button
+                          onClick={() => onUpdateHeldDate?.(meeting.id, new Date().toISOString())}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Mark as Held
+                        </button>
+                      )}
+                      {meeting.held_at && (
+                        <button
+                          onClick={() => onUpdateHeldDate?.(meeting.id, null)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Unmark as Held
+                        </button>
+                      )}
+                      {meeting.status === 'confirmed' && !meeting.held_at && (
+                        <button
+                          onClick={() => onUpdateConfirmedDate?.(meeting.id, null)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Mark as Pending
+                        </button>
+                      )}
+                    </div>
+                    {/* Expanded details always shown when expanded or editing */}
+                    {!collapsed || isEditing ? (
+                      <div className="mt-2 space-y-2 text-sm text-gray-600 relative">
+                        {/* Client Timezone row */}
+                        <div>
+                          <span className="font-medium text-gray-700">Prospect's Timezone: </span>
+                          <span className="text-gray-900">
+                            {(() => {
+                              const tz = meeting.timezone || 'America/New_York';
+                              const dt = DateTime.now().setZone(tz);
+                              return tz + ' (' + dt.offsetNameShort + ')';
+                            })()}
+                          </span>
+                        </div>
+                        {meeting.contact_phone && (
+                          <div>
+                            <span className="font-medium text-gray-700">Phone Number: </span>
+                            <span className="text-gray-900">{meeting.contact_phone}</span>
+                          </div>
+                        )}
+                        {meeting.company && (
+                          <div>
+                            <span className="font-medium text-gray-700">Company: </span>
+                            <span className="text-gray-900">{meeting.company}</span>
+                          </div>
+                        )}
+                        {meeting.linkedin_page && (
+                          <div>
+                            <span className="font-medium text-gray-700">LinkedIn: </span>
+                            <span className="text-gray-900">{meeting.linkedin_page}</span>
+                          </div>
+                        )}
+                        {meeting.notes && (
+                          <div>
+                            <span className="font-medium text-gray-700">Notes: </span>
+                            <span className="text-gray-900 whitespace-pre-wrap">{meeting.notes}</span>
+                          </div>
+                        )}
+                        <button
+                          onClick={handleCopySlack}
+                          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 border border-indigo-300 text-indigo-600 bg-white rounded-md hover:bg-indigo-50 hover:border-indigo-400 transition text-sm focus:outline-none"
+                          title="Copy meeting info for Slack"
+                          type="button"
+                        >
+                          <Clipboard className="w-4 h-4" />
+                          Copy Meeting Info
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </div>
+            {copied && (
+              <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded shadow text-sm animate-fade-in-out z-50">
+                Copied to clipboard!
+              </div>
+            )}
+          </>
+        ) : null}
       </div>
     </div>
   );

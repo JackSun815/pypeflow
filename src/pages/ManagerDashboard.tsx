@@ -18,7 +18,7 @@ export default function ManagerDashboard() {
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
   // Ensures useMeetings fetches all meetings (SDR ID: null)
   console.log('[DEBUG] useMeetings called with SDR ID:', null);
-  const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null);
+  const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(undefined, undefined, true);
   const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
