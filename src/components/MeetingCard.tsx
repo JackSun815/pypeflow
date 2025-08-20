@@ -40,6 +40,8 @@ export function MeetingCard({
     scheduled_date: meeting.scheduled_date, // Full ISO string
     status: meeting.status,
     no_show: meeting.no_show,
+    held_at: meeting.held_at,
+    icp_status: meeting.icp_status || 'pending',
     company: meeting.company || '',
     linkedin_page: meeting.linkedin_page || '',
     notes: meeting.notes || '',
@@ -76,7 +78,6 @@ export function MeetingCard({
       console.error('No onSave handler provided');
       return;
     }
-    
     const updatedMeeting = {
       ...meeting,
       contact_full_name: editedData.contact_full_name,
@@ -85,12 +86,13 @@ export function MeetingCard({
       scheduled_date: editedData.scheduled_date,
       status: editedData.status || 'pending',
       no_show: editedData.no_show,
+      held_at: editedData.held_at,
+      icp_status: editedData.icp_status,
       company: editedData.company,
       linkedin_page: editedData.linkedin_page,
       notes: editedData.notes,
       timezone: editedData.timezone
     };
-    
     onSave(updatedMeeting);
   };
 
@@ -342,7 +344,6 @@ export function MeetingCard({
                         onChange={e => setEditedData({ ...editedData, contact_phone: e.target.value })}
                       />
                     </div>
-
                     <div className="space-y-2">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
@@ -362,15 +363,52 @@ export function MeetingCard({
                         />
                       </div>
                     </div>
+                    {/* Meeting Status Dropdown */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Status</label>
                       <select
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        value={editedData.status}
-                        onChange={e => setEditedData({ ...editedData, status: e.target.value as 'pending' | 'confirmed' })}
+                        value={(() => {
+                          if (editedData.no_show) return 'no_show';
+                          if (editedData.held_at) return 'completed';
+                          if (editedData.status === 'pending') return 'pending';
+                          if (editedData.status === 'confirmed' && !editedData.held_at && !editedData.no_show && new Date(editedData.scheduled_date) < new Date()) return 'past_due';
+                          if (editedData.status === 'confirmed') return 'confirmed';
+                          return 'pending';
+                        })()}
+                        onChange={e => {
+                          const newStatus = e.target.value;
+                          if (newStatus === 'pending') {
+                            setEditedData(d => ({ ...d, status: 'pending', held_at: null, no_show: false }));
+                          } else if (newStatus === 'confirmed') {
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false }));
+                          } else if (newStatus === 'past_due') {
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false }));
+                          } else if (newStatus === 'completed') {
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: new Date().toISOString(), no_show: false }));
+                          } else if (newStatus === 'no_show') {
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: true }));
+                          }
+                        }}
                       >
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
+                        <option value="past_due">Past Due Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="no_show">No Show</option>
+                      </select>
+                    </div>
+                    {/* ICP Status Dropdown */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ICP Status</label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.icp_status}
+                        onChange={e => setEditedData(d => ({ ...d, icp_status: e.target.value as 'pending' | 'approved' | 'denied' }))}
+                      >
+                        <option value="pending">Pending Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="denied">Denied</option>
                       </select>
                     </div>
                     <div>
@@ -435,21 +473,126 @@ export function MeetingCard({
                         })}
                       </span>
                     </div>
-                    {(meeting.icp_status || 'pending') && (
+                    <div className="flex items-center gap-2 mt-3">
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium text-gray-700">Meeting Status: </span>
+                        {isEditing ? (
+                          <select
+                            className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            value={(() => {
+                              if (meeting.no_show) return 'no_show';
+                              if (meeting.held_at) return 'completed';
+                              if (meeting.status === 'pending') return 'pending';
+                              if (meeting.status === 'confirmed' && !meeting.held_at && !meeting.no_show && new Date(meeting.scheduled_date) < new Date()) return 'past_due';
+                              if (meeting.status === 'confirmed') return 'confirmed';
+                              return 'pending';
+                            })()}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              const statusLabel = {
+                                pending: 'Pending',
+                                confirmed: 'Confirmed',
+                                past_due: 'Past Due Pending',
+                                completed: 'Completed',
+                                no_show: 'No Show',
+                              }[newStatus] || newStatus;
+                              if (!window.confirm(`Are you sure you want to change the Meeting Status to \"${statusLabel}\"?`)) return;
+                              let updated = { ...meeting };
+                              if (newStatus === 'pending') {
+                                updated.status = 'pending';
+                                updated.held_at = null;
+                                updated.no_show = false;
+                              } else if (newStatus === 'confirmed') {
+                                updated.status = 'confirmed';
+                                updated.held_at = null;
+                                updated.no_show = false;
+                              } else if (newStatus === 'past_due') {
+                                updated.status = 'confirmed';
+                                updated.held_at = null;
+                                updated.no_show = false;
+                              } else if (newStatus === 'completed') {
+                                updated.status = 'confirmed';
+                                updated.held_at = new Date().toISOString();
+                                updated.no_show = false;
+                              } else if (newStatus === 'no_show') {
+                                updated.status = 'confirmed';
+                                updated.held_at = null;
+                                updated.no_show = true;
+                              }
+                              if (onSave) onSave(updated);
+                            }}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="past_due">Past Due Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="no_show">No Show</option>
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                            meeting.no_show
+                              ? 'bg-red-100 text-red-700'
+                              : meeting.held_at
+                              ? 'bg-green-100 text-green-700'
+                              : meeting.status === 'confirmed' && new Date(meeting.scheduled_date) < new Date() && !meeting.held_at
+                              ? 'bg-orange-100 text-orange-700'
+                              : meeting.status === 'confirmed'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {meeting.no_show
+                              ? 'No Show'
+                              : meeting.held_at
+                              ? 'Completed'
+                              : meeting.status === 'confirmed' && new Date(meeting.scheduled_date) < new Date() && !meeting.held_at
+                              ? 'Past Due Pending'
+                              : meeting.status === 'confirmed'
+                              ? 'Confirmed'
+                              : 'Pending'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3">
                       <div className="text-sm text-gray-600">
                         <span className="font-medium text-gray-700">ICP Status: </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          (meeting.icp_status || 'pending') === 'approved' 
-                            ? 'bg-green-100 text-green-800' 
-                            : (meeting.icp_status || 'pending') === 'denied'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {(meeting.icp_status || 'pending') === 'approved' ? 'Approved' : 
-                           (meeting.icp_status || 'pending') === 'denied' ? 'Denied' : 'Pending Review'}
-                        </span>
+                        {isEditing ? (
+                          <select
+                            className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            value={meeting.icp_status || 'pending'}
+                            onChange={async (e) => {
+                              const newIcpStatus = e.target.value as 'pending' | 'approved' | 'denied';
+                              const icpLabel = {
+                                pending: 'Pending Review',
+                                approved: 'Approved',
+                                denied: 'Denied',
+                              }[newIcpStatus] || newIcpStatus;
+                              if (!window.confirm(`Are you sure you want to change the ICP Status to \"${icpLabel}\"?`)) return;
+                              let updated = { ...meeting, icp_status: newIcpStatus };
+                              if (onSave) onSave(updated);
+                            }}
+                          >
+                            <option value="pending">Pending Review</option>
+                            <option value="approved">Approved</option>
+                            <option value="denied">Denied</option>
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                            (meeting.icp_status || 'pending') === 'approved'
+                              ? 'bg-green-100 text-green-800'
+                              : (meeting.icp_status || 'pending') === 'denied'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {(meeting.icp_status || 'pending') === 'approved'
+                              ? 'Approved'
+                              : (meeting.icp_status || 'pending') === 'denied'
+                              ? 'Denied'
+                              : 'Pending Review'}
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </div>
                     {meeting.contact_full_name && (
                       <div className="text-sm text-gray-600">
                         <span className="font-medium text-gray-700">Contact: </span>
@@ -468,65 +611,10 @@ export function MeetingCard({
                         {/* Quick action buttons are handled below */}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 mt-2">
-                      {meeting.no_show ? (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
-                          No Show
-                        </span>
-                      ) : meeting.held_at ? (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                          Meeting Held
-                        </span>
-                      ) : meeting.status === 'confirmed' ? (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-                          Confirmed
-                        </span>
-                      ) : meeting.status === 'pending' ? (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
-                          Pending
-                        </span>
-                      ) : null}
-                    </div>
+                    {/* Removed extra status badge row, only Meeting Status row remains */}
 
                     {/* Quick Status Actions */}
-                    <div className="flex items-center gap-2 mt-3">
-                      {meeting.status === 'pending' && !meeting.held_at && (
-                        <button
-                          onClick={() => onUpdateConfirmedDate?.(meeting.id, new Date().toISOString())}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                        >
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Confirm
-                        </button>
-                      )}
-                      {meeting.status === 'confirmed' && !meeting.held_at && (
-                        <button
-                          onClick={() => onUpdateHeldDate?.(meeting.id, new Date().toISOString())}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-                        >
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Mark as Held
-                        </button>
-                      )}
-                      {meeting.held_at && (
-                        <button
-                          onClick={() => onUpdateHeldDate?.(meeting.id, null)}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                        >
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Unmark as Held
-                        </button>
-                      )}
-                      {meeting.status === 'confirmed' && !meeting.held_at && (
-                        <button
-                          onClick={() => onUpdateConfirmedDate?.(meeting.id, null)}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
-                        >
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Mark as Pending
-                        </button>
-                      )}
-                    </div>
+                  
                     {/* Expanded details always shown when expanded or editing */}
                     {!collapsed || isEditing ? (
                       <div className="mt-2 space-y-2 text-sm text-gray-600 relative">

@@ -148,21 +148,34 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
   }
   async function updateMeeting(updatedMeeting: Meeting) {
   try {
+    const updateData: any = {
+      contact_full_name: updatedMeeting.contact_full_name,
+      contact_email: updatedMeeting.contact_email,
+      contact_phone: updatedMeeting.contact_phone,
+      scheduled_date: updatedMeeting.scheduled_date,
+      status: updatedMeeting.status,
+      no_show: updatedMeeting.no_show,
+      company: updatedMeeting.company,
+      linkedin_page: updatedMeeting.linkedin_page,
+      notes: updatedMeeting.notes,
+      timezone: updatedMeeting.timezone, // Save prospect's timezone
+      updated_at: new Date().toISOString(),
+    };
+    if (typeof updatedMeeting.held_at !== 'undefined') {
+      updateData.held_at = updatedMeeting.held_at;
+      if (updatedMeeting.held_at) {
+        updateData.status = 'confirmed';
+        updateData.no_show = false;
+      }
+    }
+    if (typeof updatedMeeting.icp_status !== 'undefined') {
+      updateData.icp_status = updatedMeeting.icp_status;
+      updateData.icp_checked_at = new Date().toISOString();
+      updateData.icp_checked_by = null; // Optionally set to SDR id if available
+    }
     const { error } = await supabaseClient
       .from('meetings')
-      .update({
-        contact_full_name: updatedMeeting.contact_full_name,
-        contact_email: updatedMeeting.contact_email,
-        contact_phone: updatedMeeting.contact_phone,
-        scheduled_date: updatedMeeting.scheduled_date,
-        status: updatedMeeting.status,
-        no_show: updatedMeeting.no_show,
-        company: updatedMeeting.company,
-        linkedin_page: updatedMeeting.linkedin_page,
-        notes: updatedMeeting.notes,
-        timezone: updatedMeeting.timezone, // Save prospect's timezone
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', updatedMeeting.id);
 
     if (error) throw error;
