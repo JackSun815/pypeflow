@@ -770,9 +770,111 @@ export default function SDRDashboard() {
                         meetings={meetings}
                       />
                     </div>
+                  </>
+                );
+              })()}
 
-                    {/* Data Visualizations */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {clients.map((client) => (
+                  <ClientCard
+                    key={client.id}
+                    name={client.name}
+                    monthly_set_target={client.monthly_set_target}
+                    monthly_hold_target={client.monthly_hold_target}
+                    confirmedMeetings={client.confirmedMeetings}
+                    pendingMeetings={client.pendingMeetings}
+                    heldMeetings={client.heldMeetings}
+                    todaysMeetings={client.todaysMeetings}
+                    onAddMeeting={() => {
+                      setSelectedClientId(client.id); 
+                      setShowAddMeeting(true); // Show the modal
+                    }}
+                    onConfirmMeeting={(meetingId) => {
+                      handleMeetingConfirmedDateUpdate(meetingId, todayDateString);
+                    }}
+                    onEditMeeting={(meeting) => {
+                      setSelectedClientId(meeting.client_id);
+                      handleEditMeeting(meeting);
+                    }}
+                  />
+                ))}
+                {clients.length === 0 && (
+                  <div className="col-span-full p-6 bg-white rounded-lg shadow-md text-center">
+                    <p className="text-gray-500">No clients assigned for this month</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Remove the Today's Meetings section below */}
+              {/*
+              <div className="mb-8">
+                <MeetingsList
+                  title="Today's Meetings"
+                  meetings={todayMeetings}
+                  editable={true}
+                  editingMeetingId={editingMeeting}
+                  onEdit={handleEditMeeting}
+                  onDelete={deleteMeeting}
+                  onSave={handleSaveMeeting}
+                  onCancel={handleCancelEdit}
+                  onUpdateHeldDate={handleMeetingHeldDateUpdate}
+                  onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
+                  showMeetingStatus={true}
+                />
+              </div>
+              */}
+
+              <UnifiedMeetingLists
+                pendingMeetings={pendingMeetings}
+                confirmedMeetings={confirmedMeetings}
+                completedMeetings={completedMeetings}
+                noShowMeetings={noShowMeetings}
+                notIcpQualifiedMeetings={notIcpQualifiedMeetings}
+                pastDuePendingMeetings={pastDuePendingMeetings}
+                editable={true}
+                editingMeetingId={editingMeeting}
+                onEdit={handleEditMeeting}
+                onDelete={deleteMeeting}
+                onSave={handleSaveMeeting}
+                onCancel={handleCancelEdit}
+                onUpdateHeldDate={handleMeetingHeldDateUpdate}
+                onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
+              />
+
+              {/* Data Visualizations - Moved to bottom */}
+              {(() => {
+                const calculateMetrics = () => {
+                  const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
+                  const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+                  
+                  const now = new Date();
+                  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                  const monthlyMeetings = meetings.filter(meeting => {
+                    const createdDate = new Date(meeting.created_at);
+                    return createdDate >= monthStart && createdDate <= monthEnd;
+                  });
+
+                  const totalMeetingsSet = monthlyMeetings.length;
+                  const totalMeetingsHeld = monthlyMeetings.filter(m => m.held_at !== null && !m.no_show).length;
+                  const totalNoShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
+                  const totalPendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length;
+
+                  return {
+                    totalSetTarget,
+                    totalHeldTarget,
+                    totalMeetingsSet,
+                    totalMeetingsHeld,
+                    totalPendingMeetings,
+                    totalNoShowMeetings
+                  };
+                };
+
+                const metrics = calculateMetrics();
+
+                return (
+                  <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-8">
                       {/* Monthly Performance Chart */}
                       <div className="bg-white rounded-lg shadow-md p-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Performance</h3>
@@ -941,73 +1043,6 @@ export default function SDRDashboard() {
                   </>
                 );
               })()}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {clients.map((client) => (
-                  <ClientCard
-                    key={client.id}
-                    name={client.name}
-                    monthly_set_target={client.monthly_set_target}
-                    monthly_hold_target={client.monthly_hold_target}
-                    confirmedMeetings={client.confirmedMeetings}
-                    pendingMeetings={client.pendingMeetings}
-                    heldMeetings={client.heldMeetings}
-                    todaysMeetings={client.todaysMeetings}
-                    onAddMeeting={() => {
-                      setSelectedClientId(client.id); 
-                      setShowAddMeeting(true); // Show the modal
-                    }}
-                    onConfirmMeeting={(meetingId) => {
-                      handleMeetingConfirmedDateUpdate(meetingId, todayDateString);
-                    }}
-                    onEditMeeting={(meeting) => {
-                      setSelectedClientId(meeting.client_id);
-                      handleEditMeeting(meeting);
-                    }}
-                  />
-                ))}
-                {clients.length === 0 && (
-                  <div className="col-span-full p-6 bg-white rounded-lg shadow-md text-center">
-                    <p className="text-gray-500">No clients assigned for this month</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Remove the Today's Meetings section below */}
-              {/*
-              <div className="mb-8">
-                <MeetingsList
-                  title="Today's Meetings"
-                  meetings={todayMeetings}
-                  editable={true}
-                  editingMeetingId={editingMeeting}
-                  onEdit={handleEditMeeting}
-                  onDelete={deleteMeeting}
-                  onSave={handleSaveMeeting}
-                  onCancel={handleCancelEdit}
-                  onUpdateHeldDate={handleMeetingHeldDateUpdate}
-                  onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
-                  showMeetingStatus={true}
-                />
-              </div>
-              */}
-
-              <UnifiedMeetingLists
-                pendingMeetings={pendingMeetings}
-                confirmedMeetings={confirmedMeetings}
-                completedMeetings={completedMeetings}
-                noShowMeetings={noShowMeetings}
-                notIcpQualifiedMeetings={notIcpQualifiedMeetings}
-                pastDuePendingMeetings={pastDuePendingMeetings}
-                editable={true}
-                editingMeetingId={editingMeeting}
-                onEdit={handleEditMeeting}
-                onDelete={deleteMeeting}
-                onSave={handleSaveMeeting}
-                onCancel={handleCancelEdit}
-                onUpdateHeldDate={handleMeetingHeldDateUpdate}
-                onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
-              />
             </>
           }
         />

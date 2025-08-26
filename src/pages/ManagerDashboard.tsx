@@ -660,72 +660,7 @@ export default function ManagerDashboard() {
               </div>
             </div>
 
-            {/* SDR Performance Chart */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">SDR Performance Comparison</h3>
-              <div className="h-80">
-                <Bar
-                  data={{
-                    labels: sdrs.map(sdr => sdr.full_name),
-                    datasets: [
-                      {
-                        label: 'Set Target',
-                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0)),
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 2,
-                      },
-                      {
-                        label: 'Set Actual',
-                        data: sdrs.map(sdr => {
-                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
-                          return sdrMonthlyMeetings.length;
-                        }),
-                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 2,
-                      },
-                      {
-                        label: 'Held Target',
-                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0)),
-                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                        borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 2,
-                      },
-                      {
-                        label: 'Held Actual',
-                        data: sdrs.map(sdr => {
-                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
-                          return sdrMonthlyMeetings.filter(m => 
-                            m.status === 'confirmed' && !m.no_show && m.held_at !== null
-                          ).length;
-                        }),
-                        backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                        borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 2,
-                      },
-                    ],
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: {
-                        position: 'top' as const,
-                      },
-                      title: {
-                        display: false,
-                      },
-                    },
-                    scales: {
-                      y: {
-                        beginAtZero: true,
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </div>
+
 
             {/* SDR Performance Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
@@ -1267,6 +1202,73 @@ export default function ManagerDashboard() {
                     <p className="text-sm text-gray-500">No meetings confirmed today</p>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* SDR Performance Chart - Moved to bottom */}
+            <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">SDR Performance Comparison</h3>
+              <div className="h-80">
+                <Bar
+                  data={{
+                    labels: sdrs.map(sdr => sdr.full_name),
+                    datasets: [
+                      {
+                        label: 'Set Target',
+                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0)),
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                      },
+                      {
+                        label: 'Set Actual',
+                        data: sdrs.map(sdr => {
+                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
+                          return sdrMonthlyMeetings.length;
+                        }),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                      },
+                      {
+                        label: 'Held Target',
+                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0)),
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                      },
+                      {
+                        label: 'Held Actual',
+                        data: sdrs.map(sdr => {
+                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
+                          return sdrMonthlyMeetings.filter(m => 
+                            m.status === 'confirmed' && !m.no_show && m.held_at !== null
+                          ).length;
+                        }),
+                        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'top' as const,
+                      },
+                      title: {
+                        display: false,
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
               </div>
             </div>
           </>
