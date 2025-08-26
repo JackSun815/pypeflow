@@ -14,6 +14,33 @@ import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import CalendarView from '../components/CalendarView';
 import type { Meeting } from '../types/database';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler,
+} from 'chart.js';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+);
 
 export default function SDRDashboard() {
   const { token } = useParams();
@@ -728,20 +755,190 @@ export default function SDRDashboard() {
             const metrics = calculateMetrics();
 
                 return (
-                  <div className="mb-8">
-                    <DashboardMetrics 
-                      clients={clients}
-                      monthProgress={monthProgress}
-                      totalMeetingGoal={totalMeetingGoal}
-                      totalHeldMeetings={metrics.totalMeetingsHeld}
-                      totalSetTarget={metrics.totalSetTarget}
-                      totalHeldTarget={metrics.totalHeldTarget}
-                      totalMeetingsSet={metrics.totalMeetingsSet}
-                      totalPendingMeetings={metrics.totalPendingMeetings}
-                      totalNoShowMeetings={metrics.totalNoShowMeetings}
-                      meetings={meetings}
-                    />
-                  </div>
+                  <>
+                    <div className="mb-8">
+                      <DashboardMetrics 
+                        clients={clients}
+                        monthProgress={monthProgress}
+                        totalMeetingGoal={totalMeetingGoal}
+                        totalHeldMeetings={metrics.totalMeetingsHeld}
+                        totalSetTarget={metrics.totalSetTarget}
+                        totalHeldTarget={metrics.totalHeldTarget}
+                        totalMeetingsSet={metrics.totalMeetingsSet}
+                        totalPendingMeetings={metrics.totalPendingMeetings}
+                        totalNoShowMeetings={metrics.totalNoShowMeetings}
+                        meetings={meetings}
+                      />
+                    </div>
+
+                    {/* Data Visualizations */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                      {/* Monthly Performance Chart */}
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Performance</h3>
+                        <div className="h-64">
+                          <Bar
+                            data={{
+                              labels: ['Set Meetings', 'Held Meetings'],
+                              datasets: [
+                                {
+                                  label: 'Target',
+                                  data: [metrics.totalSetTarget, metrics.totalHeldTarget],
+                                  backgroundColor: ['rgba(59, 130, 246, 0.3)', 'rgba(34, 197, 94, 0.3)'],
+                                  borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                                  borderWidth: 2,
+                                },
+                                {
+                                  label: 'Actual',
+                                  data: [metrics.totalMeetingsSet, metrics.totalMeetingsHeld],
+                                  backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)'],
+                                  borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                                  borderWidth: 2,
+                                },
+                              ],
+                            }}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  position: 'top' as const,
+                                },
+                                title: {
+                                  display: false,
+                                },
+                              },
+                              scales: {
+                                y: {
+                                  beginAtZero: true,
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Meeting Status Distribution */}
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Meeting Status Distribution</h3>
+                        <div className="h-64">
+                          <Doughnut
+                            data={{
+                              labels: ['Held', 'Pending', 'No-Show'],
+                              datasets: [
+                                {
+                                  data: [metrics.totalMeetingsHeld, metrics.totalPendingMeetings, metrics.totalNoShowMeetings],
+                                  backgroundColor: [
+                                    'rgba(34, 197, 94, 0.8)',
+                                    'rgba(251, 191, 36, 0.8)',
+                                    'rgba(239, 68, 68, 0.8)',
+                                  ],
+                                  borderColor: [
+                                    'rgba(34, 197, 94, 1)',
+                                    'rgba(251, 191, 36, 1)',
+                                    'rgba(239, 68, 68, 1)',
+                                  ],
+                                  borderWidth: 2,
+                                },
+                              ],
+                            }}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  position: 'bottom' as const,
+                                },
+                                title: {
+                                  display: false,
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Client Performance Chart */}
+                    {clients.length > 0 && (
+                      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Client Performance</h3>
+                        <div className="h-80">
+                          <Bar
+                            data={{
+                              labels: clients.map(client => client.name),
+                              datasets: [
+                                {
+                                  label: 'Set Target',
+                                  data: clients.map(client => client.monthly_set_target || 0),
+                                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                  borderColor: 'rgba(59, 130, 246, 1)',
+                                  borderWidth: 2,
+                                },
+                                {
+                                  label: 'Set Actual',
+                                  data: clients.map(client => {
+                                    const now = new Date();
+                                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                                    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                                    return meetings.filter(meeting => {
+                                      const createdDate = new Date(meeting.created_at);
+                                      return createdDate >= monthStart && createdDate <= monthEnd && meeting.client_id === client.id;
+                                    }).length;
+                                  }),
+                                  backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                                  borderColor: 'rgba(59, 130, 246, 1)',
+                                  borderWidth: 2,
+                                },
+                                {
+                                  label: 'Held Target',
+                                  data: clients.map(client => client.monthly_hold_target || 0),
+                                  backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                                  borderColor: 'rgba(34, 197, 94, 1)',
+                                  borderWidth: 2,
+                                },
+                                {
+                                  label: 'Held Actual',
+                                  data: clients.map(client => {
+                                    const now = new Date();
+                                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                                    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                                    return meetings.filter(meeting => {
+                                      const createdDate = new Date(meeting.created_at);
+                                      return createdDate >= monthStart && createdDate <= monthEnd && 
+                                             meeting.client_id === client.id && 
+                                             meeting.held_at !== null && 
+                                             !meeting.no_show;
+                                    }).length;
+                                  }),
+                                  backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                                  borderColor: 'rgba(34, 197, 94, 1)',
+                                  borderWidth: 2,
+                                },
+                              ],
+                            }}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  position: 'top' as const,
+                                },
+                                title: {
+                                  display: false,
+                                },
+                              },
+                              scales: {
+                                y: {
+                                  beginAtZero: true,
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 );
               })()}
 

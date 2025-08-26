@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
+import { useAllClients } from '../hooks/useAllClients';
 import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield } from 'lucide-react';
 import CalendarView from '../components/CalendarView';
 import SDRManagement from '../components/SDRManagement';
@@ -12,19 +13,48 @@ import ManagerMeetingHistory from '../components/ManagerMeetingHistory';
 import ICPCheck from './ICPCheck';
 import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler,
+} from 'chart.js';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+);
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
+  const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
   // Ensures useMeetings fetches all meetings (SDR ID: null)
   console.log('[DEBUG] useMeetings called with SDR ID:', null);
   const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(undefined, undefined, true);
   const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
+  const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'set' | 'held' | 'pending' | 'sdrs' | 'setTarget' | 'heldTarget' | null>(null);
+  const [modalType, setModalType] = useState<'set' | 'held' | 'pending' | 'sdrs' | 'setTarget' | 'heldTarget' | 'sdrClientMeetings' | null>(null);
   const [modalMeetings, setModalMeetings] = useState<any[]>([]);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<any>(null);
@@ -69,6 +99,13 @@ export default function ManagerDashboard() {
     setExpandedSDRs(prev => ({
       ...prev,
       [sdrId]: !prev[sdrId]
+    }));
+  }
+
+  function toggleClientExpansion(clientId: string) {
+    setExpandedClients(prev => ({
+      ...prev,
+      [clientId]: !prev[clientId]
     }));
   }
 
@@ -159,6 +196,35 @@ export default function ManagerDashboard() {
     setModalOpen(true);
   };
 
+  const handleSDRClientClick = (sdrId: string, clientId: string, sdrName: string, clientName: string) => {
+    // Filter meetings for this specific SDR and client
+    const sdrClientMeetings = monthlyMeetings.filter(m => 
+      m.sdr_id === sdrId && m.client_id === clientId
+    );
+    
+    const setMeetings = sdrClientMeetings;
+    const heldMeetings = sdrClientMeetings.filter(m => 
+      m.status === 'confirmed' && !m.no_show && m.held_at !== null
+    );
+
+    setModalMeetings(sdrClientMeetings);
+    setModalContent({
+      type: 'sdrClientMeetings',
+      sdrName,
+      clientName,
+      setMeetings,
+      heldMeetings
+    });
+    setModalTitle(`${sdrName} - ${clientName} Meetings`);
+    setModalType('sdrClientMeetings');
+    setModalOpen(true);
+  };
+
+  const handleSDRClientClickFromSDR = (sdrId: string, clientId: string, sdrName: string, clientName: string) => {
+    // Same functionality as handleSDRClientClick but for SDR Performance section
+    handleSDRClientClick(sdrId, clientId, sdrName, clientName);
+  };
+
   const closeModal = () => {
     setModalOpen(false);
     setModalType(null);
@@ -167,7 +233,7 @@ export default function ManagerDashboard() {
     setModalTitle('');
   };
 
-  if (sdrsLoading || meetingsLoading) {
+  if (sdrsLoading || meetingsLoading || clientsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
@@ -269,11 +335,11 @@ export default function ManagerDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {sdrsError && (
+        {(sdrsError || clientsError) && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
               <AlertCircle className="w-5 h-5" />
-              <p>{sdrsError}</p>
+              <p>{sdrsError || clientsError}</p>
             </div>
           </div>
         )}
@@ -506,6 +572,161 @@ export default function ManagerDashboard() {
               </div>
             </div>
 
+            {/* Data Visualizations */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Monthly Performance Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Performance</h3>
+                <div className="h-64">
+                  <Bar
+                    data={{
+                      labels: ['Set Meetings', 'Held Meetings'],
+                      datasets: [
+                        {
+                          label: 'Target',
+                          data: [totalSetTarget, totalHeldTarget],
+                          backgroundColor: ['rgba(59, 130, 246, 0.3)', 'rgba(34, 197, 94, 0.3)'],
+                          borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                          borderWidth: 2,
+                        },
+                        {
+                          label: 'Actual',
+                          data: [monthlyMeetingsSet, monthlyHeldMeetings],
+                          backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)'],
+                          borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'top' as const,
+                        },
+                        title: {
+                          display: false,
+                        },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Meeting Status Distribution */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Meeting Status Distribution</h3>
+                <div className="h-64">
+                  <Doughnut
+                    data={{
+                      labels: ['Held', 'Pending', 'No-Show'],
+                      datasets: [
+                        {
+                          data: [monthlyHeldMeetings, monthlyPendingMeetings, monthlyNoShowMeetings],
+                          backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                          ],
+                          borderColor: [
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(251, 191, 36, 1)',
+                            'rgba(239, 68, 68, 1)',
+                          ],
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom' as const,
+                        },
+                        title: {
+                          display: false,
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SDR Performance Chart */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">SDR Performance Comparison</h3>
+              <div className="h-80">
+                <Bar
+                  data={{
+                    labels: sdrs.map(sdr => sdr.full_name),
+                    datasets: [
+                      {
+                        label: 'Set Target',
+                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0)),
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                      },
+                      {
+                        label: 'Set Actual',
+                        data: sdrs.map(sdr => {
+                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
+                          return sdrMonthlyMeetings.length;
+                        }),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                      },
+                      {
+                        label: 'Held Target',
+                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0)),
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                      },
+                      {
+                        label: 'Held Actual',
+                        data: sdrs.map(sdr => {
+                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
+                          return sdrMonthlyMeetings.filter(m => 
+                            m.status === 'confirmed' && !m.no_show && m.held_at !== null
+                          ).length;
+                        }),
+                        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'top' as const,
+                      },
+                      title: {
+                        display: false,
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+
             {/* SDR Performance Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -696,7 +917,8 @@ export default function ManagerDashboard() {
                                     return (
                                       <div
                                         key={client.id}
-                                        className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm"
+                                        className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                                        onClick={() => handleSDRClientClickFromSDR(sdr.id, client.id, sdr.full_name, client.name)}
                                       >
                                         <div>
                                           <p className="text-sm font-medium text-gray-900">
@@ -740,6 +962,225 @@ export default function ManagerDashboard() {
                                   {sdr.clients.length === 0 && (
                                     <p className="text-sm text-gray-500">
                                       No clients assigned
+                                    </p>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Clients Performance Table */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Clients Performance</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Client Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Set Target
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Held Target
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Meetings Set
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Held
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Progress
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {clients.map((client) => {
+                      // Calculate monthly meetings for this client across all SDRs
+                      const clientMonthlyMeetings = monthlyMeetings.filter(m => m.client_id === client.id);
+                      // Meetings set: include all meetings (including no-shows) in set count
+                      const clientMeetingsSet = clientMonthlyMeetings.length;
+                      const clientHeldMeetings = clientMonthlyMeetings.filter(m => 
+                        m.status === 'confirmed' && 
+                        !m.no_show && 
+                        m.held_at !== null
+                      ).length;
+
+                      const setProgress = (client.monthly_set_target || 0) > 0 ? 
+                        (clientMeetingsSet / (client.monthly_set_target || 0)) * 100 : 0;
+                      const heldProgress = (client.monthly_hold_target || 0) > 0 ? 
+                        (clientHeldMeetings / (client.monthly_hold_target || 0)) * 100 : 0;
+                      const isSetOnTrack = setProgress >= monthProgress;
+                      const isHeldOnTrack = heldProgress >= monthProgress;
+                      const isExpanded = expandedClients[client.id];
+
+                      return (
+                        <React.Fragment key={client.id}>
+                          <tr
+                            className="hover:bg-gray-50 cursor-pointer"
+                            onClick={() => toggleClientExpansion(client.id)}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                {isExpanded ? (
+                                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                )}
+                                <div className="text-sm font-medium text-gray-900">
+                                  {client.name}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{client.monthly_set_target || 0}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{client.monthly_hold_target || 0}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {clientMeetingsSet}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-sm text-gray-900">
+                                  {clientHeldMeetings}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-8 py-4 whitespace-nowrap">
+                              <div className="flex flex-col items-start">
+                                {/* Meetings Set progress bar */}
+                                <div className="flex items-center w-full">
+                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-300 ${
+                                        isSetOnTrack ? 'bg-green-600' : 'bg-yellow-600'
+                                      }`}
+                                      style={{ width: `${setProgress}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      isSetOnTrack ? 'text-green-600' : 'text-yellow-600'
+                                    }`}
+                                  >
+                                    {isNaN(setProgress) ? '0.0' : setProgress.toFixed(1)}%
+                                  </span>
+                                  <div className="ml-2 text-sm text-gray-500">Set</div>
+                                </div>
+                                {/* Held meetings progress bar */}
+                                <div className="flex items-center w-full mt-1">
+                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-300 ${
+                                        isHeldOnTrack ? 'bg-green-400' : 'bg-yellow-400'
+                                      }`}
+                                      style={{ width: `${heldProgress}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      isHeldOnTrack ? 'text-green-600' : 'text-yellow-600'
+                                    }`}
+                                  >
+                                    {isNaN(heldProgress) ? '0.0' : heldProgress.toFixed(1)}%
+                                  </span>
+                                  <div className="ml-2 text-sm text-gray-500">Held</div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-4 bg-gray-50">
+                                <div className="space-y-3">
+                                  <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                    SDR Assignments
+                                  </h4>
+                                  {sdrs.filter(sdr => sdr.clients.some(c => c.id === client.id)).map((sdr) => {
+                                    // Find the client assignment for this SDR
+                                    const clientAssignment = sdr.clients.find(c => c.id === client.id);
+                                    if (!clientAssignment) return null;
+
+                                    // Calculate monthly meetings for this SDR and client
+                                    const sdrClientMonthlyMeetings = monthlyMeetings.filter(m => 
+                                      m.sdr_id === sdr.id && m.client_id === client.id
+                                    );
+                                    // Meetings set: include all meetings (including no-shows) in set count
+                                    const sdrClientMeetingsSet = sdrClientMonthlyMeetings.length;
+                                    const sdrClientHeldMeetings = sdrClientMonthlyMeetings.filter(m => 
+                                      m.status === 'confirmed' && 
+                                      !m.no_show && 
+                                      m.held_at !== null
+                                    ).length;
+                                    
+                                    const sdrClientSetProgress = (clientAssignment.monthly_set_target || 0) > 0 ? 
+                                      (sdrClientMeetingsSet / (clientAssignment.monthly_set_target || 0)) * 100 : 0;
+                                    const isSdrClientSetOnTrack = sdrClientSetProgress >= monthProgress;
+
+                                    return (
+                                      <div
+                                        key={sdr.id}
+                                        className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                                        onClick={() => handleSDRClientClick(sdr.id, client.id, sdr.full_name, client.name)}
+                                      >
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-900">
+                                            {sdr.full_name}
+                                          </p>
+                                          <div className="flex items-center gap-4 mt-1">
+                                            <span className="text-sm text-gray-500">
+                                              Set Target: {clientAssignment.monthly_set_target || 0}
+                                            </span>
+                                            <span className="text-sm text-gray-500">
+                                              Held Target: {clientAssignment.monthly_hold_target || 0}
+                                            </span>
+                                            <span className="text-sm text-gray-500">
+                                              Set: {sdrClientMeetingsSet}
+                                            </span>
+                                            <span className="text-sm text-gray-500">
+                                              Held: {sdrClientHeldMeetings}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                              className={`h-full rounded-full transition-all duration-300 ${
+                                                isSdrClientSetOnTrack ? 'bg-green-600' : 'bg-yellow-600'
+                                              }`}
+                                              style={{ width: `${sdrClientSetProgress}%` }}
+                                            />
+                                          </div>
+                                          <span
+                                            className={`text-sm font-medium ${
+                                              isSdrClientSetOnTrack ? 'text-green-600' : 'text-yellow-600'
+                                            }`}
+                                          >
+                                            {isNaN(sdrClientSetProgress) ? '0.0' : sdrClientSetProgress.toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {sdrs.filter(sdr => sdr.clients.some(c => c.id === client.id)).length === 0 && (
+                                    <p className="text-sm text-gray-500">
+                                      No SDRs assigned to this client
                                     </p>
                                   )}
                                 </div>
@@ -927,6 +1368,72 @@ export default function ManagerDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                ) : modalContent?.type === 'sdrClientMeetings' ? (
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 p-4 rounded-md">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {modalContent.sdrName} - {modalContent.clientName}
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">Meetings Set:</span> {modalContent.setMeetings.length}
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Meetings Held:</span> {modalContent.heldMeetings.length}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Meetings Held Section */}
+                    {modalContent.heldMeetings.length > 0 && (
+                      <div>
+                        <h4 className="text-md font-medium text-green-700 mb-3 flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5" />
+                          Meetings Held ({modalContent.heldMeetings.length})
+                        </h4>
+                        <div className="space-y-3">
+                          {modalContent.heldMeetings.map((meeting) => (
+                            <div key={meeting.id} className="bg-green-50">
+                              <MeetingCard
+                                meeting={meeting}
+                                showSDR={false}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Other Meetings Section */}
+                    {modalContent.setMeetings.filter(m => 
+                      !(m.status === 'confirmed' && !m.no_show && m.held_at !== null)
+                    ).length > 0 && (
+                      <div>
+                        <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <Clock className="w-5 h-5" />
+                          Other Meetings ({modalContent.setMeetings.filter(m => 
+                            !(m.status === 'confirmed' && !m.no_show && m.held_at !== null)
+                          ).length})
+                        </h4>
+                        <div className="space-y-3">
+                          {modalContent.setMeetings
+                            .filter(m => !(m.status === 'confirmed' && !m.no_show && m.held_at !== null))
+                            .map((meeting) => (
+                              <div key={meeting.id} className="bg-gray-50">
+                                <MeetingCard
+                                  meeting={meeting}
+                                  showSDR={false}
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {modalMeetings.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No meetings found for this SDR and client combination.</p>
+                    )}
                   </div>
                 ) : modalMeetings.length > 0 ? (
                   <div className="space-y-4">
