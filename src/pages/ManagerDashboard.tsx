@@ -464,7 +464,11 @@ export default function ManagerDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setExportModalOpen(true)}
+                onClick={() => {
+                  if (confirm('Export meetings data to CSV?')) {
+                    setExportModalOpen(true);
+                  }
+                }}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

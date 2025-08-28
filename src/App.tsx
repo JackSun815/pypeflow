@@ -2,14 +2,15 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
+import LandingPage from './pages/LandingPage';
 import SDRDashboard from './pages/SDRDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 
 function App() {
   const { user, profile, loading, error } = useAuth();
 
-  // Don't show loading state for public SDR dashboard routes
-  if (loading && !window.location.pathname.startsWith('/dashboard/sdr/')) {
+  // Don't show loading state for public routes
+  if (loading && !window.location.pathname.startsWith('/dashboard/sdr/') && window.location.pathname !== '/') {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -20,7 +21,7 @@ function App() {
     );
   }
 
-  if (error && !window.location.pathname.startsWith('/dashboard/sdr/')) {
+  if (error && !window.location.pathname.startsWith('/dashboard/sdr/') && window.location.pathname !== '/') {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
@@ -39,22 +40,31 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public landing page - show for unauthenticated users */}
+        {!user || !profile ? (
+          <Route path="/" element={<LandingPage />} />
+        ) : (
+          <Route
+            path="/"
+            element={
+              profile.role === 'manager' ? (
+                <Navigate to="/dashboard/manager" replace />
+              ) : (
+                <Navigate to="/dashboard/sdr" replace />
+              )
+            }
+          />
+        )}
+        
         {/* Public SDR dashboard routes */}
         <Route path="/dashboard/sdr/:token/*" element={<SDRDashboard />} />
+
+        {/* Login route */}
+        <Route path="/login" element={<Login />} />
 
         {/* Protected routes */}
         {user && profile ? (
           <>
-            <Route
-              path="/"
-              element={
-                profile.role === 'manager' ? (
-                  <Navigate to="/dashboard/manager" replace />
-                ) : (
-                  <Navigate to="/dashboard/sdr" replace />
-                )
-              }
-            />
             <Route
               path="/dashboard/manager"
               element={
@@ -76,9 +86,7 @@ function App() {
               }
             />
           </>
-        ) : (
-          <Route path="*" element={<Login />} />
-        )}
+        ) : null}
       </Routes>
     </Router>
   );

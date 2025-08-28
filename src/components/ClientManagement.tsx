@@ -540,17 +540,49 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         return;
       }
 
-      // Fetch all assignments from the previous month
+      // Fetch all clients and assignments from the previous month
+      const { data: previousClients, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .is('archived_at', null);
+
+      if (clientsError) throw clientsError;
+
       const { data: previousAssignments, error: fetchError } = await supabase
         .from('assignments')
         .select('*')
-        .eq('month', previousMonth)
-        .not('sdr_id', 'is', null); // Exclude exclusion markers
+        .eq('month', previousMonth);
 
       if (fetchError) throw fetchError;
 
-      if (!previousAssignments || previousAssignments.length === 0) {
-        setError(`No assignments found in ${monthOptions.find(m => m.value === previousMonth)?.label} to copy`);
+      // Use the same logic as fetchClients to determine which clients were visible in the previous month
+      const visibleClientsInPreviousMonth = (previousClients || [])
+        .map((client: any) => ({
+          ...client,
+          assignments: (previousAssignments || []).filter((a: any) => 
+            a.client_id === client.id && 
+            !(a.sdr_id === null && a.monthly_set_target === -1) // Exclude hidden markers
+          )
+        }))
+        .filter((client: any) => {
+          // Check if client has a hidden marker for the previous month
+          const hasHiddenMarker = (previousAssignments || []).some((a: any) => 
+            a.client_id === client.id && 
+            a.sdr_id === null && 
+            a.monthly_set_target === -1
+          );
+          return !hasHiddenMarker; // Only include clients that were NOT hidden
+        });
+
+      // Get all valid assignments for clients that were visible in the previous month
+      const finalValidAssignments = visibleClientsInPreviousMonth
+        .flatMap(client => client.assignments)
+        .filter(assignment => assignment.sdr_id !== null); // Ensure we only get real assignments, not hidden markers
+
+      if (fetchError) throw fetchError;
+
+      if (!finalValidAssignments || finalValidAssignments.length === 0) {
+        setError(`No valid assignments found in ${monthOptions.find(m => m.value === previousMonth)?.label} to copy`);
         return;
       }
 
@@ -563,7 +595,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       if (deleteError) throw deleteError;
 
       // Copy assignments from previous month to current month
-      const newAssignments = previousAssignments.map(assignment => ({
+      const newAssignments = finalValidAssignments.map(assignment => ({
         client_id: assignment.client_id,
         sdr_id: assignment.sdr_id,
         monthly_set_target: assignment.monthly_set_target,
@@ -671,7 +703,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               Copy
             </button>
             <button
-              onClick={exportToExcel}
+              onClick={() => {
+                if (confirm('Export client assignments to CSV?')) {
+                  exportToExcel();
+                }
+              }}
               className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 border border-blue-200"
               title="Export all clients and assignments to Excel"
             >
