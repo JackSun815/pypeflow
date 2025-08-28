@@ -30,10 +30,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   const [success, setSuccess] = useState<string | null>(null);
   // Sort option state
   const [sortOption, setSortOption] = useState<'alphabetical' | 'target' | 'date'>('alphabetical');
+  // Removed archived functionality - now using month-specific client management
 
   // New client form state
   const [newClientName, setNewClientName] = useState('');
-  const [newClientTarget, setNewClientTarget] = useState<number>(0);
   const [showAddClient, setShowAddClient] = useState(false);
 
   // Edit mode for client target
@@ -48,6 +48,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   const [newClientHoldTarget, setNewClientHoldTarget] = useState<number>(0);
   const [newClientSetTarget, setNewClientSetTarget] = useState<number>(0);
   const [showAssignForm, setShowAssignForm] = useState(false);
+  const [allClients, setAllClients] = useState<Client[]>([]);
 
   // Month selector state
   const now = new Date();
@@ -59,15 +60,19 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     return saved || currentMonth;
   });
 
-  // Generate month options: next month + previous 12 months
+  // Generate month options: next month + current month + 5 previous months
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const monthOptions = [
     {
       value: format(nextMonth, 'yyyy-MM'),
       label: format(nextMonth, 'MMMM yyyy')
     },
-    ...Array.from({ length: 12 }, (_, i) => {
-      const date = subMonths(now, i);
+    {
+      value: format(now, 'yyyy-MM'),
+      label: format(now, 'MMMM yyyy')
+    },
+    ...Array.from({ length: 5 }, (_, i) => {
+      const date = subMonths(now, i + 1);
       return {
         value: format(date, 'yyyy-MM'),
         label: format(date, 'MMMM yyyy')
@@ -86,6 +91,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
   useEffect(() => {
     fetchClients();
+    fetchAllClients();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortOption, selectedMonth]);
 
@@ -93,7 +99,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     try {
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select('*');
+        .select('*')
+        .is('archived_at', null); // Only fetch non-archived clients
 
       if (clientsError) throw clientsError;
 
@@ -104,10 +111,25 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
       if (assignmentsError) throw assignmentsError;
 
-      const processedClients = (clientsData || []).map((client: any) => ({
-        ...client,
-        assignments: (assignmentsData || []).filter((a: any) => a.client_id === client.id)
-      }));
+      // Include ALL clients, with their assignments for the selected month (can be empty)
+      // BUT exclude clients that have been explicitly hidden (marked with sdr_id: null and negative targets)
+      const processedClients = (clientsData || [])
+        .map((client: any) => ({
+          ...client,
+          assignments: (assignmentsData || []).filter((a: any) => 
+            a.client_id === client.id && 
+            !(a.sdr_id === null && a.monthly_set_target === -1) // Exclude hidden markers
+          )
+        }))
+        .filter((client: any) => {
+          // Check if client has a hidden marker for this month
+          const hasHiddenMarker = (assignmentsData || []).some((a: any) => 
+            a.client_id === client.id && 
+            a.sdr_id === null && 
+            a.monthly_set_target === -1
+          );
+          return !hasHiddenMarker; // Exclude clients with hidden markers
+        });
 
       let sortedClients = [...processedClients];
       if (sortOption === 'alphabetical') {
@@ -229,21 +251,28 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   setSuccess(null);
 
   try {
-    const { error: insertError } = await supabase
+    // Insert the client with proper targets
+    const { data: insertedClient, error: insertError } = await supabase
       .from('clients')
       .insert([{ 
         name: newClientName,
-        monthly_target: newClientTarget
-      }]);
+        monthly_set_target: newClientSetTarget,
+        monthly_hold_target: newClientHoldTarget
+      }])
+      .select()
+      .single();
 
     if (insertError) throw insertError;
 
-    setSuccess('Client added successfully');
+    // Client will now appear in the list immediately
+    const selectedMonthName = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+    setSuccess(`Client "${newClientName}" added successfully and is now visible in the ${selectedMonthName} list. You can now assign SDRs to this client.`);
     setNewClientName('');
     setNewClientSetTarget(0);
     setNewClientHoldTarget(0);
     setShowAddClient(false);
     await fetchClients();
+    await fetchAllClients();
     onUpdate();
   } catch (err) {
     setError(err instanceof Error ? err.message : 'Failed to add client');
@@ -314,7 +343,44 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 }
 
   async function handleDeleteClient(clientId: string) {
-    if (!confirm('Are you sure you want to delete this client? This will remove all assignments and meetings associated with this client.')) {
+    const client = clients.find(c => c.id === clientId);
+    const clientName = client?.name || 'this client';
+    const selectedMonthName = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+    
+    // Check if client has assignments for the selected month
+    const hasCurrentMonthAssignments = client?.assignments.length > 0;
+    
+    // Check if client has historical data from other months
+    const { data: historicalAssignments, error: checkError } = await supabase
+      .from('assignments')
+      .select('id, month')
+      .eq('client_id', clientId)
+      .neq('month', selectedMonth);
+
+    if (checkError) {
+      setError('Failed to check client history');
+      return;
+    }
+
+    const hasOtherMonthsData = historicalAssignments && historicalAssignments.length > 0;
+    
+    let confirmMessage;
+    if (hasCurrentMonthAssignments) {
+      if (hasOtherMonthsData) {
+        confirmMessage = `Remove "${clientName}" from ${selectedMonthName}?\n\n✅ This will:\n• Remove all SDR assignments for ${selectedMonthName}\n• Preserve all historical data from other months\n• Keep all past meeting records intact\n\nThe client will still appear in previous months' data.`;
+      } else {
+        confirmMessage = `Remove "${clientName}" from ${selectedMonthName}?\n\n⚠️ This client only has assignments for ${selectedMonthName}.\nRemoving will hide the client from the active list, but preserve any meeting data.`;
+      }
+    } else {
+      // Client has no assignments for this month, but we still want to "remove" it from view
+      if (hasOtherMonthsData) {
+        confirmMessage = `Hide "${clientName}" from ${selectedMonthName}?\n\nThis client has no assignments for ${selectedMonthName} but has historical data.\nHiding will remove it from this month's view while preserving all historical data.`;
+      } else {
+        confirmMessage = `Hide "${clientName}" from the active client list?\n\n⚠️ This client has no assignments or historical data.\nThis will hide it from view but keep the client record intact.`;
+      }
+    }
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -322,22 +388,223 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     setError(null);
 
     try {
-      const { error: deleteError } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId);
+      if (hasCurrentMonthAssignments) {
+        // Remove all assignments for this client in the selected month
+        const { error: deleteError } = await supabase
+          .from('assignments')
+          .delete()
+          .eq('client_id', clientId)
+          .eq('month', selectedMonth);
 
-      if (deleteError) throw deleteError;
+        if (deleteError) throw deleteError;
+        
+        setSuccess(`"${clientName}" removed from ${selectedMonthName}. Historical data from other months preserved.`);
+      } else {
+        // For clients without assignments, we need to mark them as hidden for this month
+        // We'll create a special assignment record with null sdr_id to indicate "hidden"
+        const { error: hideError } = await supabase
+          .from('assignments')
+          .insert([{
+            client_id: clientId,
+            sdr_id: null, // Special marker for hidden clients
+            monthly_set_target: -1, // Special marker value
+            monthly_hold_target: -1, // Special marker value
+            month: selectedMonth,
+          }]);
 
-      setSuccess('Client deleted successfully');
+        if (hideError) throw hideError;
+        
+        setSuccess(`"${clientName}" hidden from ${selectedMonthName} view.`);
+      }
+      
       await fetchClients();
       onUpdate();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete client');
+      setError(err instanceof Error ? err.message : 'Failed to remove client from month');
     } finally {
       setLoading(false);
     }
   }
+
+  async function exportToExcel() {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch all clients and their assignments for the selected month
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .is('archived_at', null);
+
+      if (clientsError) throw clientsError;
+
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('month', selectedMonth);
+
+      if (assignmentsError) throw assignmentsError;
+
+      // Prepare data for export
+      const exportData = [];
+      
+      for (const client of clientsData || []) {
+        const clientAssignments = (assignmentsData || []).filter(a => 
+          a.client_id === client.id && 
+          !(a.sdr_id === null && a.monthly_set_target === -1) // Exclude exclusion markers
+        );
+
+        if (clientAssignments.length > 0) {
+          // Client has assignments
+          for (const assignment of clientAssignments) {
+            const sdr = sdrs.find(s => s.id === assignment.sdr_id);
+            exportData.push({
+              'Client Name': client.name,
+              'Client ID': client.id,
+              'SDR Name': sdr?.full_name || 'Unknown SDR',
+              'SDR ID': assignment.sdr_id,
+              'Month': selectedMonth,
+              'Monthly Set Target': assignment.monthly_set_target,
+              'Monthly Hold Target': assignment.monthly_hold_target,
+              'Client Monthly Set Target': client.monthly_set_target,
+              'Client Monthly Hold Target': client.monthly_hold_target,
+              'Client Created': new Date(client.created_at).toLocaleDateString(),
+              'Client Updated': new Date(client.updated_at).toLocaleDateString()
+            });
+          }
+        } else {
+          // Client has no assignments for this month
+          exportData.push({
+            'Client Name': client.name,
+            'Client ID': client.id,
+            'SDR Name': 'No SDR Assigned',
+            'SDR ID': '',
+            'Month': selectedMonth,
+            'Monthly Set Target': 0,
+            'Monthly Hold Target': 0,
+            'Client Monthly Set Target': client.monthly_set_target,
+            'Client Monthly Hold Target': client.monthly_hold_target,
+            'Client Created': new Date(client.created_at).toLocaleDateString(),
+            'Client Updated': new Date(client.updated_at).toLocaleDateString()
+          });
+        }
+      }
+
+      // Convert to CSV and download
+      const headers = Object.keys(exportData[0] || {});
+      const csvContent = [
+        headers.join(','),
+        ...exportData.map(row => 
+          headers.map(header => {
+            const value = row[header];
+            // Escape commas and quotes in CSV
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `client_assignments_${selectedMonth}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setSuccess(`Successfully exported ${exportData.length} records to CSV file`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export data');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyFromPreviousMonth() {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get the previous month (the month before the currently selected month)
+      const currentMonthIndex = monthOptions.findIndex(m => m.value === selectedMonth);
+      const previousMonth = monthOptions[currentMonthIndex + 1]?.value;
+      
+      if (!previousMonth) {
+        setError('No previous month available to copy from');
+        return;
+      }
+
+      // Fetch all assignments from the previous month
+      const { data: previousAssignments, error: fetchError } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('month', previousMonth)
+        .not('sdr_id', 'is', null); // Exclude exclusion markers
+
+      if (fetchError) throw fetchError;
+
+      if (!previousAssignments || previousAssignments.length === 0) {
+        setError(`No assignments found in ${monthOptions.find(m => m.value === previousMonth)?.label} to copy`);
+        return;
+      }
+
+      // Delete any existing assignments for the current month
+      const { error: deleteError } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('month', selectedMonth);
+
+      if (deleteError) throw deleteError;
+
+      // Copy assignments from previous month to current month
+      const newAssignments = previousAssignments.map(assignment => ({
+        client_id: assignment.client_id,
+        sdr_id: assignment.sdr_id,
+        monthly_set_target: assignment.monthly_set_target,
+        monthly_hold_target: assignment.monthly_hold_target,
+        month: selectedMonth,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('assignments')
+        .insert(newAssignments);
+
+      if (insertError) throw insertError;
+
+      setSuccess(`Successfully copied ${newAssignments.length} client assignments from ${monthOptions.find(m => m.value === previousMonth)?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}`);
+      
+      // Refresh the client list
+      await fetchClients();
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to copy from previous month');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchAllClients() {
+    try {
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .is('archived_at', null) // Only fetch non-archived clients
+        .order('name', { ascending: true });
+
+      if (clientsError) throw clientsError;
+      setAllClients(clientsData || []);
+    } catch (err) {
+      console.error('Failed to fetch all clients:', err);
+    }
+  }
+
+  // Removed archived client functions - now using month-specific management
 
   if (loading) {
     return (
@@ -351,7 +618,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900">Manage Clients</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-gray-900">Manage Clients</h2>
+            {/* Month-specific client management - no archived toggle needed */}
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <label htmlFor="sort" className="text-sm font-medium text-gray-700">Sort by:</label>
@@ -385,6 +655,31 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                 <span className="text-xs text-gray-500">(Current)</span>
               )}
             </div>
+
+            <button
+              onClick={async () => {
+                if (confirm(`Copy all clients and assignments from ${monthOptions.find(m => m.value === selectedMonth) === monthOptions[1] ? monthOptions[2]?.label : monthOptions[1]?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}?\n\nThis will:\n• Copy all client assignments\n• Copy all target values\n• Overwrite any existing assignments for ${monthOptions.find(m => m.value === selectedMonth)?.label}`)) {
+                  await copyFromPreviousMonth();
+                }
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded hover:bg-green-100 border border-green-200"
+              title="Copy all clients and assignments from previous month"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Copy
+            </button>
+            <button
+              onClick={exportToExcel}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 border border-blue-200"
+              title="Export all clients and assignments to Excel"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export
+            </button>
             <button
               onClick={() => setShowAddClient(true)}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -590,9 +885,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                     
                     <button
                       onClick={() => handleDeleteClient(client.id)}
-                      className="p-1 text-red-600 hover:text-red-700 focus:outline-none"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      title={`Remove from ${monthOptions.find(m => m.value === selectedMonth)?.label}`}
                     >
                       <Trash2 className="w-4 h-4" />
+                      Remove
                     </button>
                   </div>
                 </div>
@@ -851,6 +1148,28 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">Assign Client to SDR</h2>
             <form onSubmit={handleAssignClient} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="client"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Select Client
+                </label>
+                <select
+                  id="client"
+                  value={selectedClient || ''}
+                  onChange={(e) => setSelectedClient(e.target.value)}
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">Select a client</option>
+                  {allClients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label
                   htmlFor="sdr"

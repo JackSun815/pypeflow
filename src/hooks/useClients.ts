@@ -40,15 +40,17 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
           .select(`
             monthly_set_target,
             monthly_hold_target,
-            clients (
+            clients!inner (
               id,
               name,
               monthly_set_target,
               monthly_hold_target,
               created_at,
-              updated_at
+              updated_at,
+              archived_at
             )
           `)
+          .is('clients.archived_at', null) // Only fetch assignments for non-archived clients
           .eq('sdr_id', sdrId as any)
           .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any)
       ))();

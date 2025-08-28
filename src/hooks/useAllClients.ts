@@ -12,6 +12,7 @@ export function useAllClients() {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
+        .is('archived_at', null) // Only fetch non-archived clients
         .order('name', { ascending: true });
 
       if (error) throw error;

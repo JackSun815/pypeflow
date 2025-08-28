@@ -58,6 +58,24 @@ export default function ManagerDashboard() {
   const [modalMeetings, setModalMeetings] = useState<any[]>([]);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<any>(null);
+  
+  // Export modal state
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportFilters, setExportFilters] = useState({
+    dateRange: 'all', // 'all', 'currentMonth', 'custom'
+    startDate: '',
+    endDate: '',
+    status: 'all', // 'all', 'confirmed', 'pending', 'noShow'
+    clientIds: [] as string[],
+    sdrIds: [] as string[],
+    includeFields: {
+      clientInfo: true,
+      sdrInfo: true,
+      meetingDetails: true,
+      targets: true,
+      timestamps: true
+    }
+  });
 
   // Debug: Log raw meetings and loading state
   useEffect(() => {
@@ -88,6 +106,127 @@ export default function ManagerDashboard() {
       meeting.confirmed_at &&
       new Date(meeting.confirmed_at).toDateString() === new Date().toDateString()
   );
+
+  async function exportMeetings() {
+    try {
+      // Apply filters to meetings
+      let filteredMeetings = [...meetings];
+      
+      // Filter by date range
+      if (exportFilters.dateRange === 'currentMonth') {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        filteredMeetings = filteredMeetings.filter(meeting => {
+          const createdDate = new Date(meeting.created_at);
+          return createdDate >= monthStart && createdDate <= monthEnd;
+        });
+      } else if (exportFilters.dateRange === 'custom' && exportFilters.startDate && exportFilters.endDate) {
+        filteredMeetings = filteredMeetings.filter(meeting => {
+          const createdDate = new Date(meeting.created_at);
+          const startDate = new Date(exportFilters.startDate);
+          const endDate = new Date(exportFilters.endDate);
+          return createdDate >= startDate && createdDate <= endDate;
+        });
+      }
+      
+      // Filter by status
+      if (exportFilters.status !== 'all') {
+        filteredMeetings = filteredMeetings.filter(meeting => {
+          if (exportFilters.status === 'noShow') return meeting.no_show;
+          return meeting.status === exportFilters.status;
+        });
+      }
+      
+      // Filter by client
+      if (exportFilters.clientIds.length > 0) {
+        filteredMeetings = filteredMeetings.filter(meeting => 
+          exportFilters.clientIds.includes(meeting.client_id)
+        );
+      }
+      
+      // Filter by SDR
+      if (exportFilters.sdrIds.length > 0) {
+        filteredMeetings = filteredMeetings.filter(meeting => 
+          exportFilters.sdrIds.includes(meeting.sdr_id)
+        );
+      }
+      
+      // Prepare export data
+      const exportData = filteredMeetings.map(meeting => {
+        const sdr = sdrs.find(s => s.id === meeting.sdr_id);
+        const client = clients.find(c => c.id === meeting.client_id);
+        
+        const row: any = {};
+        
+        if (exportFilters.includeFields.meetingDetails) {
+          row['Status'] = meeting.status;
+          row['Scheduled Date'] = meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : '';
+          row['No Show'] = meeting.no_show ? 'Yes' : 'No';
+          row['Notes'] = meeting.notes || '';
+        }
+        
+        if (exportFilters.includeFields.clientInfo) {
+          row['Client Name'] = client?.name || 'Unknown Client';
+        }
+        
+        if (exportFilters.includeFields.sdrInfo) {
+          row['SDR Name'] = sdr?.full_name || 'Unknown SDR';
+        }
+        
+        if (exportFilters.includeFields.targets) {
+          // Find SDR's target for this client
+          const sdrClient = sdr?.clients.find(c => c.id === meeting.client_id);
+          row['Monthly Set Target'] = sdrClient?.monthly_set_target || 0;
+          row['Monthly Hold Target'] = sdrClient?.monthly_hold_target || 0;
+        }
+        
+        if (exportFilters.includeFields.timestamps) {
+          row['Created'] = new Date(meeting.created_at).toLocaleDateString();
+          row['Confirmed'] = meeting.confirmed_at ? new Date(meeting.confirmed_at).toLocaleDateString() : '';
+          row['Held'] = meeting.held_at ? new Date(meeting.held_at).toLocaleDateString() : '';
+        }
+        
+        return row;
+      });
+      
+      // Convert to CSV and download
+      if (exportData.length === 0) {
+        alert('No meetings match the selected filters.');
+        return;
+      }
+      
+      const headers = Object.keys(exportData[0]);
+      const csvContent = [
+        headers.join(','),
+        ...exportData.map(row => 
+          headers.map(header => {
+            const value = row[header];
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          }).join(',')
+        )
+      ].join('\n');
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `meetings_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setExportModalOpen(false);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Export failed. Please try again.');
+    }
+  }
 
   async function handleLogout() {
     localStorage.removeItem('currentUser');
@@ -323,13 +462,24 @@ export default function ManagerDashboard() {
                 Month Progress: {monthProgress.toFixed(1)}%
               </p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setExportModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Data
+              </button>
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -1452,6 +1602,251 @@ export default function ManagerDashboard() {
                     No information available for this category.
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Export Modal */}
+        {exportModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-semibold">Export Meetings Data</h2>
+                <button
+                  onClick={() => setExportModalOpen(false)}
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] space-y-6">
+                
+                {/* Date Range Filter */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Date Range</h3>
+                  <div className="space-y-3">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="dateRange"
+                        value="all"
+                        checked={exportFilters.dateRange === 'all'}
+                        onChange={(e) => setExportFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                        className="mr-2"
+                      />
+                      All time
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="dateRange"
+                        value="currentMonth"
+                        checked={exportFilters.dateRange === 'currentMonth'}
+                        onChange={(e) => setExportFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                        className="mr-2"
+                      />
+                      Current month only
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="dateRange"
+                        value="custom"
+                        checked={exportFilters.dateRange === 'custom'}
+                        onChange={(e) => setExportFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                        className="mr-2"
+                      />
+                      Custom range
+                    </label>
+                    {exportFilters.dateRange === 'custom' && (
+                      <div className="ml-6 space-y-2">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                          <input
+                            type="date"
+                            value={exportFilters.startDate}
+                            onChange={(e) => setExportFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">End Date</label>
+                          <input
+                            type="date"
+                            value={exportFilters.endDate}
+                            onChange={(e) => setExportFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Meeting Status</h3>
+                  <select
+                    value={exportFilters.status}
+                    onChange={(e) => setExportFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="all">All statuses</option>
+                    <option value="confirmed">Confirmed only</option>
+                    <option value="pending">Pending only</option>
+                    <option value="noShow">No-show only</option>
+                  </select>
+                </div>
+
+                {/* Client Filter */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Clients</h3>
+                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                    {clients.map(client => (
+                      <label key={client.id} className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          checked={exportFilters.clientIds.includes(client.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setExportFilters(prev => ({ 
+                                ...prev, 
+                                clientIds: [...prev.clientIds, client.id] 
+                              }));
+                            } else {
+                              setExportFilters(prev => ({ 
+                                ...prev, 
+                                clientIds: prev.clientIds.filter(id => id !== client.id) 
+                              }));
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        {client.name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {exportFilters.clientIds.length === 0 ? 'All clients' : `${exportFilters.clientIds.length} client(s) selected`}
+                  </p>
+                </div>
+
+                {/* SDR Filter */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">SDRs</h3>
+                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                    {sdrs.map(sdr => (
+                      <label key={sdr.id} className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          checked={exportFilters.sdrIds.includes(sdr.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setExportFilters(prev => ({ 
+                                ...prev, 
+                                sdrIds: [...prev.sdrIds, sdr.id] 
+                              }));
+                            } else {
+                              setExportFilters(prev => ({ 
+                                ...prev, 
+                                sdrIds: prev.sdrIds.filter(id => id !== sdr.id) 
+                              }));
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        {sdr.full_name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {exportFilters.sdrIds.length === 0 ? 'All SDRs' : `${exportFilters.sdrIds.length} SDR(s) selected`}
+                  </p>
+                </div>
+
+                {/* Fields to Include */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Fields to Include</h3>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportFilters.includeFields.meetingDetails}
+                        onChange={(e) => setExportFilters(prev => ({ 
+                          ...prev, 
+                          includeFields: { ...prev.includeFields, meetingDetails: e.target.checked } 
+                        }))}
+                        className="mr-2"
+                      />
+                      Meeting details (ID, status, scheduled date, no-show, notes)
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportFilters.includeFields.clientInfo}
+                        onChange={(e) => setExportFilters(prev => ({ 
+                          ...prev, 
+                          includeFields: { ...prev.includeFields, clientInfo: e.target.checked } 
+                        }))}
+                        className="mr-2"
+                      />
+                      Client information (name, ID)
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportFilters.includeFields.sdrInfo}
+                        onChange={(e) => setExportFilters(prev => ({ 
+                          ...prev, 
+                          includeFields: { ...prev.includeFields, sdrInfo: e.target.checked } 
+                        }))}
+                        className="mr-2"
+                      />
+                      SDR information (name, ID)
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportFilters.includeFields.targets}
+                        onChange={(e) => setExportFilters(prev => ({ 
+                          ...prev, 
+                          includeFields: { ...prev.includeFields, targets: e.target.checked } 
+                        }))}
+                        className="mr-2"
+                      />
+                      Target information (monthly set/hold targets)
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportFilters.includeFields.timestamps}
+                        onChange={(e) => setExportFilters(prev => ({ 
+                          ...prev, 
+                          includeFields: { ...prev.includeFields, timestamps: e.target.checked } 
+                        }))}
+                        className="mr-2"
+                      />
+                      Timestamps (created, confirmed, held dates)
+                    </label>
+                  </div>
+                </div>
+
+                {/* Export Button */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    onClick={() => setExportModalOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={exportMeetings}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                  >
+                    Export to CSV
+                  </button>
+                </div>
               </div>
             </div>
           </div>
