@@ -53,6 +53,7 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
           .is('clients.archived_at', null) // Only fetch assignments for non-archived clients
           .eq('sdr_id', sdrId as any)
           .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any)
+          .eq('is_active', true) // Only fetch active assignments
       ))();
       const assignmentsData = (typeof assignmentsResult === 'object' && assignmentsResult !== null && 'data' in assignmentsResult) ? assignmentsResult.data : [];
       const assignmentsError = (typeof assignmentsResult === 'object' && assignmentsResult !== null && 'error' in assignmentsResult) ? assignmentsResult.error : null;

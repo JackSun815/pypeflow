@@ -88,6 +88,14 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   const [clientDraftTargets, setClientDraftTargets] = useState<Record<string, number>>({});
   const [assignmentDraftTargets, setAssignmentDraftTargets] = useState<Record<string, number>>({});
 
+  // Undo system
+  const [undoStack, setUndoStack] = useState<Array<{
+    action: 'remove_client' | 'add_client' | 'assign_client' | 'update_target' | 'copy_month';
+    data: any;
+    timestamp: number;
+  }>>([]);
+  const [canUndo, setCanUndo] = useState(false);
+
 
   useEffect(() => {
     fetchClients();
@@ -111,14 +119,18 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
       if (assignmentsError) throw assignmentsError;
 
-      // Include ALL clients, with their assignments for the selected month (can be empty)
+      // Only show clients that either:
+      // 1. Have assignments in the current month, OR
+      // 2. Were created in the current month (for newly added clients)
       // BUT exclude clients that have been explicitly hidden (marked with sdr_id: null and negative targets)
+      // AND exclude inactive assignments (soft deleted)
       const processedClients = (clientsData || [])
         .map((client: any) => ({
           ...client,
           assignments: (assignmentsData || []).filter((a: any) => 
             a.client_id === client.id && 
-            !(a.sdr_id === null && a.monthly_set_target === -1) // Exclude hidden markers
+            !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude hidden markers
+            a.is_active !== false // Exclude inactive assignments
           )
         }))
         .filter((client: any) => {
@@ -128,7 +140,27 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             a.sdr_id === null && 
             a.monthly_set_target === -1
           );
-          return !hasHiddenMarker; // Exclude clients with hidden markers
+          
+          if (hasHiddenMarker) return false; // Exclude clients with hidden markers
+          
+          // Check if client has assignments in this month
+          const hasAssignments = (assignmentsData || []).some((a: any) => 
+            a.client_id === client.id && 
+            a.sdr_id !== null && 
+            a.monthly_set_target !== -1 &&
+            a.is_active !== false
+          );
+          
+          // Check if client was created in this month
+          const clientCreatedDate = new Date(client.created_at);
+          const selectedMonthDate = new Date(selectedMonth + '-01'); // First day of selected month
+          const nextMonthDate = new Date(selectedMonthDate);
+          nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+          
+          const wasCreatedThisMonth = clientCreatedDate >= selectedMonthDate && clientCreatedDate < nextMonthDate;
+          
+          // Show client if it has assignments OR was created this month
+          return hasAssignments || wasCreatedThisMonth;
         });
 
       let sortedClients = [...processedClients];
@@ -264,6 +296,12 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
     if (insertError) throw insertError;
 
+    // Add to undo stack after successful creation
+    addToUndoStack('add_client', {
+      clientId: insertedClient.id,
+      clientName: newClientName
+    });
+
     // Client will now appear in the list immediately
     const selectedMonthName = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
     setSuccess(`Client "${newClientName}" added successfully and is now visible in the ${selectedMonthName} list. You can now assign SDRs to this client.`);
@@ -314,7 +352,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
       if (updateError) throw updateError;
     } else {
-      const { error: insertError } = await supabase
+      const { data: insertedAssignment, error: insertError } = await supabase
         .from('assignments')
         .insert([{
           client_id: String(selectedClient),
@@ -322,9 +360,18 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
           monthly_set_target: monthlySetTarget,
           monthly_hold_target: monthlyHoldTarget,
           month: String(currentMonth),
-        }]);
+        }])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // Add to undo stack for new assignments
+      addToUndoStack('assign_client', {
+        assignmentId: insertedAssignment.id,
+        clientId: String(selectedClient),
+        sdrId: String(selectedSDR)
+      });
     }
 
     setSuccess('Client assigned successfully');
@@ -388,17 +435,28 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     setError(null);
 
     try {
+      // Add to undo stack before making changes
+      addToUndoStack('remove_client', {
+        clientId,
+        clientName,
+        assignments: client?.assignments || []
+      });
+
       if (hasCurrentMonthAssignments) {
-        // Remove all assignments for this client in the selected month
-        const { error: deleteError } = await supabase
+        // Instead of deleting assignments, mark them as inactive for this month
+        const { error: updateError } = await supabase
           .from('assignments')
-          .delete()
+          .update({ 
+            is_active: false,
+            deactivated_at: new Date().toISOString(),
+            deactivation_reason: 'client_removed_from_month'
+          })
           .eq('client_id', clientId)
           .eq('month', selectedMonth);
 
-        if (deleteError) throw deleteError;
+        if (updateError) throw updateError;
         
-        setSuccess(`"${clientName}" removed from ${selectedMonthName}. Historical data from other months preserved.`);
+        setSuccess(`"${clientName}" removed from ${selectedMonthName}. All meetings are preserved. It will still appear in other months.`);
       } else {
         // For clients without assignments, we need to mark them as hidden for this month
         // We'll create a special assignment record with null sdr_id to indicate "hidden"
@@ -452,7 +510,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       for (const client of clientsData || []) {
         const clientAssignments = (assignmentsData || []).filter(a => 
           a.client_id === client.id && 
-          !(a.sdr_id === null && a.monthly_set_target === -1) // Exclude exclusion markers
+          !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude exclusion markers
+          a.is_active !== false // Exclude inactive assignments
         );
 
         if (clientAssignments.length > 0) {
@@ -561,7 +620,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
           ...client,
           assignments: (previousAssignments || []).filter((a: any) => 
             a.client_id === client.id && 
-            !(a.sdr_id === null && a.monthly_set_target === -1) // Exclude hidden markers
+            !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude hidden markers
+            a.is_active !== false // Exclude inactive assignments
           )
         }))
         .filter((client: any) => {
@@ -586,6 +646,14 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         return;
       }
 
+      // Get existing assignments for the current month (for undo)
+      const { data: existingAssignments, error: fetchExistingError } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('month', selectedMonth);
+
+      if (fetchExistingError) throw fetchExistingError;
+
       // Delete any existing assignments for the current month
       const { error: deleteError } = await supabase
         .from('assignments')
@@ -593,6 +661,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         .eq('month', selectedMonth);
 
       if (deleteError) throw deleteError;
+
+      // Add to undo stack before making changes
+      addToUndoStack('copy_month', {
+        deletedAssignments: existingAssignments || []
+      });
 
       // Copy assignments from previous month to current month
       const newAssignments = finalValidAssignments.map(assignment => ({
@@ -633,6 +706,139 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       setAllClients(clientsData || []);
     } catch (err) {
       console.error('Failed to fetch all clients:', err);
+    }
+  }
+
+  // Add action to undo stack
+  function addToUndoStack(action: 'remove_client' | 'add_client' | 'assign_client' | 'update_target' | 'copy_month', data: any) {
+    const undoItem = {
+      action,
+      data,
+      timestamp: Date.now()
+    };
+    
+    setUndoStack(prev => {
+      const newStack = [undoItem, ...prev.slice(0, 9)]; // Keep last 10 actions
+      setCanUndo(newStack.length > 0);
+      return newStack;
+    });
+  }
+
+  // Undo last action
+  async function handleUndo() {
+    if (undoStack.length === 0) return;
+
+    const lastAction = undoStack[0];
+    setUndoStack(prev => {
+      const newStack = prev.slice(1);
+      setCanUndo(newStack.length > 0);
+      return newStack;
+    });
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      switch (lastAction.action) {
+        case 'remove_client':
+          await undoRemoveClient(lastAction.data);
+          break;
+        case 'add_client':
+          await undoAddClient(lastAction.data);
+          break;
+        case 'assign_client':
+          await undoAssignClient(lastAction.data);
+          break;
+        case 'update_target':
+          await undoUpdateTarget(lastAction.data);
+          break;
+        case 'copy_month':
+          await undoCopyMonth(lastAction.data);
+          break;
+      }
+
+      setSuccess(`Undid ${lastAction.action.replace('_', ' ')} action`);
+      await fetchClients();
+      await fetchAllClients();
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to undo action');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Undo functions for each action type
+  async function undoRemoveClient(data: { clientId: string; clientName: string; assignments: any[] }) {
+    // Restore assignments that were soft deleted
+    if (data.assignments.length > 0) {
+      const { error } = await supabase
+        .from('assignments')
+        .update({ 
+          is_active: true,
+          deactivated_at: null,
+          deactivation_reason: null
+        })
+        .eq('client_id', data.clientId)
+        .eq('month', selectedMonth)
+        .eq('is_active', false);
+
+      if (error) throw error;
+    }
+
+    // Remove hidden marker if it exists
+    const { error: deleteError } = await supabase
+      .from('assignments')
+      .delete()
+      .eq('client_id', data.clientId)
+      .eq('month', selectedMonth)
+      .is('sdr_id', null)
+      .eq('monthly_set_target', -1);
+
+    if (deleteError) throw deleteError;
+  }
+
+  async function undoAddClient(data: { clientId: string; clientName: string }) {
+    // Delete the client
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', data.clientId);
+
+    if (error) throw error;
+  }
+
+  async function undoAssignClient(data: { assignmentId: string; clientId: string; sdrId: string }) {
+    // Delete the assignment
+    const { error } = await supabase
+      .from('assignments')
+      .delete()
+      .eq('id', data.assignmentId);
+
+    if (error) throw error;
+  }
+
+  async function undoUpdateTarget(data: { clientId: string; oldSetTarget: number; oldHoldTarget: number }) {
+    // Restore old targets
+    const { error } = await supabase
+      .from('clients')
+      .update({ 
+        monthly_set_target: data.oldSetTarget,
+        monthly_hold_target: data.oldHoldTarget
+      })
+      .eq('id', data.clientId);
+
+    if (error) throw error;
+  }
+
+  async function undoCopyMonth(data: { deletedAssignments: any[] }) {
+    // Restore deleted assignments
+    if (data.deletedAssignments.length > 0) {
+      const { error } = await supabase
+        .from('assignments')
+        .upsert(data.deletedAssignments);
+
+      if (error) throw error;
     }
   }
 
@@ -688,6 +894,21 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               )}
             </div>
 
+            <button
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border ${
+                canUndo 
+                  ? 'text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200' 
+                  : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
+              }`}
+              title={canUndo ? `Undo last action (${undoStack.length} actions available)` : 'No actions to undo'}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Undo
+            </button>
             <button
               onClick={async () => {
                 if (confirm(`Copy all clients and assignments from ${monthOptions.find(m => m.value === selectedMonth) === monthOptions[1] ? monthOptions[2]?.label : monthOptions[1]?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}?\n\nThis will:\n• Copy all client assignments\n• Copy all target values\n• Overwrite any existing assignments for ${monthOptions.find(m => m.value === selectedMonth)?.label}`)) {
