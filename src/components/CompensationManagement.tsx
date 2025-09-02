@@ -327,7 +327,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
                 onClick={() => setCommissionType('per_meeting')}
                 className={`px-4 py-2 rounded-md text-sm font-medium ${
                   commissionType === 'per_meeting'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -337,7 +337,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
                 onClick={() => setCommissionType('goal_based')}
                 className={`px-4 py-2 rounded-md text-sm font-medium ${
                   commissionType === 'goal_based'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -361,7 +361,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
                     ...prev,
                     booked: Math.max(0, parseInt(e.target.value) || 0)
                   }))}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
@@ -376,7 +376,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
                     ...prev,
                     held: Math.max(0, parseInt(e.target.value) || 0)
                   }))}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div className="pt-4 border-t">

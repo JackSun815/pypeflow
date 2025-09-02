@@ -270,7 +270,7 @@ export default function ManagerMeetingHistory({
               ))}
             </select>
             <button
-              className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium shadow transition"
+              className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium shadow transition"
               onClick={() => setShowExport(true)}
               title="Export meetings"
             >
@@ -313,7 +313,7 @@ export default function ManagerMeetingHistory({
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
                   onClick={exportCSV}
                   disabled={selectedColumns.length === 0}
                 >
@@ -327,12 +327,12 @@ export default function ManagerMeetingHistory({
         {/* Monthly Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
           <div 
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-indigo-50 transition-all duration-200 border-2 border-transparent hover:border-indigo-200"
+            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-blue-50 transition-all duration-200 border-2 border-transparent hover:border-blue-200"
             onClick={() => openMeetingsModal('booked')}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-500">Meetings Booked</h3>
-              <Calendar className="w-5 h-5 text-indigo-600" />
+              <Calendar className="w-5 h-5 text-blue-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{monthlyStats.totalBooked}</p>
           </div>
@@ -362,9 +362,9 @@ export default function ManagerMeetingHistory({
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-500">Show Rate</h3>
-              <Target className="w-5 h-5 text-indigo-600" />
+              <Target className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-indigo-600">
+            <p className="text-2xl font-bold text-blue-600">
               {monthlyStats.showRate.toFixed(1)}%
             </p>
           </div>

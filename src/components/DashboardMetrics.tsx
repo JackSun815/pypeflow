@@ -165,15 +165,15 @@ export default function DashboardMetrics({
     <>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
           onClick={() => handleCardClick('setTarget')}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Monthly Set Target</h3>
           </div>
-          <div className="space-y-1 bg-indigo-50 p-3 rounded-md">
+          <div className="space-y-1 bg-blue-50 p-3 rounded-md">
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-indigo-700">{totalSetTarget.toLocaleString()}</span>
+              <span className="text-3xl font-bold text-blue-700">{totalSetTarget.toLocaleString()}</span>
               <span className="text-sm text-gray-600">set goal</span>
             </div>
             <p className="text-xs text-gray-500">{(monthProgress ?? 0).toFixed(1)}% of month completed</p>
@@ -182,15 +182,15 @@ export default function DashboardMetrics({
         </div>
 
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
           onClick={() => handleCardClick('heldTarget')}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Monthly Held Target <Target className="w-5 h-5 text-indigo-500" /></h3>
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Monthly Held Target <Target className="w-5 h-5 text-blue-500" /></h3>
           </div>
-          <div className="space-y-1 bg-indigo-50 p-3 rounded-md">
+          <div className="space-y-1 bg-blue-50 p-3 rounded-md">
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-indigo-700">{totalHeldTarget.toLocaleString()}</span>
+              <span className="text-3xl font-bold text-blue-700">{totalHeldTarget.toLocaleString()}</span>
               <span className="text-sm text-gray-600">held goal</span>
             </div>
             <p className="text-xs text-gray-500">{(monthProgress ?? 0).toFixed(1)}% of month completed</p>

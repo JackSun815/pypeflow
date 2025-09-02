@@ -847,7 +847,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
       </div>
     );
   }
@@ -939,7 +939,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             </button>
             <button
               onClick={() => setShowAddClient(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <Plus className="w-4 h-4" />
               Add Client
@@ -1449,6 +1449,79 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   ))}
                 </select>
               </div>
+
+              {/* SDR Summary Section */}
+              {selectedSDR && (
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                    SDR Workload Summary for {monthOptions.find(m => m.value === selectedMonth)?.label}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-gray-600 font-medium">Monthly Set Target:</div>
+                      <div className="text-lg font-bold text-blue-600">
+                        {(() => {
+                          const sdr = sdrs.find(s => s.id === selectedSDR);
+                          return sdr?.monthly_set_target || 0;
+                        })()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-medium">Monthly Hold Target:</div>
+                      <div className="text-lg font-bold text-green-600">
+                        {(() => {
+                          const sdr = sdrs.find(s => s.id === selectedSDR);
+                          return sdr?.monthly_hold_target || 0;
+                        })()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-medium">Currently Assigned Set:</div>
+                      <div className="text-lg font-bold text-orange-600">
+                        {(() => {
+                          const currentAssignments = clients
+                            .filter(client => 
+                              client.assignments.some(a => 
+                                a.sdr_id === selectedSDR && 
+                                a.is_active !== false
+                              )
+                            )
+                            .reduce((sum, client) => {
+                              const assignment = client.assignments.find(a => 
+                                a.sdr_id === selectedSDR && 
+                                a.is_active !== false
+                              );
+                              return sum + (assignment?.monthly_set_target || 0);
+                            }, 0);
+                          return currentAssignments;
+                        })()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600 font-medium">Currently Assigned Hold:</div>
+                      <div className="text-lg font-bold text-purple-600">
+                        {(() => {
+                          const currentAssignments = clients
+                            .filter(client => 
+                              client.assignments.some(a => 
+                                a.sdr_id === selectedSDR && 
+                                a.is_active !== false
+                              )
+                            )
+                            .reduce((sum, client) => {
+                              const assignment = client.assignments.find(a => 
+                                a.sdr_id === selectedSDR && 
+                                a.is_active !== false
+                              );
+                              return sum + (assignment?.monthly_hold_target || 0);
+                            }, 0);
+                          return currentAssignments;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div>
                 <label
                   htmlFor="holdTarget"

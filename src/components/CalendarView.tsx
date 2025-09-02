@@ -447,7 +447,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
                   console.log(showDetails ? 'Hiding details for' : 'Showing details for', selectedMeeting);
                   setShowDetails(!showDetails);
                 }}
-                className="mt-2 text-sm text-indigo-600 hover:underline"
+                className="mt-2 text-sm text-blue-600 hover:underline"
               >
                 {showDetails ? (
                   <><ChevronUp className="inline-block w-4 h-4 mr-1" /> Hide Details</>

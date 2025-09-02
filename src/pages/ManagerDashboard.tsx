@@ -13,6 +13,41 @@ import ManagerMeetingHistory from '../components/ManagerMeetingHistory';
 import ICPCheck from './ICPCheck';
 import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
+
+// Add custom CSS for flow animation
+const flowStyles = `
+  .flow-animation {
+    animation: flowPulse 0.6s ease-in-out;
+  }
+  
+  @keyframes flowPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .flow-particle {
+    animation: flowFloat 2s ease-out forwards;
+  }
+  
+  @keyframes flowFloat {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--flow-x, 100px), var(--flow-y, -100px)) scale(0);
+      opacity: 0;
+    }
+  }
+`;
+
+// Inject styles into document head
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = flowStyles;
+  document.head.appendChild(styleElement);
+}
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -450,35 +485,103 @@ export default function ManagerDashboard() {
   const totalNoShowMeetings = meetings.filter(m => m.no_show).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome, {profile?.full_name || 'Manager'}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+      <header className="bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <h1 
+                className="text-2xl font-bold text-blue-500 cursor-pointer hover:text-blue-600 transition-colors duration-300 relative overflow-hidden group"
+                onClick={() => {
+                  // Easter egg: Flow effect animation
+                  const logo = document.querySelector('.pypeflow-logo-manager');
+                  if (logo) {
+                    // Add flow animation class
+                    logo.classList.add('flow-animation');
+                    
+                    // Create flowing particles effect
+                    for (let i = 0; i < 8; i++) {
+                      setTimeout(() => {
+                        const particle = document.createElement('div');
+                        particle.className = 'flow-particle';
+                        particle.style.cssText = `
+                          position: absolute;
+                          width: 4px;
+                          height: 4px;
+                          background: linear-gradient(45deg, #3b82f6, #06b6d4);
+                          border-radius: 50%;
+                          pointer-events: none;
+                          z-index: 10;
+                        `;
+                        
+                        // Position particles around the logo
+                        const rect = logo.getBoundingClientRect();
+                        const startX = rect.left + Math.random() * rect.width;
+                        const startY = rect.top + Math.random() * rect.height;
+                        
+                        particle.style.left = startX + 'px';
+                        particle.style.top = startY + 'px';
+                        
+                        document.body.appendChild(particle);
+                        
+                        // Animate particle flow
+                        const animation = particle.animate([
+                          { 
+                            transform: 'translate(0, 0) scale(1)',
+                            opacity: 1
+                          },
+                          { 
+                            transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`,
+                            opacity: 0
+                          }
+                        ], {
+                          duration: 2000,
+                          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                        });
+                        
+                        animation.onfinish = () => {
+                          particle.remove();
+                        };
+                      }, i * 100);
+                    }
+                    
+                    // Remove animation class after effect
+                    setTimeout(() => {
+                      logo.classList.remove('flow-animation');
+                    }, 3000);
+                  }
+                }}
+                title="🌊 Click for a flow effect!"
+              >
+                <span className="pypeflow-logo-manager relative">
+                  Pype
+                  <span className="text-cyan-500">Flow</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded"></div>
+                </span>
               </h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Month Progress: {monthProgress.toFixed(1)}%
-              </p>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <p className="text-base font-medium text-gray-700">Manager Dashboard</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
+                {monthProgress.toFixed(1)}% Progress
+              </span>
               <button
                 onClick={() => {
                   if (confirm('Export meetings data to CSV?')) {
                     setExportModalOpen(true);
                   }
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Export Data
+                Export
               </button>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -505,9 +608,9 @@ export default function ManagerDashboard() {
               onClick={() => setActiveTab('overview')}
               className={`${
                 activeTab === 'overview'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               Overview
             </button>
@@ -515,9 +618,9 @@ export default function ManagerDashboard() {
               onClick={() => setActiveTab('meetings')}
               className={`${
                 activeTab === 'meetings'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
               <ListChecks className="w-4 h-4" />
               Team's Meetings
@@ -526,9 +629,9 @@ export default function ManagerDashboard() {
               onClick={() => setActiveTab('sdrs')}
               className={`${
                 activeTab === 'sdrs'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               SDR Management
             </button>
@@ -536,9 +639,9 @@ export default function ManagerDashboard() {
               onClick={() => setActiveTab('clients')}
               className={`${
                 activeTab === 'clients'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               Client Management
             </button>
@@ -547,9 +650,9 @@ export default function ManagerDashboard() {
                 onClick={() => setActiveTab('users')}
                 className={`${
                   activeTab === 'users'
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm`}
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 User Management
               </button>
@@ -558,9 +661,9 @@ export default function ManagerDashboard() {
               onClick={() => setActiveTab('history')}
               className={`${
                 activeTab === 'history'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
               <History className="w-4 h-4" />
               Meeting History
@@ -569,9 +672,9 @@ export default function ManagerDashboard() {
               onClick={() => setActiveTab('icp')}
               className={`${
                 activeTab === 'icp'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
               <Shield className="w-4 h-4" />
               ICP Check

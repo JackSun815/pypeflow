@@ -14,6 +14,41 @@ import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import CalendarView from '../components/CalendarView';
 import type { Meeting } from '../types/database';
+
+// Add custom CSS for flow animation
+const flowStyles = `
+  .flow-animation {
+    animation: flowPulse 0.6s ease-in-out;
+  }
+  
+  @keyframes flowPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .flow-particle {
+    animation: flowFloat 2s ease-out forwards;
+  }
+  
+  @keyframes flowFloat {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--flow-x, 100px), var(--flow-y, -100px)) scale(0);
+      opacity: 0;
+    }
+  }
+`;
+
+// Inject styles into document head
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = flowStyles;
+  document.head.appendChild(styleElement);
+}
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -627,76 +662,174 @@ export default function SDRDashboard() {
         </div>
       </div>
     )}
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col space-y-2">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome, {sdrName}
-            </h1>
-            <div className="flex items-center gap-2 text-lg text-gray-600">
-              <span>{currentMonth}</span>
-              <Rocket className="w-5 h-5 text-indigo-600" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+      <header className="bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <h1 
+                className="text-2xl font-bold text-blue-500 cursor-pointer hover:text-blue-600 transition-colors duration-300 relative overflow-hidden group"
+                onClick={() => {
+                  // Easter egg: Flow effect animation
+                  const logo = document.querySelector('.pypeflow-logo');
+                  if (logo) {
+                    // Add flow animation class
+                    logo.classList.add('flow-animation');
+                    
+                    // Create flowing particles effect
+                    for (let i = 0; i < 8; i++) {
+                      setTimeout(() => {
+                        const particle = document.createElement('div');
+                        particle.className = 'flow-particle';
+                        particle.style.cssText = `
+                          position: absolute;
+                          width: 4px;
+                          height: 4px;
+                          background: linear-gradient(45deg, #3b82f6, #06b6d4);
+                          border-radius: 50%;
+                          pointer-events: none;
+                          z-index: 10;
+                        `;
+                        
+                        // Position particles around the logo
+                        const rect = logo.getBoundingClientRect();
+                        const startX = rect.left + Math.random() * rect.width;
+                        const startY = rect.top + Math.random() * rect.height;
+                        
+                        particle.style.left = startX + 'px';
+                        particle.style.top = startY + 'px';
+                        
+                        document.body.appendChild(particle);
+                        
+                        // Animate particle flow
+                        const animation = particle.animate([
+                          { 
+                            transform: 'translate(0, 0) scale(1)',
+                            opacity: 1
+                          },
+                          { 
+                            transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`,
+                            opacity: 0
+                          }
+                        ], {
+                          duration: 2000,
+                          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                        });
+                        
+                        animation.onfinish = () => {
+                          particle.remove();
+                        };
+                      }, i * 100);
+                    }
+                    
+                    // Remove animation class after effect
+                    setTimeout(() => {
+                      logo.classList.remove('flow-animation');
+                    }, 3000);
+                  }
+                }}
+                title="🌊 Click for a flow effect!"
+              >
+                <span className="pypeflow-logo relative">
+                  Pype
+                  <span className="text-cyan-500">Flow</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded"></div>
+                </span>
+              </h1>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <p className="text-base font-medium text-gray-700">SDR Dashboard</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg shadow-sm">
+                {currentMonth}
+              </span>
+              <div 
+                className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-200 group"
+                onClick={() => {
+                  // Easter egg: confetti and rocket animation
+                  confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                  });
+                  
+                  // Add a subtle bounce effect to the rocket
+                  const rocket = document.querySelector('.rocket-easter-egg');
+                  if (rocket) {
+                    rocket.classList.add('animate-bounce');
+                    setTimeout(() => {
+                      rocket.classList.remove('animate-bounce');
+                    }, 1000);
+                  }
+                }}
+                title="🎉 Click for a surprise!"
+              >
+                <span className="text-sm font-medium text-blue-500 group-hover:text-blue-600 transition-colors">{sdrName}</span>
+                <Rocket className="w-4 h-4 text-blue-500 group-hover:text-blue-600 transition-colors rocket-easter-egg" />
+              </div>
             </div>
           </div>
-          <div className="mt-4 flex gap-4">
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {/* Tab Navigation */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
             <Link
               to=""
-              className={`text-sm font-medium ${
+              className={`${
                 location.pathname === `/dashboard/sdr/${token}`
-                  ? 'text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Dashboard
               </span>
             </Link>
             <Link
               to="history"
-              className={`text-sm font-medium ${
+              className={`${
                 location.pathname === `/dashboard/sdr/${token}/history`
-                  ? 'text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-2">
                 <History className="w-4 h-4" />
                 Meeting History
               </span>
             </Link>
             <Link
               to="commissions"
-              className={`text-sm font-medium ${
+              className={`${
                 location.pathname === `/dashboard/sdr/${token}/commissions`
-                  ? 'text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
                 Commissions
               </span>
             </Link>
             <Link
               to="calendar"
-              className={`text-sm font-medium ${
+              className={`${
                 location.pathname === `/dashboard/sdr/${token}/calendar`
-                  ? 'text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Calendar
               </span>
             </Link>
-          </div>
+          </nav>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {(clientsError || meetingsError) && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center gap-2 text-red-700">

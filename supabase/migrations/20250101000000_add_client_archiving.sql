@@ -107,3 +107,4 @@ BEGIN
   ORDER BY c.archived_at DESC;
 END;
 $$ LANGUAGE plpgsql;
+

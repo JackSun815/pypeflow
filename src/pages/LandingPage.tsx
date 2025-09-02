@@ -75,16 +75,16 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <h1 className="text-2xl font-bold text-indigo-600">PypeFlow</h1>
+                <h1 className="text-2xl font-bold text-blue-500">PypeFlow</h1>
               </div>
             </div>
             
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <a href="#features" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Features</a>
-                <a href="#pricing" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Pricing</a>
-                <a href="#testimonials" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Testimonials</a>
-                <a href="/login" className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <a href="#features" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Features</a>
+                <a href="#pricing" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Pricing</a>
+                <a href="#testimonials" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Testimonials</a>
+                <a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors">
                   Sign In
                 </a>
               </div>
@@ -93,7 +93,7 @@ export default function LandingPage() {
             <div className="md:hidden">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="text-gray-700 hover:text-indigo-600"
+                className="text-gray-700 hover:text-blue-500 transition-colors"
               >
                 {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
@@ -105,22 +105,22 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-100">
-              <a href="#features" className="text-gray-700 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">Features</a>
-              <a href="#pricing" className="text-gray-700 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">Pricing</a>
-              <a href="#testimonials" className="text-gray-700 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">Testimonials</a>
-              <a href="/login" className="bg-indigo-600 text-white block px-3 py-2 rounded-md text-base font-medium">Sign In</a>
+              <a href="#features" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Features</a>
+              <a href="#pricing" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Pricing</a>
+              <a href="#testimonials" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Testimonials</a>
+              <a href="/login" className="bg-blue-500 text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-600 transition-colors">Sign In</a>
             </div>
           </div>
         )}
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-indigo-50 to-blue-50 py-20">
+      <section className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               The All-in-One Dashboard for
-              <span className="text-indigo-600"> Modern Sales Teams</span>
+              <span className="text-blue-500"> Modern Sales Teams</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               PypeFlow streamlines meeting management, goal tracking, and performance analytics for SDRs, Managers, and Clients in one powerful platform.
@@ -128,7 +128,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/login"
-                className="bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
               >
                 Get Started Free
                 <ArrowRight className="w-5 h-5" />
@@ -167,7 +167,7 @@ export default function LandingPage() {
                   onClick={() => setActiveTab(role.id as any)}
                   className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors ${
                     activeTab === role.id
-                      ? 'bg-white text-indigo-600 shadow-sm'
+                      ? 'bg-white text-blue-500 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -181,9 +181,9 @@ export default function LandingPage() {
           {/* Feature Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features[activeTab].map((feature, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-indigo-600" />
+              <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center mb-4 group-hover:from-blue-200 group-hover:to-cyan-200 transition-all duration-300">
+                  <feature.icon className="w-6 h-6 text-blue-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
                 <p className="text-gray-600">{feature.description}</p>
@@ -194,31 +194,31 @@ export default function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-indigo-600 py-16">
+      <section className="bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-white mb-2">500+</div>
-              <div className="text-indigo-200">Active SDRs</div>
+              <div className="text-blue-100">Active SDRs</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-white mb-2">10,000+</div>
-              <div className="text-indigo-200">Meetings Tracked</div>
+              <div className="text-blue-100">Meetings Tracked</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-white mb-2">95%</div>
-              <div className="text-indigo-200">Client Satisfaction</div>
+              <div className="text-blue-100">Client Satisfaction</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-white mb-2">24/7</div>
-              <div className="text-indigo-200">Support Available</div>
+              <div className="text-blue-100">Support Available</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-gray-50">
+      <section id="testimonials" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -231,10 +231,10 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-sm">
+              <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="flex items-center mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star key={i} className="w-5 h-5 text-amber-400 fill-current" />
                   ))}
                 </div>
                 <p className="text-gray-600 mb-4">"{testimonial.content}"</p>
@@ -260,7 +260,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="/login"
-              className="bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             >
               Start Your Free Trial
               <ArrowRight className="w-5 h-5" />
@@ -273,44 +273,44 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-gradient-to-br from-gray-800 via-slate-700 to-gray-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold text-indigo-400 mb-4">PypeFlow</h3>
-              <p className="text-gray-400">
+              <h3 className="text-2xl font-bold text-blue-300 mb-4">PypeFlow</h3>
+              <p className="text-gray-300">
                 The all-in-one dashboard for modern sales teams.
               </p>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Features</a></li>
-                <li><a href="#" className="hover:text-white">Pricing</a></li>
-                <li><a href="#" className="hover:text-white">Integrations</a></li>
-                <li><a href="#" className="hover:text-white">API</a></li>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Features</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Pricing</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Integrations</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">API</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Careers</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-blue-200 transition-colors">About</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Contact</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Help Center</a></li>
-                <li><a href="#" className="hover:text-white">Documentation</a></li>
-                <li><a href="#" className="hover:text-white">Status</a></li>
-                <li><a href="#" className="hover:text-white">Contact Support</a></li>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Help Center</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Documentation</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Status</a></li>
+                <li><a href="#" className="hover:text-blue-200 transition-colors">Contact Support</a></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2024 PypeFlow. All rights reserved.</p>
           </div>
         </div>
