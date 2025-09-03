@@ -3,7 +3,7 @@ import { format, subMonths } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {Plus, Trash2, AlertCircle, Users, Target, Edit } from 'lucide-react';
-import type { Client, Profile } from '../types/database';
+import type { Client, Profile, Meeting } from '../types/database';
 
 interface ClientManagementProps {
   sdrs: Profile[];
@@ -21,6 +21,12 @@ interface ClientWithAssignments extends Client {
   monthly_target: number;
   monthly_set_target: number;
   monthly_hold_target: number;
+}
+
+// Add interface for meeting metrics
+interface MeetingMetrics {
+  setCount: number;
+  heldCount: number;
 }
 
 export default function ClientManagement({ sdrs, onUpdate }: ClientManagementProps) {
@@ -87,6 +93,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
   const [clientDraftTargets, setClientDraftTargets] = useState<Record<string, number>>({});
   const [assignmentDraftTargets, setAssignmentDraftTargets] = useState<Record<string, number>>({});
+  const [meetingMetrics, setMeetingMetrics] = useState<Record<string, Record<string, MeetingMetrics>>>({});
+  const [meetings, setMeetings] = useState<any[]>([]);
 
   // Undo system
   const [undoStack, setUndoStack] = useState<Array<{
@@ -100,6 +108,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   useEffect(() => {
     fetchClients();
     fetchAllClients();
+    fetchMeetings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortOption, selectedMonth]);
 
@@ -706,6 +715,26 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       setAllClients(clientsData || []);
     } catch (err) {
       console.error('Failed to fetch all clients:', err);
+    }
+  }
+
+  async function fetchMeetings() {
+    try {
+      const [year, month] = selectedMonth.split('-');
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0);
+
+      const { data: meetingsData, error: meetingsError } = await supabase
+        .from('meetings')
+        .select('*')
+        .gte('scheduled_date', startDate.toISOString().split('T')[0])
+        .lte('scheduled_date', endDate.toISOString().split('T')[0]);
+
+      if (meetingsError) throw meetingsError;
+      setMeetings(meetingsData || []);
+    } catch (err) {
+      console.error('Failed to fetch meetings:', err);
+      setMeetings([]);
     }
   }
 
@@ -1454,68 +1483,36 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               {selectedSDR && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-800 mb-3">
-                    SDR Workload Summary for {monthOptions.find(m => m.value === selectedMonth)?.label}
+                    SDR Total Goals for {monthOptions.find(m => m.value === selectedMonth)?.label}
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <div className="text-gray-600 font-medium">Monthly Set Target:</div>
-                      <div className="text-lg font-bold text-blue-600">
-                        {(() => {
-                          const sdr = sdrs.find(s => s.id === selectedSDR);
-                          return sdr?.monthly_set_target || 0;
-                        })()}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-600 font-medium">Monthly Hold Target:</div>
-                      <div className="text-lg font-bold text-green-600">
-                        {(() => {
-                          const sdr = sdrs.find(s => s.id === selectedSDR);
-                          return sdr?.monthly_hold_target || 0;
-                        })()}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-600 font-medium">Currently Assigned Set:</div>
+                      <div className="text-gray-600 font-medium">SDR Total Set Goal:</div>
                       <div className="text-lg font-bold text-orange-600">
                         {(() => {
-                          const currentAssignments = clients
-                            .filter(client => 
-                              client.assignments.some(a => 
-                                a.sdr_id === selectedSDR && 
-                                a.is_active !== false
-                              )
-                            )
-                            .reduce((sum, client) => {
-                              const assignment = client.assignments.find(a => 
-                                a.sdr_id === selectedSDR && 
-                                a.is_active !== false
-                              );
-                              return sum + (assignment?.monthly_set_target || 0);
-                            }, 0);
-                          return currentAssignments;
+                          // Calculate total set target across all SDR's client assignments for this month
+                          const sdrAssignments = clients.filter(client => 
+                            client.assignments.some(assignment => assignment.sdr_id === selectedSDR)
+                          );
+                          return sdrAssignments.reduce((total, client) => {
+                            const assignment = client.assignments.find(a => a.sdr_id === selectedSDR);
+                            return total + (assignment?.monthly_set_target || 0);
+                          }, 0);
                         })()}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600 font-medium">Currently Assigned Hold:</div>
+                      <div className="text-gray-600 font-medium">SDR Total Held Goal:</div>
                       <div className="text-lg font-bold text-purple-600">
                         {(() => {
-                          const currentAssignments = clients
-                            .filter(client => 
-                              client.assignments.some(a => 
-                                a.sdr_id === selectedSDR && 
-                                a.is_active !== false
-                              )
-                            )
-                            .reduce((sum, client) => {
-                              const assignment = client.assignments.find(a => 
-                                a.sdr_id === selectedSDR && 
-                                a.is_active !== false
-                              );
-                              return sum + (assignment?.monthly_hold_target || 0);
-                            }, 0);
-                          return currentAssignments;
+                          // Calculate total held target across all SDR's client assignments for this month
+                          const sdrAssignments = clients.filter(client => 
+                            client.assignments.some(assignment => assignment.sdr_id === selectedSDR)
+                          );
+                          return sdrAssignments.reduce((total, client) => {
+                            const assignment = client.assignments.find(a => a.sdr_id === selectedSDR);
+                            return total + (assignment?.monthly_hold_target || 0);
+                          }, 0);
                         })()}
                       </div>
                     </div>
