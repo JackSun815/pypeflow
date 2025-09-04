@@ -82,7 +82,7 @@ export default function ManagerDashboard() {
   const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
   // Ensures useMeetings fetches all meetings (SDR ID: null)
   console.log('[DEBUG] useMeetings called with SDR ID:', null);
-  const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(undefined, undefined, true);
+  const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
   const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
@@ -1110,7 +1110,7 @@ export default function ManagerDashboard() {
                                       <div
                                         key={client.id}
                                         className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
-                                        onClick={() => handleSDRClientClickFromSDR(sdr.id, client.id, sdr.full_name, client.name)}
+                                        onClick={() => handleSDRClientClickFromSDR(sdr.id!, client.id!, sdr.full_name || '', client.name || '')}
                                       >
                                         <div>
                                           <p className="text-sm font-medium text-gray-900">
@@ -1329,7 +1329,7 @@ export default function ManagerDashboard() {
                                       <div
                                         key={sdr.id}
                                         className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
-                                        onClick={() => handleSDRClientClick(sdr.id, client.id, sdr.full_name, client.name)}
+                                        onClick={() => handleSDRClientClick(sdr.id!, client.id!, sdr.full_name || '', client.name || '')}
                                       >
                                         <div>
                                           <p className="text-sm font-medium text-gray-900">
@@ -1533,7 +1533,7 @@ export default function ManagerDashboard() {
 
         {activeTab === 'meetings' && (
           <>
-            <TeamMeetings />
+            <TeamMeetings meetings={meetings} fetchSDRs={fetchSDRs} />
           </>
         )}
 
@@ -1652,7 +1652,7 @@ export default function ManagerDashboard() {
                           Meetings Held ({modalContent.heldMeetings.length})
                         </h4>
                         <div className="space-y-3">
-                          {modalContent.heldMeetings.map((meeting) => (
+                          {modalContent.heldMeetings.map((meeting: any) => (
                             <div key={meeting.id} className="bg-green-50">
                               <MeetingCard
                                 meeting={meeting}
@@ -1665,20 +1665,20 @@ export default function ManagerDashboard() {
                     )}
 
                     {/* Other Meetings Section */}
-                    {modalContent.setMeetings.filter(m => 
+                    {modalContent.setMeetings.filter((m: any) => 
                       !(m.status === 'confirmed' && !m.no_show && m.held_at !== null)
                     ).length > 0 && (
                       <div>
                         <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
                           <Clock className="w-5 h-5" />
-                          Other Meetings ({modalContent.setMeetings.filter(m => 
+                          Other Meetings ({modalContent.setMeetings.filter((m: any) => 
                             !(m.status === 'confirmed' && !m.no_show && m.held_at !== null)
                           ).length})
                         </h4>
                         <div className="space-y-3">
                           {modalContent.setMeetings
-                            .filter(m => !(m.status === 'confirmed' && !m.no_show && m.held_at !== null))
-                            .map((meeting) => (
+                            .filter((m: any) => !(m.status === 'confirmed' && !m.no_show && m.held_at !== null))
+                            .map((meeting: any) => (
                               <div key={meeting.id} className="bg-gray-50">
                                 <MeetingCard
                                   meeting={meeting}

@@ -128,6 +128,9 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
       if (assignmentsError) throw assignmentsError;
 
+      console.log('🔍 Fetched assignments for month', selectedMonth, ':', assignmentsData);
+      console.log('🔍 All clients data:', clientsData);
+
       // Only show clients that either:
       // 1. Have assignments in the current month, OR
       // 2. Were created in the current month (for newly added clients)
@@ -150,7 +153,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             a.monthly_set_target === -1
           );
           
-          if (hasHiddenMarker) return false; // Exclude clients with hidden markers
+          if (hasHiddenMarker) {
+            console.log(`🔍 Client "${client.name}" excluded: has hidden marker`);
+            return false; // Exclude clients with hidden markers
+          }
           
           // Check if client has assignments in this month
           const hasAssignments = (assignmentsData || []).some((a: any) => 
@@ -168,8 +174,21 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
           
           const wasCreatedThisMonth = clientCreatedDate >= selectedMonthDate && clientCreatedDate < nextMonthDate;
           
+          console.log(`🔍 Client "${client.name}":`, {
+            hasAssignments,
+            wasCreatedThisMonth,
+            clientCreatedDate: clientCreatedDate.toISOString(),
+            selectedMonthDate: selectedMonthDate.toISOString(),
+            nextMonthDate: nextMonthDate.toISOString(),
+            assignments: client.assignments
+          });
+          
           // Show client if it has assignments OR was created this month
-          return hasAssignments || wasCreatedThisMonth;
+          const shouldShow = hasAssignments || wasCreatedThisMonth;
+          if (!shouldShow) {
+            console.log(`🔍 Client "${client.name}" excluded: no assignments and not created this month`);
+          }
+          return shouldShow;
         });
 
       let sortedClients = [...processedClients];
@@ -332,11 +351,31 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   e.preventDefault();
   if (!selectedClient || !selectedSDR) return;
 
-  // ... existing duplicate check code ...
+  // Check for duplicate assignment
+  const existingAssignment = clients.find(client => 
+    client.id === selectedClient && 
+    client.assignments.some(assignment => assignment.sdr_id === selectedSDR)
+  );
+
+  if (existingAssignment) {
+    setError('This SDR is already assigned to this client for the selected month');
+    return;
+  }
 
   try {
+    setLoading(true);
+    setError(null);
+    
     // Use selectedMonth as currentMonth for correct month logic
     const currentMonth = selectedMonth;
+
+    console.log('🔍 Assignment Debug:', {
+      selectedClient,
+      selectedSDR,
+      currentMonth,
+      monthlySetTarget,
+      monthlyHoldTarget
+    });
 
     const { data: existingAssignment, error: checkError } = await supabase
       .from('assignments')
@@ -347,6 +386,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       .maybeSingle();
 
     if (checkError) throw checkError;
+
+    console.log('🔍 Existing assignment check:', existingAssignment);
 
     if (existingAssignment) {
       const { error: updateError } = await supabase
@@ -361,6 +402,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
       if (updateError) throw updateError;
     } else {
+      console.log('🔍 Creating new assignment...');
+      
       const { data: insertedAssignment, error: insertError } = await supabase
         .from('assignments')
         .insert([{
@@ -373,7 +416,12 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('❌ Insert error:', insertError);
+        throw insertError;
+      }
+
+      console.log('✅ Assignment created successfully:', insertedAssignment);
 
       // Add to undo stack for new assignments
       addToUndoStack('assign_client', {
@@ -389,6 +437,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
     setMonthlySetTarget(0);
     setMonthlyHoldTarget(0);
     setShowAssignForm(false);
+    
+    console.log('🔄 Refreshing client list...');
     await fetchClients();
     onUpdate();
   } catch (err) {

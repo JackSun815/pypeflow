@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Calculator, DollarSign, TrendingUp, Target, AlertCircle, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calculator, TrendingUp, Target, AlertCircle, ChevronRight, History, Calendar } from 'lucide-react';
 import { useMeetings } from '../hooks/useMeetings';
 import { useClients } from '../hooks/useClients';
 import { supabase } from '../lib/supabase';
@@ -17,6 +17,17 @@ interface CommissionStructure {
   }>;
 }
 
+interface HistoricalCommissionData {
+  month: string;
+  year: number;
+  monthName: string;
+  heldGoal: number;
+  heldMeetings: number;
+  progressPercentage: number;
+  commission: number;
+  commissionGoalOverride?: number;
+}
+
 export default function Commissions({ sdrId }: { sdrId: string }) {
   const { meetings } = useMeetings(sdrId);
   const { clients } = useClients(sdrId);
@@ -25,14 +36,25 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [commissionGoalOverride, setCommissionGoalOverride] = useState<CommissionGoalOverride | null>(null);
+  const [historicalData, setHistoricalData] = useState<HistoricalCommissionData[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Calculate held goal and held meetings for commissions
   const calculatedGoal = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
   const heldGoal = commissionGoalOverride ? commissionGoalOverride.commission_goal : calculatedGoal;
+  
+  // Filter meetings to current month only
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
   const heldMeetings = meetings.filter(m => 
     m.status === 'confirmed' && 
     !m.no_show && 
-    m.held_at !== null
+    m.held_at !== null &&
+    new Date(m.held_at) >= monthStart &&
+    new Date(m.held_at) <= monthEnd
   ).length;
 
   useEffect(() => {
@@ -48,7 +70,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
         const { data, error: fetchError } = await supabase
           .from('compensation_structures')
           .select('*')
-          .eq('sdr_id', sdrId)
+          .eq('sdr_id', sdrId as any)
           .maybeSingle();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
@@ -65,14 +87,14 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
             goal_tiers: []
           });
         } else {
-          setStructure(data);
+          setStructure(data as unknown as CommissionStructure);
         }
 
         // Load commission goal override
         const { data: overrideData, error: overrideError } = await supabase
           .from('commission_goal_overrides')
           .select('*')
-          .eq('sdr_id', sdrId)
+          .eq('sdr_id', sdrId as any)
           .maybeSingle();
 
         if (overrideError && overrideError.code !== 'PGRST116') {
@@ -80,7 +102,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
         }
 
         if (overrideData) {
-          setCommissionGoalOverride(overrideData);
+          setCommissionGoalOverride(overrideData as unknown as CommissionGoalOverride);
         }
 
         setError(null);
@@ -94,6 +116,74 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
 
     loadCompensation();
   }, [sdrId]);
+
+  // Function to fetch historical commission data
+  const fetchHistoricalData = async () => {
+    if (!sdrId || !structure) return;
+    
+    setHistoryLoading(true);
+    try {
+      // Get the last 12 months of data
+      const now = new Date();
+      const historicalData: HistoricalCommissionData[] = [];
+      
+      for (let i = 1; i <= 12; i++) {
+        const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+        const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+        const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Fetch assignments for this month
+        const { data: assignments } = await supabase
+          .from('assignments')
+          .select('monthly_hold_target')
+          .eq('sdr_id', sdrId as any)
+          .eq('month', monthKey as any);
+        
+        // Fetch meetings for this month
+        const { data: monthMeetings } = await supabase
+          .from('meetings')
+          .select('*')
+          .eq('sdr_id', sdrId as any)
+          .gte('held_at', monthStart.toISOString())
+          .lte('held_at', monthEnd.toISOString());
+        
+        // Calculate held meetings (confirmed, not no-show, with held_at)
+        const heldMeetings = (monthMeetings || []).filter((m: any) => 
+          m.status === 'confirmed' && 
+          !m.no_show && 
+          m.held_at !== null
+        ).length;
+        
+        // Calculate held goal
+        const heldGoal = (assignments || []).reduce((sum, assignment: any) => 
+          sum + (assignment.monthly_hold_target || 0), 0
+        );
+        
+        // Calculate commission for this month
+        const commission = calculateCommission(heldMeetings);
+        
+        // Calculate progress percentage
+        const progressPercentage = heldGoal > 0 ? (heldMeetings / heldGoal) * 100 : 0;
+        
+        historicalData.push({
+          month: monthKey,
+          year: targetDate.getFullYear(),
+          monthName: targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          heldGoal,
+          heldMeetings,
+          progressPercentage,
+          commission
+        });
+      }
+      
+      setHistoricalData(historicalData.reverse()); // Show oldest first
+    } catch (err) {
+      console.error('Error fetching historical data:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -155,7 +245,6 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
     }
   };
 
-  const confirmedMeetings = meetings.filter(m => m.status === 'confirmed').length;
   const actualCommission = calculateCommission(heldMeetings);
   const mockCommission = calculateCommission(mockMeetings);
 
@@ -425,6 +514,97 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Commission History */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <History className="w-5 h-5" />
+                Commission History
+              </h2>
+              <button
+                onClick={() => {
+                  if (!showHistory) {
+                    fetchHistoricalData();
+                  }
+                  setShowHistory(!showHistory);
+                }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                <Calendar className="w-4 h-4" />
+                {showHistory ? 'Hide History' : 'Show History'}
+              </button>
+            </div>
+          </div>
+          
+          {showHistory && (
+            <div className="p-6">
+              {historyLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+                </div>
+              ) : historicalData.length > 0 ? (
+                <div className="space-y-4">
+                  {historicalData.map((data) => (
+                    <div
+                      key={data.month}
+                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {data.monthName}
+                        </h3>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-green-600">
+                            ${data.commission.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-500">Commission Earned</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                          <p className="text-sm text-gray-500">Held Goal</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {data.heldGoal} meetings
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Meetings Held</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {data.heldMeetings} meetings
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Goal Progress</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {data.progressPercentage.toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(data.progressPercentage, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No historical commission data available</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Historical data will appear here once you have completed months with meetings
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

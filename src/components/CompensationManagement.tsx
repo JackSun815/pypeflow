@@ -89,16 +89,18 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           setHasOverride(true);
         }
 
-        // Calculate the current goal from assignments
+        // Calculate the current goal from current month's client assignments
+        // This matches the approach used in Manager Dashboard and useSDRs hook
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        
         const { data: assignmentsData, error: assignmentsError } = await supabase
           .from('assignments')
           .select(`
-            monthly_hold_target,
-            clients (
-              monthly_hold_target
-            )
+            monthly_hold_target
           `)
-          .eq('sdr_id', sdrId);
+          .eq('sdr_id', sdrId)
+          .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`);
 
         if (assignmentsError) {
           console.error('Load assignments error:', assignmentsError);
@@ -106,6 +108,10 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           const calculatedGoal = assignmentsData?.reduce((sum, assignment) => {
             return sum + (assignment.monthly_hold_target || 0);
           }, 0) || 0;
+          console.log(`[DEBUG] Commission goal calculation for SDR ${sdrId}:`, {
+            assignments: assignmentsData,
+            calculatedGoal
+          });
           setCalculatedGoal(calculatedGoal);
         }
       } catch (err) {

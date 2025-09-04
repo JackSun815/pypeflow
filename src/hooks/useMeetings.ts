@@ -77,8 +77,8 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
           table: 'meetings'
         },
         (payload) => {
-          const changedMeetingSdrId = payload.new?.sdr_id;
-          if (sdrId && changedMeetingSdrId === sdrId) {
+          const changedMeetingSdrId = (payload.new as any)?.sdr_id;
+          if (fetchAll || (sdrId && changedMeetingSdrId === sdrId)) {
             fetchMeetings();
           }
         }
@@ -88,7 +88,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
     return () => {
       supabaseClient.removeChannel(subscription);
     };
-  }, [sdrId, supabaseClient]);
+  }, [sdrId, supabaseClient, fetchAll]);
 
   async function addMeeting(
     clientId: string,
@@ -176,7 +176,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
     const { error } = await supabaseClient
       .from('meetings')
       .update(updateData)
-      .eq('id', updatedMeeting.id);
+      .eq('id', updatedMeeting.id as any);
 
     if (error) throw error;
     await fetchMeetings();
@@ -201,11 +201,11 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
         const { data: meeting } = await supabaseClient
           .from('meetings')
           .select('scheduled_date')
-          .eq('id', meetingId)
+          .eq('id', meetingId as any)
           .single();
           
-        if (meeting) {
-          const meetingDateString = meeting.scheduled_date.split('T')[0];
+        if (meeting && (meeting as any).scheduled_date) {
+          const meetingDateString = (meeting as any).scheduled_date.split('T')[0];
           const todayString = new Date().toISOString().split('T')[0];
           
           if (meetingDateString < todayString) {
@@ -217,7 +217,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
       const { error } = await supabaseClient
         .from('meetings')
         .update(updateData)
-        .eq('id', meetingId);
+        .eq('id', meetingId as any);
 
       if (error) throw error;
       await fetchMeetings();
@@ -244,7 +244,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
       const { error } = await supabaseClient
         .from('meetings')
         .update(updateData)
-        .eq('id', meetingId);
+        .eq('id', meetingId as any);
 
       if (error) throw error;
       await fetchMeetings();
@@ -259,7 +259,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
       const { error } = await supabaseClient
         .from('meetings')
         .delete()
-        .eq('id', meetingId);
+        .eq('id', meetingId as any);
 
       if (error) throw error;
       await fetchMeetings();
