@@ -96,6 +96,8 @@ export default function ManagerDashboard() {
   
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [sdrPerformanceExportModalOpen, setSdrPerformanceExportModalOpen] = useState(false);
+  const [clientPerformanceExportModalOpen, setClientPerformanceExportModalOpen] = useState(false);
   const [exportFilters, setExportFilters] = useState({
     dateRange: 'all', // 'all', 'currentMonth', 'custom'
     startDate: '',
@@ -232,16 +234,27 @@ export default function ManagerDashboard() {
       }
       
       const headers = Object.keys(exportData[0]);
+      
+      // Helper function to properly escape CSV values
+      const escapeCSVValue = (value: any): string => {
+        if (value === null || value === undefined) {
+          return '';
+        }
+        
+        const stringValue = String(value);
+        
+        // If the value contains comma, quote, or newline, wrap in quotes and escape internal quotes
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        
+        return stringValue;
+      };
+
       const csvContent = [
-        headers.join(','),
+        headers.map(escapeCSVValue).join(','),
         ...exportData.map(row => 
-          headers.map(header => {
-            const value = row[header];
-            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value;
-          }).join(',')
+          headers.map(header => escapeCSVValue(row[header])).join(',')
         )
       ].join('\n');
       
@@ -260,6 +273,174 @@ export default function ManagerDashboard() {
     } catch (err) {
       console.error('Export failed:', err);
       alert('Export failed. Please try again.');
+    }
+  }
+
+  // Export SDR Performance function
+  async function exportSDRPerformance() {
+    try {
+      // Calculate SDR performance metrics
+      const sdrPerformanceData = sdrs.map(sdr => {
+        const sdrMeetings = meetings.filter(meeting => meeting.sdr_id === sdr.id);
+        const monthlyMeetings = sdrMeetings.filter(meeting => {
+          const meetingDate = new Date(meeting.scheduled_date);
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          return meetingDate >= monthStart && meetingDate <= monthEnd;
+        });
+
+        const totalMeetings = monthlyMeetings.length;
+        const heldMeetings = monthlyMeetings.filter(m => m.held_at && !m.no_show).length;
+        const noShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
+        const pendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length;
+        const confirmedMeetings = monthlyMeetings.filter(m => m.status === 'confirmed' && !m.held_at && !m.no_show).length;
+
+        // Calculate targets (you may need to adjust this based on your data structure)
+        const totalSetTarget = sdr.clients?.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0) || 0;
+        const totalHeldTarget = sdr.clients?.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0) || 0;
+
+        const setTargetProgress = totalSetTarget > 0 ? (totalMeetings / totalSetTarget) * 100 : 0;
+        const heldTargetProgress = totalHeldTarget > 0 ? (heldMeetings / totalHeldTarget) * 100 : 0;
+
+        return {
+          'SDR Name': sdr.full_name,
+          'Total Meetings Set': totalMeetings,
+          'Meetings Held': heldMeetings,
+          'No Shows': noShowMeetings,
+          'Pending Meetings': pendingMeetings,
+          'Confirmed Meetings': confirmedMeetings,
+          'Monthly Set Target': totalSetTarget,
+          'Monthly Held Target': totalHeldTarget,
+          'Set Target Progress (%)': setTargetProgress.toFixed(1),
+          'Held Target Progress (%)': heldTargetProgress.toFixed(1),
+          'Hold Rate (%)': totalMeetings > 0 ? ((heldMeetings / totalMeetings) * 100).toFixed(1) : '0.0',
+          'No Show Rate (%)': totalMeetings > 0 ? ((noShowMeetings / totalMeetings) * 100).toFixed(1) : '0.0'
+        };
+      });
+
+      // Helper function to properly escape CSV values
+      const escapeCSVValue = (value: any): string => {
+        if (value === null || value === undefined) {
+          return '';
+        }
+        
+        const stringValue = String(value);
+        
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        
+        return stringValue;
+      };
+
+      const headers = Object.keys(sdrPerformanceData[0] || {});
+      const csvContent = [
+        headers.map(escapeCSVValue).join(','),
+        ...sdrPerformanceData.map(row => 
+          headers.map(header => escapeCSVValue(row[header])).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `sdr_performance_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setSdrPerformanceExportModalOpen(false);
+    } catch (err) {
+      console.error('SDR Performance export failed:', err);
+      alert('SDR Performance export failed. Please try again.');
+    }
+  }
+
+  // Export Client Performance function
+  async function exportClientPerformance() {
+    try {
+      // Calculate client performance metrics
+      const clientPerformanceData = clients.map(client => {
+        const clientMeetings = meetings.filter(meeting => meeting.client_id === client.id);
+        const monthlyMeetings = clientMeetings.filter(meeting => {
+          const meetingDate = new Date(meeting.scheduled_date);
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          return meetingDate >= monthStart && meetingDate <= monthEnd;
+        });
+
+        const totalMeetings = monthlyMeetings.length;
+        const heldMeetings = monthlyMeetings.filter(m => m.held_at && !m.no_show).length;
+        const noShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
+        const pendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length;
+        const confirmedMeetings = monthlyMeetings.filter(m => m.status === 'confirmed' && !m.held_at && !m.no_show).length;
+
+        // Get SDRs assigned to this client
+        const assignedSDRs = sdrs.filter(sdr => 
+          sdr.clients?.some(c => c.id === client.id)
+        ).map(sdr => sdr.full_name).join(', ');
+
+        return {
+          'Client Name': client.name,
+          'Assigned SDRs': assignedSDRs || 'No SDRs Assigned',
+          'Total Meetings Set': totalMeetings,
+          'Meetings Held': heldMeetings,
+          'No Shows': noShowMeetings,
+          'Pending Meetings': pendingMeetings,
+          'Confirmed Meetings': confirmedMeetings,
+          'Monthly Set Target': client.monthly_set_target || 0,
+          'Monthly Held Target': client.monthly_hold_target || 0,
+          'Set Target Progress (%)': client.monthly_set_target > 0 ? ((totalMeetings / client.monthly_set_target) * 100).toFixed(1) : '0.0',
+          'Held Target Progress (%)': client.monthly_hold_target > 0 ? ((heldMeetings / client.monthly_hold_target) * 100).toFixed(1) : '0.0',
+          'Hold Rate (%)': totalMeetings > 0 ? ((heldMeetings / totalMeetings) * 100).toFixed(1) : '0.0',
+          'No Show Rate (%)': totalMeetings > 0 ? ((noShowMeetings / totalMeetings) * 100).toFixed(1) : '0.0',
+          'Client Created': new Date(client.created_at).toLocaleDateString()
+        };
+      });
+
+      // Helper function to properly escape CSV values
+      const escapeCSVValue = (value: any): string => {
+        if (value === null || value === undefined) {
+          return '';
+        }
+        
+        const stringValue = String(value);
+        
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        
+        return stringValue;
+      };
+
+      const headers = Object.keys(clientPerformanceData[0] || {});
+      const csvContent = [
+        headers.map(escapeCSVValue).join(','),
+        ...clientPerformanceData.map(row => 
+          headers.map(header => escapeCSVValue(row[header])).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `client_performance_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setClientPerformanceExportModalOpen(false);
+    } catch (err) {
+      console.error('Client Performance export failed:', err);
+      alert('Client Performance export failed. Please try again.');
     }
   }
 
@@ -922,7 +1103,18 @@ export default function ManagerDashboard() {
             {/* SDR Performance Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">SDR Performance</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">SDR Performance</h2>
+                  <button
+                    onClick={() => setSdrPerformanceExportModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export
+                  </button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -1171,7 +1363,18 @@ export default function ManagerDashboard() {
             {/* Clients Performance Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Clients Performance</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Clients Performance</h2>
+                  <button
+                    onClick={() => setClientPerformanceExportModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export
+                  </button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -1952,6 +2155,100 @@ export default function ManagerDashboard() {
                     className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
                   >
                     Export to CSV
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SDR Performance Export Modal */}
+        {sdrPerformanceExportModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Export SDR Performance</h3>
+                  <button
+                    onClick={() => setSdrPerformanceExportModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XCircle className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600 mb-4">
+                    This will export SDR performance metrics including:
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Total meetings set vs targets</li>
+                    <li>• Meetings held vs targets</li>
+                    <li>• Hold rates and no-show rates</li>
+                    <li>• Progress percentages</li>
+                    <li>• Meeting status breakdowns</li>
+                  </ul>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setSdrPerformanceExportModalOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={exportSDRPerformance}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                  >
+                    Export 
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Client Performance Export Modal */}
+        {clientPerformanceExportModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Export Client Performance</h3>
+                  <button
+                    onClick={() => setClientPerformanceExportModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XCircle className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600 mb-4">
+                    This will export client performance metrics including:
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Client meeting activity</li>
+                    <li>• Assigned SDRs</li>
+                    <li>• Target progress</li>
+                    <li>• Hold rates and no-show rates</li>
+                    <li>• Meeting status breakdowns</li>
+                  </ul>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setClientPerformanceExportModalOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={exportClientPerformance}
+                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700"
+                  >
+                    Export
                   </button>
                 </div>
               </div>
