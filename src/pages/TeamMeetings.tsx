@@ -129,19 +129,10 @@ export default function TeamMeetings({
     meeting => meeting.scheduled_date.split('T')[0] === todayString
   ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
+  const nowDate = new Date();
   const pendingMeetings = filteredMeetings
-    .filter(meeting => meeting.status === 'pending' && !meeting.no_show)
-    .sort((a, b) => {
-      const dateA = new Date(a.scheduled_date);
-      const dateB = new Date(b.scheduled_date);
-      const today = new Date();
-      
-      // Calculate absolute difference from today
-      const diffA = Math.abs(dateA.getTime() - today.getTime());
-      const diffB = Math.abs(dateB.getTime() - today.getTime());
-      
-      return diffA - diffB;
-    });
+    .filter(meeting => meeting.status === 'pending' && !meeting.no_show && new Date(meeting.scheduled_date) >= nowDate)
+    .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const confirmedMeetings = filteredMeetings
     .filter(meeting => meeting.status === 'confirmed')

@@ -270,8 +270,9 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
   }
 
   // Calculate pending meetings using the same logic as Team Meetings
+  const nowDate = new Date();
   const pendingMeetings = meetings.filter(
-    meeting => meeting.status === 'pending' && !meeting.no_show
+    meeting => meeting.status === 'pending' && !meeting.no_show && new Date(meeting.scheduled_date) >= nowDate
   ).length;
 
   return { 

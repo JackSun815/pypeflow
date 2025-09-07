@@ -78,6 +78,20 @@ export function MeetingCard({
       console.error('No onSave handler provided');
       return;
     }
+
+    // Validate the scheduled_date
+    if (!editedData.scheduled_date) {
+      console.error('Scheduled date is required');
+      return;
+    }
+
+    // Validate that the date is not in the past (unless it's a completed meeting)
+    const meetingDate = new Date(editedData.scheduled_date);
+    const now = new Date();
+    if (meetingDate < now && !editedData.held_at) {
+      console.warn('Warning: Meeting is scheduled in the past');
+    }
+
     const updatedMeeting = {
       ...meeting,
       contact_full_name: editedData.contact_full_name,
@@ -98,6 +112,13 @@ export function MeetingCard({
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value;
+    
+    // Validate date format
+    if (!newDate || !newDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      console.error('Invalid date format');
+      return;
+    }
+    
     const currentTime = getTimePart(editedData.scheduled_date);
     
     // Create a DateTime in EST timezone with the new date and current time
@@ -114,6 +135,12 @@ export function MeetingCard({
       },
       { zone: 'America/New_York' }
     );
+    
+    // Validate the DateTime
+    if (!newDateTime.isValid) {
+      console.error('Invalid date/time combination:', newDateTime.invalidReason);
+      return;
+    }
     
     const isoString = newDateTime.toISO();
     if (isoString) {

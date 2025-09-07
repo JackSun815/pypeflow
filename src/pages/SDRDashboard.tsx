@@ -241,18 +241,19 @@ export default function SDRDashboard() {
     setEditingMeeting(null);
   };
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const nowDate = new Date();
 
   const pendingMeetings = meetings.filter(
-    meeting => meeting.status === 'pending' && !meeting.no_show && (meeting.icp_status || 'pending') !== 'denied'
+    meeting => meeting.status === 'pending' && !meeting.no_show && (meeting.icp_status || 'pending') !== 'denied' && new Date(meeting.scheduled_date) >= nowDate
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  // Past Due Pending: confirmed, not held, not no_show, scheduled_date < now
-  const nowDate = new Date();
+  // Past Due Pending: confirmed or pending, not held, not no_show, scheduled_date < now
   const pastDuePendingMeetings = meetings.filter(
     meeting =>
-      meeting.status === 'confirmed' &&
+      (meeting.status === 'confirmed' || meeting.status === 'pending') &&
       !meeting.held_at &&
       !meeting.no_show &&
+      (meeting.icp_status || 'pending') !== 'denied' &&
       new Date(meeting.scheduled_date) < nowDate
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 

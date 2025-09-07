@@ -579,9 +579,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             const sdr = sdrs.find(s => s.id === assignment.sdr_id);
             exportData.push({
               'Client Name': client.name,
-              'Client ID': client.id,
               'SDR Name': sdr?.full_name || 'Unknown SDR',
-              'SDR ID': assignment.sdr_id,
               'Month': selectedMonth,
               'Monthly Set Target': assignment.monthly_set_target,
               'Monthly Hold Target': assignment.monthly_hold_target,
@@ -595,9 +593,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
           // Client has no assignments for this month
           exportData.push({
             'Client Name': client.name,
-            'Client ID': client.id,
             'SDR Name': 'No SDR Assigned',
-            'SDR ID': '',
             'Month': selectedMonth,
             'Monthly Set Target': 0,
             'Monthly Hold Target': 0,

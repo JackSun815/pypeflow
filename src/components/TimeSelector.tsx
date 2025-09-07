@@ -67,9 +67,23 @@ export default function TimeSelector({
       hour24 = newHour + 12; // PM times get +12
     }
     
-    // Create a DateTime in the specified timezone
-    const now = DateTime.now().setZone(timezone);
-    const localTime = now.set({ 
+    // Parse the current value to get the existing date
+    let baseDate;
+    try {
+      if (value.includes('T') || value.includes(' ')) {
+        // If we have a full ISO string, use that date
+        baseDate = DateTime.fromISO(value, { zone: timezone });
+      } else {
+        // If we only have time, use today's date
+        baseDate = DateTime.now().setZone(timezone);
+      }
+    } catch (e) {
+      // Fallback to today's date if parsing fails
+      baseDate = DateTime.now().setZone(timezone);
+    }
+    
+    // Create a DateTime with the existing date but new time
+    const localTime = baseDate.set({ 
       hour: hour24, 
       minute: newMinute, 
       second: 0, 
