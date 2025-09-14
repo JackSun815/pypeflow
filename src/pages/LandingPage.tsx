@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   ArrowRight, 
   CheckCircle, 
@@ -7,13 +7,9 @@ import {
   Calendar, 
   BarChart3, 
   Clock, 
-  Zap,
   Star,
   Play,
   Mail,
-  Phone,
-  MapPin,
-  ChevronDown,
   Menu,
   X
 } from 'lucide-react';
@@ -24,22 +20,22 @@ export default function LandingPage() {
 
   const features = {
     sdr: [
-      { icon: Target, title: 'Meeting Goal Tracking', description: 'Set and track monthly meeting targets with real-time progress updates' },
-      { icon: Calendar, title: 'Smart Scheduling', description: 'Efficiently schedule meetings with integrated calendar management' },
-      { icon: BarChart3, title: 'Performance Analytics', description: 'Monitor your performance with detailed analytics and insights' },
-      { icon: Clock, title: 'Time Management', description: 'Optimize your time with intelligent meeting scheduling and reminders' }
+      { icon: Target, title: 'Real-Time Goal Tracking', description: 'Track monthly set and held meeting targets with live progress bars, client-specific goals, and performance metrics that update instantly' },
+      { icon: Calendar, title: 'Advanced Meeting Management', description: 'Schedule meetings with timezone support, contact details, LinkedIn integration, and automated status tracking (pending, confirmed, held, no-show)' },
+      { icon: BarChart3, title: 'Comprehensive Analytics', description: 'View detailed performance charts, meeting distribution, client performance comparisons, and monthly progress visualizations' },
+      { icon: Clock, title: 'Smart Meeting Lists', description: 'Organized meeting lists by status: pending, confirmed, completed, no-shows, and ICP-qualified meetings with easy filtering and management' }
     ],
     manager: [
-      { icon: Users, title: 'Team Management', description: 'Oversee your SDR team with comprehensive management tools' },
-      { icon: BarChart3, title: 'Advanced Analytics', description: 'Get detailed insights into team performance and meeting outcomes' },
-      { icon: Target, title: 'Goal Setting', description: 'Set and monitor team-wide goals with individual target tracking' },
-      { icon: Calendar, title: 'Meeting Oversight', description: 'Track all team meetings with detailed reporting and analytics' }
+      { icon: Users, title: 'Complete Team Oversight', description: 'Manage SDRs, assign clients, set individual targets, track team performance, and generate comprehensive reports' },
+      { icon: BarChart3, title: 'Advanced Team Analytics', description: 'Team-wide performance dashboards, individual SDR metrics, client performance analysis, and exportable data reports' },
+      { icon: Target, title: 'Goal & Target Management', description: 'Set monthly targets for each SDR, track progress across all team members, and manage client assignments with detailed goal tracking' },
+      { icon: Calendar, title: 'Meeting Oversight & History', description: 'View all team meetings, track meeting history, manage meeting statuses, and oversee the complete sales process' }
     ],
     client: [
-      { icon: Calendar, title: 'Meeting Coordination', description: 'Seamlessly coordinate meetings with your SDR team' },
-      { icon: Clock, title: 'Flexible Scheduling', description: 'Choose meeting times that work best for your schedule' },
-      { icon: Mail, title: 'Communication Hub', description: 'Centralized communication with your dedicated SDR' },
-      { icon: CheckCircle, title: 'Progress Tracking', description: 'Stay updated on meeting progress and outcomes' }
+      { icon: Calendar, title: 'Seamless Meeting Coordination', description: 'Access your dedicated SDR dashboard through secure token-based links for easy meeting scheduling and coordination' },
+      { icon: Clock, title: 'Flexible Timezone Support', description: 'Schedule meetings across different timezones with automatic time conversion and prospect-friendly scheduling' },
+      { icon: Mail, title: 'Direct SDR Communication', description: 'Direct access to your assigned SDR with integrated contact information and meeting management' },
+      { icon: CheckCircle, title: 'Meeting Status Tracking', description: 'Real-time updates on meeting confirmations, held meetings, and progress tracking with your dedicated SDR team' }
     ]
   };
 
@@ -48,21 +44,21 @@ export default function LandingPage() {
       name: 'Sarah Johnson',
       role: 'Senior SDR',
       company: 'TechCorp',
-      content: 'PypeFlow has transformed how I manage my meetings. The goal tracking keeps me motivated and the analytics help me improve every day.',
+      content: 'The real-time goal tracking and client-specific targets keep me focused. I can see exactly where I stand with each client and the progress bars motivate me to stay on track. The meeting management with timezone support is a game-changer.',
       rating: 5
     },
     {
       name: 'Michael Chen',
       role: 'Sales Manager',
       company: 'GrowthCo',
-      content: 'As a manager, I love the visibility PypeFlow provides. I can see exactly how my team is performing and where we need to focus.',
+      content: 'The team oversight features are incredible. I can manage all my SDRs, set individual targets, and track performance across the entire team. The analytics dashboard gives me insights I never had before.',
       rating: 5
     },
     {
       name: 'Emily Rodriguez',
       role: 'VP of Sales',
       company: 'InnovateTech',
-      content: 'Our clients love the seamless meeting experience. PypeFlow has improved our client satisfaction scores significantly.',
+      content: 'Our clients love the secure token-based access to their SDR dashboards. The seamless meeting coordination and real-time status updates have improved our client satisfaction and meeting success rates by 40%.',
       rating: 5
     }
   ];
@@ -133,9 +129,15 @@ export default function LandingPage() {
                 Get Started Free
                 <ArrowRight className="w-5 h-5" />
               </a>
-              <button className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+              <button 
+                onClick={() => {
+                  // Scroll to feature showcase section
+                  document.querySelector('.py-20.bg-white')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              >
                 <Play className="w-5 h-5" />
-                Watch Demo
+                See It In Action
               </button>
             </div>
           </div>
@@ -198,20 +200,487 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-white mb-2">500+</div>
+              <div className="text-3xl font-bold text-white mb-2">50+</div>
               <div className="text-blue-100">Active SDRs</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-white mb-2">10,000+</div>
+              <div className="text-3xl font-bold text-white mb-2">2,500+</div>
               <div className="text-blue-100">Meetings Tracked</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-white mb-2">95%</div>
-              <div className="text-blue-100">Client Satisfaction</div>
+              <div className="text-3xl font-bold text-white mb-2">40%</div>
+              <div className="text-blue-100">Meeting Success Rate Increase</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-white mb-2">24/7</div>
-              <div className="text-blue-100">Support Available</div>
+              <div className="text-3xl font-bold text-white mb-2">Real-time</div>
+              <div className="text-blue-100">Goal Tracking</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-gray-600">
+              Choose the plan that fits your team size and needs
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* SDR Plan */}
+            <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-gray-100">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">SDR Plan</h3>
+                <p className="text-gray-600">Perfect for individual SDRs</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-blue-600">$29</span>
+                  <span className="text-gray-600">/month</span>
+                </div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Real-time goal tracking</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Advanced meeting management</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Performance analytics</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Timezone support</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Client-specific targets</span>
+                </li>
+              </ul>
+              <a
+                href="/login"
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
+              >
+                Get Started
+              </a>
+            </div>
+
+            {/* Manager Plan */}
+            <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-blue-500 relative">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  Most Popular
+                </span>
+              </div>
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Manager Plan</h3>
+                <p className="text-gray-600">Complete team management</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-blue-600">$99</span>
+                  <span className="text-gray-600">/month</span>
+                </div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Everything in SDR Plan</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Team oversight dashboard</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Advanced team analytics</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>SDR management tools</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Client assignment management</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Exportable reports</span>
+                </li>
+              </ul>
+              <a
+                href="/login"
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
+              >
+                Get Started
+              </a>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-gray-100">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                <p className="text-gray-600">Custom solutions for large teams</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-blue-600">Custom</span>
+                </div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Everything in Manager Plan</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Custom integrations</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Dedicated support</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Advanced security</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Custom reporting</span>
+                </li>
+              </ul>
+              <a
+                href="/login"
+                className="w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-700 transition-colors text-center block"
+              >
+                Contact Sales
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Dashboard Preview Section */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Your Dashboard Awaits
+            </h2>
+            <p className="text-xl text-gray-600">
+              See exactly what you'll get with PypeFlow - no more guessing
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">SDR Dashboard</h3>
+              <p className="text-gray-600 mb-6">
+                Your personal command center for meeting management and goal tracking. 
+                Everything you need to succeed as an SDR in one beautiful interface.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Real-time goal tracking with progress bars</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Client cards with individual targets</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Meeting lists organized by status</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Performance analytics and charts</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-xl shadow-2xl p-6 border border-gray-200">
+              <div className="bg-gray-100 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+                <div className="text-sm font-semibold text-gray-700">SDR Dashboard - December 2024</div>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-700">15</div>
+                    <div className="text-xs text-blue-600">Meetings Set</div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <div className="text-2xl font-bold text-green-700">12</div>
+                    <div className="text-xs text-green-600">Meetings Held</div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Client: TechCorp</div>
+                  <div className="flex justify-between text-xs text-gray-600 mb-1">
+                    <span>Progress</span>
+                    <span>75%</span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded">
+                    <Clock className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm">3 Pending Meetings</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-green-50 rounded">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-sm">5 Confirmed Meetings</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
+              <div className="bg-white rounded-xl shadow-2xl p-6 border border-gray-200">
+                <div className="bg-gray-100 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-700">Manager Dashboard - Team Overview</div>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-blue-50 p-2 rounded text-center">
+                      <div className="text-lg font-bold text-blue-700">8</div>
+                      <div className="text-xs text-blue-600">SDRs</div>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded text-center">
+                      <div className="text-lg font-bold text-green-700">45</div>
+                      <div className="text-xs text-green-600">Meetings</div>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded text-center">
+                      <div className="text-lg font-bold text-purple-700">12</div>
+                      <div className="text-xs text-purple-600">Clients</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Team Performance</span>
+                      <span className="font-semibold text-green-600">85%</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full">
+                      <div className="h-full bg-green-500 rounded-full" style={{ width: '85%' }}></div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Sarah Johnson - 15 meetings</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Mike Chen - 12 meetings</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                      <span>Alex Smith - 8 meetings</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Manager Dashboard</h3>
+              <p className="text-gray-600 mb-6">
+                Complete oversight of your SDR team with comprehensive analytics, 
+                individual performance tracking, and team-wide goal management.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Team performance overview</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Individual SDR tracking</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Client assignment management</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Exportable reports and analytics</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Showcase Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              See PypeFlow in Action
+            </h2>
+            <p className="text-xl text-gray-600">
+              Real features that drive real results for your sales team
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Real-Time Goal Tracking</h3>
+              <p className="text-gray-600 mb-6">
+                Track monthly set and held meeting targets with live progress bars that update instantly. 
+                See exactly where you stand with each client and get motivated by visual progress indicators.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Client-specific monthly targets</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Live progress bars with month completion tracking</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Performance metrics and analytics</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Goal tier tracking with bonus calculations</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-8 rounded-xl">
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h4 className="font-semibold text-gray-900 mb-4">Monthly Set Target</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Progress</span>
+                    <span className="font-semibold text-green-600">75%</span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-600 rounded-full" style={{ width: '75%' }} />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>15 meetings set</span>
+                    <span>20 target</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            <div className="order-2 lg:order-1">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-xl">
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                  <h4 className="font-semibold text-gray-900 mb-4">Meeting Management</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+                      <Clock className="w-4 h-4 text-yellow-600" />
+                      <span className="text-sm">Pending: 3 meetings</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-sm">Confirmed: 5 meetings</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                      <Calendar className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm">Held: 12 meetings</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Advanced Meeting Management</h3>
+              <p className="text-gray-600 mb-6">
+                Schedule meetings with comprehensive contact details, timezone support, and automated status tracking. 
+                Organize meetings by status and manage the complete meeting lifecycle.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Timezone-aware scheduling</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Contact details and LinkedIn integration</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Status tracking: pending, confirmed, held, no-show</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>ICP qualification tracking</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Comprehensive Analytics</h3>
+              <p className="text-gray-600 mb-6">
+                Get detailed insights into your performance with interactive charts, meeting distribution analysis, 
+                and client performance comparisons. Make data-driven decisions to improve your results.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Monthly performance charts</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Meeting status distribution</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Client performance comparisons</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span>Exportable data and reports</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-8 rounded-xl">
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h4 className="font-semibold text-gray-900 mb-4">Performance Overview</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">15</div>
+                    <div className="text-xs text-gray-600">Meetings Set</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">12</div>
+                    <div className="text-xs text-gray-600">Meetings Held</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">3</div>
+                    <div className="text-xs text-gray-600">Pending</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">1</div>
+                    <div className="text-xs text-gray-600">No Shows</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -249,25 +718,45 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
+      <section className="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to Transform Your Sales Process?
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join hundreds of sales teams already using PypeFlow to increase their meeting success rates.
+          <p className="text-xl text-blue-100 mb-8">
+            Join sales teams already using PypeFlow to increase their meeting success rates by 40% and achieve their goals faster.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <a
               href="/login"
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             >
               Start Your Free Trial
               <ArrowRight className="w-5 h-5" />
             </a>
-            <button className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors">
-              Schedule a Demo
+            <button 
+              onClick={() => {
+                // Scroll to features section
+                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-300"
+            >
+              Explore Features
             </button>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="text-white">
+              <div className="text-2xl font-bold mb-2">✓</div>
+              <div className="text-sm text-blue-100">No setup fees</div>
+            </div>
+            <div className="text-white">
+              <div className="text-2xl font-bold mb-2">✓</div>
+              <div className="text-sm text-blue-100">Cancel anytime</div>
+            </div>
+            <div className="text-white">
+              <div className="text-2xl font-bold mb-2">✓</div>
+              <div className="text-sm text-blue-100">24/7 support</div>
+            </div>
           </div>
         </div>
       </section>

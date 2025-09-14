@@ -40,6 +40,7 @@ export interface Meeting {
   confirmed_at: string | null;
   held_at: string | null;
   no_show: boolean;
+  no_longer_interested: boolean;
   contact_full_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;

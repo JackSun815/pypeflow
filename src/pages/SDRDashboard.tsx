@@ -282,6 +282,10 @@ export default function SDRDashboard() {
     meeting => (meeting.icp_status || 'pending') === 'denied'
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
+  const noLongerInterestedMeetings = meetings.filter(
+    meeting => meeting.no_longer_interested && (meeting.icp_status || 'pending') !== 'denied'
+  ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+
   const heldMeetings = meetings.filter(
     meeting => 
       meeting.status === 'confirmed' &&
@@ -964,6 +968,7 @@ export default function SDRDashboard() {
                 completedMeetings={completedMeetings}
                 noShowMeetings={noShowMeetings}
                 notIcpQualifiedMeetings={notIcpQualifiedMeetings}
+                noLongerInterestedMeetings={noLongerInterestedMeetings}
                 pastDuePendingMeetings={pastDuePendingMeetings}
                 editable={true}
                 editingMeetingId={editingMeeting}

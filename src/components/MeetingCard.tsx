@@ -40,6 +40,7 @@ export function MeetingCard({
     scheduled_date: meeting.scheduled_date, // Full ISO string
     status: meeting.status,
     no_show: meeting.no_show,
+    no_longer_interested: meeting.no_longer_interested,
     held_at: meeting.held_at,
     icp_status: meeting.icp_status || 'pending',
     company: meeting.company || '',
@@ -396,6 +397,7 @@ export function MeetingCard({
                       <select
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         value={(() => {
+                          if (editedData.no_longer_interested) return 'no_longer_interested';
                           if (editedData.no_show) return 'no_show';
                           if (editedData.held_at) return 'completed';
                           if (editedData.status === 'pending') return 'pending';
@@ -406,15 +408,17 @@ export function MeetingCard({
                         onChange={e => {
                           const newStatus = e.target.value;
                           if (newStatus === 'pending') {
-                            setEditedData(d => ({ ...d, status: 'pending', held_at: null, no_show: false }));
+                            setEditedData(d => ({ ...d, status: 'pending', held_at: null, no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'confirmed') {
-                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false }));
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'past_due') {
-                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false }));
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'completed') {
-                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: new Date().toISOString(), no_show: false }));
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: new Date().toISOString(), no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'no_show') {
-                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: true }));
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: true, no_longer_interested: false }));
+                          } else if (newStatus === 'no_longer_interested') {
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false, no_longer_interested: true }));
                           }
                         }}
                       >
@@ -423,6 +427,7 @@ export function MeetingCard({
                         <option value="past_due">Past Due Pending</option>
                         <option value="completed">Completed</option>
                         <option value="no_show">No Show</option>
+                        <option value="no_longer_interested">No Longer Interested</option>
                       </select>
                     </div>
                     {/* ICP Status Dropdown */}
@@ -507,6 +512,7 @@ export function MeetingCard({
                           <select
                             className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             value={(() => {
+                              if (meeting.no_longer_interested) return 'no_longer_interested';
                               if (meeting.no_show) return 'no_show';
                               if (meeting.held_at) return 'completed';
                               if (meeting.status === 'pending') return 'pending';
@@ -522,6 +528,7 @@ export function MeetingCard({
                                 past_due: 'Past Due Pending',
                                 completed: 'Completed',
                                 no_show: 'No Show',
+                                no_longer_interested: 'No Longer Interested',
                               }[newStatus] || newStatus;
                               if (!window.confirm(`Are you sure you want to change the Meeting Status to \"${statusLabel}\"?`)) return;
                               let updated = { ...meeting };
@@ -529,22 +536,32 @@ export function MeetingCard({
                                 updated.status = 'pending';
                                 updated.held_at = null;
                                 updated.no_show = false;
+                                updated.no_longer_interested = false;
                               } else if (newStatus === 'confirmed') {
                                 updated.status = 'confirmed';
                                 updated.held_at = null;
                                 updated.no_show = false;
+                                updated.no_longer_interested = false;
                               } else if (newStatus === 'past_due') {
                                 updated.status = 'confirmed';
                                 updated.held_at = null;
                                 updated.no_show = false;
+                                updated.no_longer_interested = false;
                               } else if (newStatus === 'completed') {
                                 updated.status = 'confirmed';
                                 updated.held_at = new Date().toISOString();
                                 updated.no_show = false;
+                                updated.no_longer_interested = false;
                               } else if (newStatus === 'no_show') {
                                 updated.status = 'confirmed';
                                 updated.held_at = null;
                                 updated.no_show = true;
+                                updated.no_longer_interested = false;
+                              } else if (newStatus === 'no_longer_interested') {
+                                updated.status = 'confirmed';
+                                updated.held_at = null;
+                                updated.no_show = false;
+                                updated.no_longer_interested = true;
                               }
                               if (onSave) onSave(updated);
                             }}
@@ -554,10 +571,13 @@ export function MeetingCard({
                             <option value="past_due">Past Due Pending</option>
                             <option value="completed">Completed</option>
                             <option value="no_show">No Show</option>
+                            <option value="no_longer_interested">No Longer Interested</option>
                           </select>
                         ) : (
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                            meeting.no_show
+                            meeting.no_longer_interested
+                              ? 'bg-purple-100 text-purple-700'
+                              : meeting.no_show
                               ? 'bg-red-100 text-red-700'
                               : meeting.held_at
                               ? 'bg-green-100 text-green-700'
@@ -567,7 +587,9 @@ export function MeetingCard({
                               ? 'bg-blue-100 text-blue-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
-                            {meeting.no_show
+                            {meeting.no_longer_interested
+                              ? 'No Longer Interested'
+                              : meeting.no_show
                               ? 'No Show'
                               : meeting.held_at
                               ? 'Completed'
