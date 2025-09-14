@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
 import SDRDashboard from './pages/SDRDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 
 function App() {
   const { user, profile, loading, error } = useAuth();
@@ -58,6 +60,10 @@ function App() {
         
         {/* Public SDR dashboard routes */}
         <Route path="/dashboard/sdr/:token/*" element={<SDRDashboard />} />
+
+        {/* Blog routes - public */}
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
 
         {/* Login route */}
         <Route path="/login" element={<Login />} />

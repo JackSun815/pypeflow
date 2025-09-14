@@ -148,6 +148,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
   }
   async function updateMeeting(updatedMeeting: Meeting) {
   try {
+    console.log('updateMeeting called with:', updatedMeeting);
     const updateData: any = {
       contact_full_name: updatedMeeting.contact_full_name,
       contact_email: updatedMeeting.contact_email,
@@ -155,12 +156,14 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
       scheduled_date: updatedMeeting.scheduled_date,
       status: updatedMeeting.status,
       no_show: updatedMeeting.no_show,
+      no_longer_interested: updatedMeeting.no_longer_interested,
       company: updatedMeeting.company,
       linkedin_page: updatedMeeting.linkedin_page,
       notes: updatedMeeting.notes,
       timezone: updatedMeeting.timezone, // Save prospect's timezone
       updated_at: new Date().toISOString(),
     };
+    console.log('updateData being sent to database:', updateData);
     if (typeof updatedMeeting.held_at !== 'undefined') {
       updateData.held_at = updatedMeeting.held_at;
       if (updatedMeeting.held_at) {

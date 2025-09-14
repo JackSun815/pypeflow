@@ -101,6 +101,7 @@ export function MeetingCard({
       scheduled_date: editedData.scheduled_date,
       status: editedData.status || 'pending',
       no_show: editedData.no_show,
+      no_longer_interested: editedData.no_longer_interested,
       held_at: editedData.held_at,
       icp_status: editedData.icp_status,
       company: editedData.company,
@@ -108,6 +109,8 @@ export function MeetingCard({
       notes: editedData.notes,
       timezone: editedData.timezone
     };
+    console.log('MeetingCard handleInternalSave - updatedMeeting:', updatedMeeting);
+    console.log('MeetingCard handleInternalSave - editedData:', editedData);
     onSave(updatedMeeting);
   };
 
@@ -401,7 +404,7 @@ export function MeetingCard({
                           if (editedData.no_show) return 'no_show';
                           if (editedData.held_at) return 'completed';
                           if (editedData.status === 'pending') return 'pending';
-                          if (editedData.status === 'confirmed' && !editedData.held_at && !editedData.no_show && new Date(editedData.scheduled_date) < new Date()) return 'past_due';
+                          if (editedData.status === 'confirmed' && !editedData.held_at && !editedData.no_show && !editedData.no_longer_interested && new Date(editedData.scheduled_date) < new Date()) return 'past_due';
                           if (editedData.status === 'confirmed') return 'confirmed';
                           return 'pending';
                         })()}
@@ -511,15 +514,15 @@ export function MeetingCard({
                         {isEditing ? (
                           <select
                             className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            value={(() => {
-                              if (meeting.no_longer_interested) return 'no_longer_interested';
-                              if (meeting.no_show) return 'no_show';
-                              if (meeting.held_at) return 'completed';
-                              if (meeting.status === 'pending') return 'pending';
-                              if (meeting.status === 'confirmed' && !meeting.held_at && !meeting.no_show && new Date(meeting.scheduled_date) < new Date()) return 'past_due';
-                              if (meeting.status === 'confirmed') return 'confirmed';
-                              return 'pending';
-                            })()}
+                            value={
+                              meeting.no_longer_interested ? 'no_longer_interested' :
+                              meeting.no_show ? 'no_show' :
+                              meeting.held_at ? 'completed' :
+                              meeting.status === 'pending' ? 'pending' :
+                              meeting.status === 'confirmed' && !meeting.held_at && !meeting.no_show && !meeting.no_longer_interested && new Date(meeting.scheduled_date) < new Date() ? 'past_due' :
+                              meeting.status === 'confirmed' ? 'confirmed' :
+                              'pending'
+                            }
                             onChange={async (e) => {
                               const newStatus = e.target.value;
                               const statusLabel = {
@@ -563,6 +566,8 @@ export function MeetingCard({
                                 updated.no_show = false;
                                 updated.no_longer_interested = true;
                               }
+                              console.log('MeetingCard non-editing mode - updated meeting:', updated);
+                              console.log('MeetingCard non-editing mode - newStatus:', newStatus);
                               if (onSave) onSave(updated);
                             }}
                           >

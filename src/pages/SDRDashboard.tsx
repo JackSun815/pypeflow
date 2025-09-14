@@ -244,25 +244,27 @@ export default function SDRDashboard() {
   const nowDate = new Date();
 
   const pendingMeetings = meetings.filter(
-    meeting => meeting.status === 'pending' && !meeting.no_show && (meeting.icp_status || 'pending') !== 'denied' && new Date(meeting.scheduled_date) >= nowDate
+    meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.no_longer_interested && (meeting.icp_status || 'pending') !== 'denied' && new Date(meeting.scheduled_date) >= nowDate
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  // Past Due Pending: confirmed or pending, not held, not no_show, scheduled_date < now
+  // Past Due Pending: confirmed or pending, not held, not no_show, not no_longer_interested, scheduled_date < now
   const pastDuePendingMeetings = meetings.filter(
     meeting =>
       (meeting.status === 'confirmed' || meeting.status === 'pending') &&
       !meeting.held_at &&
       !meeting.no_show &&
+      !meeting.no_longer_interested &&
       (meeting.icp_status || 'pending') !== 'denied' &&
       new Date(meeting.scheduled_date) < nowDate
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  // Confirmed Meetings: confirmed, not held, not no_show, scheduled_date >= now
+  // Confirmed Meetings: confirmed, not held, not no_show, not no_longer_interested, scheduled_date >= now
   const confirmedMeetings = meetings.filter(
     meeting =>
       meeting.status === 'confirmed' &&
       !meeting.held_at &&
       !meeting.no_show &&
+      !meeting.no_longer_interested &&
       new Date(meeting.scheduled_date) >= nowDate
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
@@ -271,11 +273,12 @@ export default function SDRDashboard() {
       meeting.status === 'confirmed' && 
       meeting.held_at && 
       !meeting.no_show &&
+      !meeting.no_longer_interested &&
       (meeting.icp_status || 'pending') !== 'denied'
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const noShowMeetings = meetings.filter(
-    meeting => meeting.no_show && (meeting.icp_status || 'pending') !== 'denied'
+    meeting => meeting.no_show && !meeting.no_longer_interested && (meeting.icp_status || 'pending') !== 'denied'
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const notIcpQualifiedMeetings = meetings.filter(
