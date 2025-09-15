@@ -2,6 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom markdown styling for blog posts */
+.prose h1 {
+  @apply text-3xl font-bold text-gray-900 mb-6 mt-8 first:mt-0;
+}
+
+.prose h2 {
+  @apply text-2xl font-bold text-gray-900 mb-4 mt-8 first:mt-0;
+}
+
+.prose h3 {
+  @apply text-xl font-semibold text-gray-900 mb-3 mt-6 first:mt-0;
+}
+
+.prose p {
+  @apply mb-4 text-gray-700 leading-relaxed;
+}
+
+.prose ul {
+  @apply mb-4 ml-6 list-disc text-gray-700;
+}
+
+.prose ol {
+  @apply mb-4 ml-6 list-decimal text-gray-700;
+}
+
+.prose li {
+  @apply mb-2 text-gray-700;
+}
+
+.prose strong {
+  @apply font-semibold text-gray-900;
+}
+
+.prose em {
+  @apply italic text-gray-800;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-blue-500 pl-4 italic text-gray-600 my-4;
+}
+
+.prose hr {
+  @apply my-8 border-gray-300;
+}
+
+.prose code {
+  @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800;
+}
+
+.prose pre {
+  @apply bg-gray-100 p-4 rounded-lg overflow-x-auto my-4;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
 
 .calendar-wrapper .rbc-calendar {
   font-family: 'Times New Roman', sans-serif; 

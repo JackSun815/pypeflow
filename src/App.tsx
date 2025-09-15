@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
@@ -7,6 +8,8 @@ import SDRDashboard from './pages/SDRDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
+import Sitemap from './pages/Sitemap';
+import GoogleAnalytics from './components/GoogleAnalytics';
 
 function App() {
   const { user, profile, loading, error } = useAuth();
@@ -40,8 +43,10 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
+    <HelmetProvider>
+      <Router>
+        <GoogleAnalytics />
+        <Routes>
         {/* Public landing page - show for unauthenticated users */}
         {!user || !profile ? (
           <Route path="/" element={<LandingPage />} />
@@ -64,6 +69,9 @@ function App() {
         {/* Blog routes - public */}
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
+        
+        {/* SEO routes */}
+        <Route path="/sitemap.xml" element={<Sitemap />} />
 
         {/* Login route */}
         <Route path="/login" element={<Login />} />
@@ -93,8 +101,9 @@ function App() {
             />
           </>
         ) : null}
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </HelmetProvider>
   );
 }
 

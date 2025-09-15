@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, User, ArrowLeft, Tag, Clock } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import SEOHead from '../components/SEOHead';
+import Header from '../components/Header';
+import { trackBlogEngagement } from '../components/GoogleAnalytics';
 
 interface BlogPost {
   id: string;
@@ -8,6 +13,7 @@ interface BlogPost {
   content: string;
   slug: string;
   publishedAt: string;
+  excerpt?: string;
   author: {
     name: string;
     avatar?: string;
@@ -35,28 +41,90 @@ export default function BlogPost() {
       setLoading(true);
       setError(null);
       
-      // Replace with actual Strapi API call
-      const response = await fetch(`${import.meta.env.VITE_STRAPI_URL}/api/blog-posts?filters[slug][$eq]=${slug}&populate=*`);
-      const data = await response.json();
+      const strapiUrl = import.meta.env.VITE_STRAPI_URL;
+      if (!strapiUrl) {
+        setError('Strapi URL not configured');
+        return;
+      }
+      
+      // Try both possible endpoints - articles and blog-posts
+      let response;
+      let data;
+      
+      try {
+        // First try the articles endpoint
+        response = await fetch(`${strapiUrl}/api/articles?filters[slug][$eq]=${slug}&populate=*`);
+        if (response.ok) {
+          data = await response.json();
+        } else {
+          throw new Error(`Articles endpoint failed: ${response.status}`);
+        }
+      } catch (articlesError) {
+        // Fallback to blog-posts endpoint
+        response = await fetch(`${strapiUrl}/api/blog-posts?filters[slug][$eq]=${slug}&populate=*`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        data = await response.json();
+      }
       
       if (data.data && data.data.length > 0) {
         const postData = data.data[0];
+        
+        // Handle both Strapi v4 structure (direct properties) and v3 structure (attributes)
+        const isV4 = !postData.attributes;
+        const title = isV4 ? postData.title : postData.attributes.title;
+        const slug = isV4 ? postData.slug : postData.attributes.slug;
+        const publishedAt = isV4 ? postData.publishedAt : postData.attributes.publishedAt;
+        const description = isV4 ? postData.description : postData.attributes.description;
+        const cover = isV4 ? postData.cover : postData.attributes.cover;
+        const author = isV4 ? postData.author : postData.attributes.author;
+        const category = isV4 ? postData.category : postData.attributes.category;
+        const blocks = isV4 ? postData.blocks : postData.attributes.blocks;
+        
+        // Extract content from blocks (Strapi v4 structure)
+        let content = '';
+        if (blocks && Array.isArray(blocks)) {
+          content = blocks
+            .filter(block => block.__component === 'shared.rich-text')
+            .map(block => block.body)
+            .join('\n\n');
+        }
+        
+        // If no content from blocks, use description as markdown
+        if (!content && description) {
+          content = description;
+        }
+        
+        // Create excerpt from content (strip markdown for preview)
+        const excerpt = content ? 
+          content.replace(/#{1,6}\s+/g, '') // Remove headers
+                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links
+                .substring(0, 150) + '...' : 
+          (description || 'No description available');
+        
         const formattedPost: BlogPost = {
-          id: postData.id,
-          title: postData.attributes.title,
-          content: postData.attributes.content,
-          slug: postData.attributes.slug,
-          publishedAt: postData.attributes.publishedAt,
+          id: postData.id.toString(),
+          title,
+          content: content || description || 'No content available',
+          slug,
+          publishedAt,
+          excerpt,
           author: {
-            name: postData.attributes.author?.data?.attributes?.name || 'Eric Chen',
-            avatar: postData.attributes.author?.data?.attributes?.avatar?.url,
-            bio: postData.attributes.author?.data?.attributes?.bio
+            name: author?.name || 'Eric Chen',
+            avatar: author?.avatar?.url,
+            bio: author?.bio
           },
-          tags: postData.attributes.tags?.data?.map((tag: any) => tag.attributes.name) || [],
-          featuredImage: postData.attributes.featuredImage?.url,
-          readTime: postData.attributes.readTime || 5
+          tags: category ? [category.name] : [],
+          featuredImage: cover?.url,
+          readTime: 5 // Default read time
         };
+        
         setPost(formattedPost);
+        // Track blog post view
+        trackBlogEngagement('view_post', formattedPost.title, formattedPost.slug);
       } else {
         setError('Post not found');
       }
@@ -106,24 +174,37 @@ export default function BlogPost() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-white">
+      <SEOHead
+        title={post.title}
+        description={post.excerpt || post.content.substring(0, 160) + '...'}
+        image={post.featuredImage}
+        url={`https://pypeflow.com/blog/${post.slug}`}
+        type="article"
+        publishedTime={post.publishedAt}
+        author={post.author.name}
+        tags={post.tags}
+      />
+      
+      <Header />
+      
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             to="/blog"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-6 transition-colors"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-8 transition-colors font-medium"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Blog
           </Link>
           
           {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-3 mb-6">
             {post.tags.map(tag => (
               <span
                 key={tag}
-                className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
+                className="px-4 py-2 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 text-sm font-medium rounded-full"
               >
                 <Tag className="w-3 h-3 inline mr-1" />
                 {tag}
@@ -132,69 +213,93 @@ export default function BlogPost() {
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
             {post.title}
           </h1>
 
           {/* Meta Info */}
-          <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
-            <div className="flex items-center">
-              <User className="w-4 h-4 mr-2" />
-              <span>{post.author.name}</span>
-            </div>
-            <div className="flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              <span>{formatDate(post.publishedAt)}</span>
-            </div>
-            <div className="flex items-center">
-              <Clock className="w-4 h-4 mr-2" />
-              <span>{post.readTime} min read</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Featured Image */}
-      {post.featuredImage && (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <img
-            src={post.featuredImage}
-            alt={post.title}
-            className="w-full h-64 md:h-96 object-cover rounded-lg shadow-lg"
-          />
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <div 
-            className="prose prose-lg max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
-        </div>
-
-        {/* Author Bio */}
-        {post.author.bio && (
-          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-start">
-              {post.author.avatar && (
-                <img
-                  src={post.author.avatar}
-                  alt={post.author.name}
-                  className="w-16 h-16 rounded-full mr-4"
-                />
-              )}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  About {post.author.name}
-                </h3>
-                <p className="text-gray-600">{post.author.bio}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm text-gray-600 mb-8">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center">
+                <User className="w-4 h-4 mr-2" />
+                <span className="font-medium">{post.author.name}</span>
+              </div>
+              <div className="flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                <span>{formatDate(post.publishedAt)}</span>
+              </div>
+              <div className="flex items-center">
+                <Clock className="w-4 h-4 mr-2" />
+                <span>{post.readTime} min read</span>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* Featured Image */}
+      {post.featuredImage && (
+        <section className="py-8 bg-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <img
+              src={post.featuredImage}
+              alt={post.title}
+              className="w-full h-64 md:h-96 object-cover rounded-xl shadow-lg"
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Content */}
+      <section className="py-12 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 md:p-12">
+          <div className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed prose-strong:text-gray-900 prose-ul:text-gray-700 prose-li:text-gray-700 prose-li:leading-relaxed">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({children}) => <h1 className="text-3xl font-bold text-gray-900 mb-6 mt-8 first:mt-0">{children}</h1>,
+                h2: ({children}) => <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8 first:mt-0">{children}</h2>,
+                h3: ({children}) => <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6 first:mt-0">{children}</h3>,
+                p: ({children}) => <p className="mb-4 text-gray-700 leading-relaxed">{children}</p>,
+                ul: ({children}) => <ul className="mb-4 ml-6 list-disc text-gray-700">{children}</ul>,
+                ol: ({children}) => <ol className="mb-4 ml-6 list-decimal text-gray-700">{children}</ol>,
+                li: ({children}) => <li className="mb-2 text-gray-700">{children}</li>,
+                strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                em: ({children}) => <em className="italic text-gray-800">{children}</em>,
+                blockquote: ({children}) => <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-600 my-4">{children}</blockquote>,
+                hr: () => <hr className="my-8 border-gray-300" />,
+                code: ({children}) => <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">{children}</code>,
+                pre: ({children}) => <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto my-4">{children}</pre>
+              }}
+            >
+              {post.content}
+            </ReactMarkdown>
+          </div>
+        </div>
+
+          {/* Author Bio */}
+          {post.author.bio && (
+            <div className="mt-12 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-8 border border-blue-100">
+              <div className="flex items-start">
+                {post.author.avatar && (
+                  <img
+                    src={post.author.avatar}
+                    alt={post.author.name}
+                    className="w-16 h-16 rounded-full mr-6 border-2 border-white shadow-md"
+                  />
+                )}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    About {post.author.name}
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed">{post.author.bio}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

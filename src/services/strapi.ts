@@ -21,6 +21,23 @@ export interface StrapiBlogPost {
     content: string;
     publishedAt: string;
     readTime: number;
+    // SEO fields
+    seoTitle?: string;
+    seoDescription?: string;
+    seoKeywords?: string;
+    // Social media fields
+    ogTitle?: string;
+    ogDescription?: string;
+    ogImage?: {
+      url: string;
+      alternativeText?: string;
+    };
+    twitterTitle?: string;
+    twitterDescription?: string;
+    twitterImage?: {
+      url: string;
+      alternativeText?: string;
+    };
     featuredImage?: {
       url: string;
       alternativeText?: string;

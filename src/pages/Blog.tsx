@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, User, ArrowRight, Search, Tag } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
+import Header from '../components/Header';
+import { trackBlogEngagement } from '../components/GoogleAnalytics';
 
 interface BlogPost {
   id: string;
@@ -31,26 +34,102 @@ export default function Blog() {
   const loadBlogPosts = async () => {
     try {
       setLoading(true);
-      // Replace with actual Strapi API call
-      const response = await fetch(`${import.meta.env.VITE_STRAPI_URL}/api/blog-posts?populate=*&sort=publishedAt:desc`);
-      const data = await response.json();
       
-      const formattedPosts = data.data.map((post: any) => ({
-        id: post.id,
-        title: post.attributes.title,
-        excerpt: post.attributes.excerpt,
-        content: post.attributes.content,
-        slug: post.attributes.slug,
-        publishedAt: post.attributes.publishedAt,
-        author: {
-          name: post.attributes.author?.data?.attributes?.name || 'Eric Chen',
-          avatar: post.attributes.author?.data?.attributes?.avatar?.url
-        },
-        tags: post.attributes.tags?.data?.map((tag: any) => tag.attributes.name) || [],
-        featuredImage: post.attributes.featuredImage?.url,
-        readTime: post.attributes.readTime || 5
-      }));
+      // Check if Strapi URL is configured
+      const strapiUrl = import.meta.env.VITE_STRAPI_URL;
+      if (!strapiUrl) {
+        console.warn('VITE_STRAPI_URL not configured, using mock data');
+        setPosts(getMockPosts());
+        return;
+      }
       
+      console.log('Loading blog posts from Strapi...');
+      
+      // Try both possible endpoints - articles and blog-posts
+      let response;
+      let data;
+      
+      try {
+        // First try the articles endpoint (most common in Strapi)
+        response = await fetch(`${strapiUrl}/api/articles?populate=*&sort=publishedAt:desc`);
+        if (response.ok) {
+          data = await response.json();
+          console.log('Successfully loaded from /api/articles');
+        } else {
+          throw new Error(`Articles endpoint failed: ${response.status}`);
+        }
+      } catch (articlesError) {
+        console.log('Articles endpoint failed, trying blog-posts...');
+        // Fallback to blog-posts endpoint
+        response = await fetch(`${strapiUrl}/api/blog-posts?populate=*&sort=publishedAt:desc`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        data = await response.json();
+        console.log('Successfully loaded from /api/blog-posts');
+      }
+      
+      console.log('Strapi response:', data);
+      
+      if (!data.data || data.data.length === 0) {
+        console.log('No blog posts found in Strapi, using mock data');
+        setPosts(getMockPosts());
+        return;
+      }
+      
+      const formattedPosts = data.data.map((post: any) => {
+        // Handle both Strapi v4 structure (direct properties) and v3 structure (attributes)
+        const isV4 = !post.attributes;
+        const title = isV4 ? post.title : post.attributes.title;
+        const slug = isV4 ? post.slug : post.attributes.slug;
+        const publishedAt = isV4 ? post.publishedAt : post.attributes.publishedAt;
+        const description = isV4 ? post.description : post.attributes.description;
+        const cover = isV4 ? post.cover : post.attributes.cover;
+        const author = isV4 ? post.author : post.attributes.author;
+        const category = isV4 ? post.category : post.attributes.category;
+        const blocks = isV4 ? post.blocks : post.attributes.blocks;
+        
+        // Extract content from blocks (Strapi v4 structure)
+        let content = '';
+        if (blocks && Array.isArray(blocks)) {
+          content = blocks
+            .filter(block => block.__component === 'shared.rich-text')
+            .map(block => block.body)
+            .join('\n\n');
+        }
+        
+        // If no content from blocks, use description as markdown
+        if (!content && description) {
+          content = description;
+        }
+        
+        // Create excerpt from content (strip markdown for preview)
+        const excerpt = content ? 
+          content.replace(/#{1,6}\s+/g, '') // Remove headers
+                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links
+                .substring(0, 150) + '...' : 
+          (description || 'No description available');
+        
+        return {
+          id: post.id.toString(),
+          title,
+          excerpt,
+          content: content || description || 'No content available',
+          slug,
+          publishedAt,
+          author: {
+            name: author?.name || 'Eric Chen',
+            avatar: author?.avatar?.url
+          },
+          tags: category ? [category.name] : [],
+          featuredImage: cover?.url,
+          readTime: 5 // Default read time
+        };
+      });
+      
+      console.log('Formatted posts:', formattedPosts);
       setPosts(formattedPosts);
     } catch (error) {
       console.error('Error loading blog posts:', error);
@@ -140,25 +219,35 @@ export default function Blog() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-white">
+      <SEOHead
+        title="PypeFlow Blog - Sales Development Insights & Best Practices"
+        description="Discover expert insights, strategies, and best practices for building high-performing sales development teams. Learn from industry leaders and scale your SDR operations."
+        url="https://pypeflow.com/blog"
+        type="website"
+        tags={['SDR', 'Sales Development', 'Sales Strategy', 'Team Management', 'Revenue Growth']}
+      />
+      
+      <Header />
+      
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              PypeFlow Blog
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              PypeFlow <span className="text-blue-500">Blog</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
               Insights, strategies, and best practices for building high-performing sales development teams
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+      {/* Search and Filters */}
+      <section className="py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
             {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -167,19 +256,19 @@ export default function Blog() {
                 placeholder="Search blog posts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
               />
             </div>
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setSelectedTag(null)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 !selectedTag
-                  ? 'bg-blue-100 text-blue-800 border-2 border-blue-200'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
               }`}
             >
               All Posts
@@ -188,10 +277,10 @@ export default function Blog() {
               <button
                 key={tag}
                 onClick={() => setSelectedTag(tag)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   selectedTag === tag
-                    ? 'bg-blue-100 text-blue-800 border-2 border-blue-200'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                 }`}
               >
                 <Tag className="w-4 h-4 inline mr-1" />
@@ -200,47 +289,51 @@ export default function Blog() {
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredPosts.map((post) => (
-            <article
-              key={post.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
-            >
-              {/* Featured Image */}
-              {post.featuredImage && (
-                <div className="aspect-w-16 aspect-h-9">
-                  <img
-                    src={post.featuredImage}
-                    alt={post.title}
-                    className="w-full h-48 object-cover"
-                  />
-                </div>
-              )}
+      {/* Blog Posts Grid */}
+      <section className="py-12 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredPosts.map((post) => (
+              <article
+                key={post.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:border-blue-200 transition-all duration-300 group"
+              >
+                {/* Featured Image */}
+                {post.featuredImage && (
+                  <div className="aspect-w-16 aspect-h-9 overflow-hidden">
+                    <img
+                      src={post.featuredImage}
+                      alt={post.title}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                )}
 
-              <div className="p-6">
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {post.tags.slice(0, 2).map(tag => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full"
+                <div className="p-6">
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {post.tags.slice(0, 2).map(tag => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 text-xs font-medium rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    <Link
+                      to={`/blog/${post.slug}`}
+                      className="hover:text-blue-600 transition-colors"
+                      onClick={() => trackBlogEngagement('click_title', post.title, post.slug)}
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Title */}
-                <h2 className="text-xl font-semibold text-gray-900 mb-3 line-clamp-2">
-                  <Link
-                    to={`/blog/${post.slug}`}
-                    className="hover:text-blue-600 transition-colors"
-                  >
-                    {post.title}
-                  </Link>
-                </h2>
+                      {post.title}
+                    </Link>
+                  </h2>
 
                 {/* Excerpt */}
                 <p className="text-gray-600 mb-4 line-clamp-3">
@@ -264,32 +357,34 @@ export default function Blog() {
                   {post.readTime} min read
                 </div>
 
-                {/* Read More Link */}
-                <Link
-                  to={`/blog/${post.slug}`}
-                  className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                >
-                  Read More
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredPosts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Search className="w-16 h-16 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No posts found</h3>
-            <p className="text-gray-600">
-              Try adjusting your search terms or filters
-            </p>
+                  {/* Read More Link */}
+                  <Link
+                    to={`/blog/${post.slug}`}
+                    className="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold transition-colors group-hover:bg-blue-50 px-3 py-2 rounded-lg"
+                    onClick={() => trackBlogEngagement('click_read_more', post.title, post.slug)}
+                  >
+                    Read More
+                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+              </article>
+            ))}
           </div>
-        )}
-      </div>
+
+          {/* No Results */}
+          {filteredPosts.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search className="w-16 h-16 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No posts found</h3>
+              <p className="text-gray-600">
+                Try adjusting your search terms or filters
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

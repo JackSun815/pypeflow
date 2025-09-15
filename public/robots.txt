@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://pypeflow.com/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+
+# Allow blog and public pages
+Allow: /blog
+Allow: /login
+Allow: /
