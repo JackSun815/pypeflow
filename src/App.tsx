@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from './hooks/useAuth';
@@ -6,6 +5,7 @@ import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
 import SDRDashboard from './pages/SDRDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
+import ClientDashboard from './pages/ClientDashboard';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Sitemap from './pages/Sitemap';
@@ -65,6 +65,9 @@ function App() {
         
         {/* Public SDR dashboard routes */}
         <Route path="/dashboard/sdr/:token/*" element={<SDRDashboard />} />
+
+        {/* Public client dashboard routes */}
+        <Route path="/dashboard/client/:token/*" element={<ClientDashboard />} />
 
         {/* Blog routes - public */}
         <Route path="/blog" element={<Blog />} />

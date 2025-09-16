@@ -254,7 +254,7 @@ export default function BlogPost() {
       <section className="py-12 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 md:p-12">
-          <div className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed prose-strong:text-gray-900 prose-ul:text-gray-700 prose-li:text-gray-700 prose-li:leading-relaxed">
+            <div className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed prose-strong:text-gray-900 prose-ul:text-gray-700 prose-li:text-gray-700 prose-li:leading-relaxed">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               components={{
@@ -275,8 +275,8 @@ export default function BlogPost() {
             >
               {post.content}
             </ReactMarkdown>
+            </div>
           </div>
-        </div>
 
           {/* Author Bio */}
           {post.author.bio && (

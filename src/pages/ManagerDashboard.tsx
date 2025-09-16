@@ -4,10 +4,8 @@ import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield } from 'lucide-react';
-import CalendarView from '../components/CalendarView';
-import SDRManagement from '../components/SDRManagement';
 import ClientManagement from '../components/ClientManagement';
-import UserManagement from '../components/UserManagement';
+import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
 import ManagerMeetingHistory from '../components/ManagerMeetingHistory';
 import ICPCheck from './ICPCheck';
@@ -61,7 +59,7 @@ import {
   LineElement,
   Filler,
 } from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Bar, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -77,14 +75,14 @@ ChartJS.register(
 );
 
 export default function ManagerDashboard() {
-  const { profile } = useAuth();
+  const { } = useAuth();
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
   const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
   // Ensures useMeetings fetches all meetings (SDR ID: null)
   console.log('[DEBUG] useMeetings called with SDR ID:', null);
   const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
-  const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'sdrs' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
+  const [selectedSDR] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
   const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -807,16 +805,6 @@ export default function ManagerDashboard() {
               Team's Meetings
             </button>
             <button
-              onClick={() => setActiveTab('sdrs')}
-              className={`${
-                activeTab === 'sdrs'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-            >
-              SDR Management
-            </button>
-            <button
               onClick={() => setActiveTab('clients')}
               className={`${
                 activeTab === 'clients'
@@ -826,18 +814,17 @@ export default function ManagerDashboard() {
             >
               Client Management
             </button>
-            {profile?.super_admin && (
-              <button
-                onClick={() => setActiveTab('users')}
-                className={`${
-                  activeTab === 'users'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-                } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-              >
-                User Management
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`${
+                activeTab === 'users'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+            >
+              <Users className="w-4 h-4" />
+              User Management
+            </button>
             <button
               onClick={() => setActiveTab('history')}
               className={`${
@@ -1740,16 +1727,17 @@ export default function ManagerDashboard() {
           </>
         )}
 
-        {activeTab === 'sdrs' && (
-          <SDRManagement sdrs={sdrs} onInviteSent={fetchSDRs} />
-        )}
 
         {activeTab === 'clients' && (
           <ClientManagement sdrs={sdrs} onUpdate={fetchSDRs} />
         )}
 
-        {activeTab === 'users' && profile?.super_admin && (
-          <UserManagement />
+        {activeTab === 'users' && (
+          <UnifiedUserManagement 
+            sdrs={sdrs} 
+            clients={clients as any} 
+            onUpdate={fetchSDRs} 
+          />
         )}
 
                 {activeTab === 'history' && (
