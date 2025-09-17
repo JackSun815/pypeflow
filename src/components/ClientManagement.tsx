@@ -1038,6 +1038,83 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         </div>
       )}
 
+      {/* Overview Section */}
+      <div className="p-6 bg-gray-50 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Target className="w-5 h-5" />
+          Target Overview - {monthOptions.find(m => m.value === selectedMonth)?.label}
+        </h3>
+        
+        {/* Calculate overview metrics */}
+        {(() => {
+          const totalClientSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
+          const totalClientHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+
+          const totalAssignedSetTarget = clients.reduce((sum, client) => 
+            sum + client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_set_target || 0), 0), 0
+          );
+          const totalAssignedHeldTarget = clients.reduce((sum, client) => 
+            sum + client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_hold_target || 0), 0), 0
+          );
+
+          const unassignedSetTarget = totalClientSetTarget - totalAssignedSetTarget;
+          const unassignedHeldTarget = totalClientHeldTarget - totalAssignedHeldTarget;
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Total Client Targets */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Total Client Targets</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Set Target:</span>
+                    <span className="font-semibold text-blue-600">{totalClientSetTarget}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Hold Target:</span>
+                    <span className="font-semibold text-green-600">{totalClientHeldTarget}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned Targets */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Assigned to SDRs</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Set Target:</span>
+                    <span className="font-semibold text-blue-600">{totalAssignedSetTarget}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Hold Target:</span>
+                    <span className="font-semibold text-green-600">{totalAssignedHeldTarget}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Unassigned Targets */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Unassigned</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Set Target:</span>
+                    <span className={`font-semibold ${unassignedSetTarget > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+                      {unassignedSetTarget}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Hold Target:</span>
+                    <span className={`font-semibold ${unassignedHeldTarget > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+                      {unassignedHeldTarget}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       {/* Client List */}
       <div className="p-8">
         <div className="space-y-8">

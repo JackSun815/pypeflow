@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format, subMonths } from 'date-fns';
 import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
@@ -111,6 +112,68 @@ export default function ManagerDashboard() {
       timestamps: true
     }
   });
+
+  // Month selector state for clients performance
+  const nowForMonth = new Date();
+  const currentMonthForSelector = format(nowForMonth, 'yyyy-MM');
+  
+  // Initialize selectedMonth from localStorage or default to current month
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = localStorage.getItem('managerDashboardSelectedMonth');
+    return saved || currentMonthForSelector;
+  });
+
+  // Generate month options: next month + current month + 5 previous months
+  const nextMonth = new Date(nowForMonth.getFullYear(), nowForMonth.getMonth() + 1, 1);
+  const monthOptions = [
+    {
+      value: format(nextMonth, 'yyyy-MM'),
+      label: format(nextMonth, 'MMMM yyyy')
+    },
+    {
+      value: format(nowForMonth, 'yyyy-MM'),
+      label: format(nowForMonth, 'MMMM yyyy')
+    },
+    ...Array.from({ length: 5 }, (_, i) => {
+      const date = subMonths(nowForMonth, i + 1);
+      return {
+        value: format(date, 'yyyy-MM'),
+        label: format(date, 'MMMM yyyy')
+      };
+    })
+  ];
+
+  // Save selectedMonth to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('managerDashboardSelectedMonth', selectedMonth);
+  }, [selectedMonth]);
+
+  // State for assignments data
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+
+  // Fetch assignments for the selected month
+  useEffect(() => {
+    async function fetchAssignments() {
+      try {
+        setAssignmentsLoading(true);
+        const { data: assignmentsData, error: assignmentsError } = await supabase
+          .from('assignments')
+          .select('*')
+          .eq('month', selectedMonth as any);
+
+        if (assignmentsError) throw assignmentsError;
+        setAssignments(assignmentsData || []);
+      } catch (err) {
+        console.error('Failed to fetch assignments:', err);
+        setAssignments([]);
+      } finally {
+        setAssignmentsLoading(false);
+      }
+    }
+
+    fetchAssignments();
+  }, [selectedMonth]);
 
   // Debug: Log raw meetings and loading state
   useEffect(() => {
@@ -609,12 +672,12 @@ export default function ManagerDashboard() {
   const monthProgress = (dayOfMonth / daysInMonth) * 100;
 
   // Calculate metrics similar to SDR dashboard
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  const monthStart = new Date(currentYear, currentMonth, 1);
-  const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+  const currentMonthIndex = now.getMonth();
+  // Filter meetings by selected month
+  const [year, month] = selectedMonth.split('-');
+  const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
+  const monthEnd = new Date(parseInt(year), parseInt(month), 0);
 
-  // Filter meetings for current month only (by created_at)
   const monthlyMeetings = meetings.filter(meeting => {
     const createdDate = new Date(meeting.created_at);
     return createdDate >= monthStart && createdDate <= monthEnd;
@@ -1348,10 +1411,56 @@ export default function ManagerDashboard() {
             </div>
 
             {/* Clients Performance Table */}
+            {(() => {
+              // Filter clients to show only those active for the selected month
+              // This logic matches the ClientManagement component's filtering
+              const activeClientsForMonth = clients.filter(client => {
+                // Check if client has assignments in the selected month
+                const hasAssignments = assignments.some(assignment => 
+                  assignment.client_id === client.id && 
+                  !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
+                  assignment.is_active !== false // Exclude inactive assignments
+                );
+                
+                // Check if client was created in the selected month
+                const clientCreatedDate = new Date(client.created_at);
+                const selectedMonthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+                const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
+                
+                const wasCreatedThisMonth = clientCreatedDate >= selectedMonthDate && clientCreatedDate < nextMonthDate;
+                
+                // Show client if it has assignments OR was created this month
+                return hasAssignments || wasCreatedThisMonth;
+              });
+
+              return (
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Clients Performance</h2>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Clients Performance</h2>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700">Month:</label>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        disabled={assignmentsLoading}
+                      >
+                        {monthOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedMonth === currentMonthForSelector && (
+                        <span className="text-xs text-gray-500">(Current)</span>
+                      )}
+                      {assignmentsLoading && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={() => setClientPerformanceExportModalOpen(true)}
                     className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
@@ -1388,21 +1497,54 @@ export default function ManagerDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {clients.map((client) => {
-                      // Calculate monthly meetings for this client across all SDRs
-                      const clientMonthlyMeetings = monthlyMeetings.filter(m => m.client_id === client.id);
-                      // Meetings set: include all meetings (including no-shows) in set count
-                      const clientMeetingsSet = clientMonthlyMeetings.length;
-                      const clientHeldMeetings = clientMonthlyMeetings.filter(m => 
-                        m.status === 'confirmed' && 
-                        !m.no_show && 
-                        m.held_at !== null
-                      ).length;
+                    {activeClientsForMonth.map((client) => {
+                      // Calculate total targets from SDR assignments for this client for the selected month
+                      const clientAssignments = assignments.filter(assignment => 
+                        assignment.client_id === client.id && 
+                        !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
+                        assignment.is_active !== false // Exclude inactive assignments
+                      );
+                      
+                      const assignedSDRs = clientAssignments.map(assignment => {
+                        const sdr = sdrs.find(s => s.id === assignment.sdr_id);
+                        return sdr ? {
+                          ...sdr,
+                          monthly_set_target: assignment.monthly_set_target,
+                          monthly_hold_target: assignment.monthly_hold_target
+                        } : null;
+                      }).filter(Boolean);
+                      
+                      // Calculate meetings set and held from SDR assignments only
+                      const clientMeetingsSet = assignedSDRs.reduce((sum, sdr) => {
+                        if (!sdr) return sum;
+                        const sdrClientMonthlyMeetings = monthlyMeetings.filter(m => 
+                          m.sdr_id === sdr.id && m.client_id === client.id
+                        );
+                        return sum + sdrClientMonthlyMeetings.length;
+                      }, 0);
+                      
+                      const clientHeldMeetings = assignedSDRs.reduce((sum, sdr) => {
+                        if (!sdr) return sum;
+                        const sdrClientMonthlyMeetings = monthlyMeetings.filter(m => 
+                          m.sdr_id === sdr.id && m.client_id === client.id
+                        );
+                        return sum + sdrClientMonthlyMeetings.filter(m => 
+                          m.status === 'confirmed' && 
+                          !m.no_show && 
+                          m.held_at !== null
+                        ).length;
+                      }, 0);
+                      const totalSetTargetFromAssignments = assignedSDRs.reduce((sum, sdr) => {
+                        return sum + (sdr?.monthly_set_target || 0);
+                      }, 0);
+                      const totalHeldTargetFromAssignments = assignedSDRs.reduce((sum, sdr) => {
+                        return sum + (sdr?.monthly_hold_target || 0);
+                      }, 0);
 
-                      const setProgress = (client.monthly_set_target || 0) > 0 ? 
-                        (clientMeetingsSet / (client.monthly_set_target || 0)) * 100 : 0;
-                      const heldProgress = (client.monthly_hold_target || 0) > 0 ? 
-                        (clientHeldMeetings / (client.monthly_hold_target || 0)) * 100 : 0;
+                      const setProgress = totalSetTargetFromAssignments > 0 ? 
+                        (clientMeetingsSet / totalSetTargetFromAssignments) * 100 : 0;
+                      const heldProgress = totalHeldTargetFromAssignments > 0 ? 
+                        (clientHeldMeetings / totalHeldTargetFromAssignments) * 100 : 0;
                       const isSetOnTrack = setProgress >= monthProgress;
                       const isHeldOnTrack = heldProgress >= monthProgress;
                       const isExpanded = expandedClients[client.id];
@@ -1426,10 +1568,10 @@ export default function ManagerDashboard() {
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{client.monthly_set_target || 0}</div>
+                              <div className="text-sm text-gray-900">{totalSetTargetFromAssignments}</div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{client.monthly_hold_target || 0}</div>
+                              <div className="text-sm text-gray-900">{totalHeldTargetFromAssignments}</div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
@@ -1494,10 +1636,8 @@ export default function ManagerDashboard() {
                                   <h4 className="text-sm font-medium text-gray-900 mb-2">
                                     SDR Assignments
                                   </h4>
-                                  {sdrs.filter(sdr => sdr.clients.some(c => c.id === client.id)).map((sdr) => {
-                                    // Find the client assignment for this SDR
-                                    const clientAssignment = sdr.clients.find(c => c.id === client.id);
-                                    if (!clientAssignment) return null;
+                                  {assignedSDRs.map((sdr) => {
+                                    if (!sdr) return null;
 
                                     // Calculate monthly meetings for this SDR and client
                                     const sdrClientMonthlyMeetings = monthlyMeetings.filter(m => 
@@ -1511,8 +1651,8 @@ export default function ManagerDashboard() {
                                       m.held_at !== null
                                     ).length;
                                     
-                                    const sdrClientSetProgress = (clientAssignment.monthly_set_target || 0) > 0 ? 
-                                      (sdrClientMeetingsSet / (clientAssignment.monthly_set_target || 0)) * 100 : 0;
+                                    const sdrClientSetProgress = (sdr.monthly_set_target || 0) > 0 ? 
+                                      (sdrClientMeetingsSet / (sdr.monthly_set_target || 0)) * 100 : 0;
                                     const isSdrClientSetOnTrack = sdrClientSetProgress >= monthProgress;
 
                                     return (
@@ -1527,10 +1667,10 @@ export default function ManagerDashboard() {
                                           </p>
                                           <div className="flex items-center gap-4 mt-1">
                                             <span className="text-sm text-gray-500">
-                                              Set Target: {clientAssignment.monthly_set_target || 0}
+                                              Set Target: {sdr.monthly_set_target || 0}
                                             </span>
                                             <span className="text-sm text-gray-500">
-                                              Held Target: {clientAssignment.monthly_hold_target || 0}
+                                              Held Target: {sdr.monthly_hold_target || 0}
                                             </span>
                                             <span className="text-sm text-gray-500">
                                               Set: {sdrClientMeetingsSet}
@@ -1560,9 +1700,9 @@ export default function ManagerDashboard() {
                                       </div>
                                     );
                                   })}
-                                  {sdrs.filter(sdr => sdr.clients.some(c => c.id === client.id)).length === 0 && (
+                                  {assignedSDRs.length === 0 && (
                                     <p className="text-sm text-gray-500">
-                                      No SDRs assigned to this client
+                                      No SDRs assigned to this client for {monthOptions.find(m => m.value === selectedMonth)?.label}
                                     </p>
                                   )}
                                 </div>
@@ -1576,6 +1716,8 @@ export default function ManagerDashboard() {
                 </table>
               </div>
             </div>
+              );
+            })()}
 
             {/* Today's Activity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
