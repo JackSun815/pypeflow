@@ -1151,10 +1151,47 @@ export default function ManagerDashboard() {
 
 
             {/* SDR Performance Table */}
+            {(() => {
+              // Filter SDRs to show only those with assignments for the selected month
+              const activeSDRsForMonth = sdrs.filter(sdr => {
+                // Check if SDR has assignments for the selected month
+                const hasAssignments = assignments.some(assignment => 
+                  assignment.sdr_id === sdr.id && 
+                  !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
+                  assignment.is_active !== false // Exclude inactive assignments
+                );
+                
+                return hasAssignments;
+              });
+
+              return (
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">SDR Performance</h2>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-900">SDR Performance</h2>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700">Month:</label>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        disabled={assignmentsLoading}
+                      >
+                        {monthOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedMonth === currentMonthForSelector && (
+                        <span className="text-xs text-gray-500">(Current)</span>
+                      )}
+                      {assignmentsLoading && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={() => setSdrPerformanceExportModalOpen(true)}
                     className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
@@ -1194,14 +1231,20 @@ export default function ManagerDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {sdrs.map((sdr) => {
-                      // Calculate separate set and held targets for this SDR
-                      const totalSetTarget = sdr.clients.reduce(
-                        (sum, client) => sum + (client.monthly_set_target || 0),
+                    {activeSDRsForMonth.map((sdr) => {
+                      // Calculate separate set and held targets for this SDR from assignments for the selected month
+                      const sdrAssignments = assignments.filter(assignment => 
+                        assignment.sdr_id === sdr.id && 
+                        !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
+                        assignment.is_active !== false // Exclude inactive assignments
+                      );
+                      
+                      const totalSetTarget = sdrAssignments.reduce(
+                        (sum, assignment) => sum + (assignment.monthly_set_target || 0),
                         0
                       );
-                      const totalHeldTarget = sdr.clients.reduce(
-                        (sum, client) => sum + (client.monthly_hold_target || 0),
+                      const totalHeldTarget = sdrAssignments.reduce(
+                        (sum, assignment) => sum + (assignment.monthly_hold_target || 0),
                         0
                       );
 
@@ -1409,6 +1452,8 @@ export default function ManagerDashboard() {
                 </table>
               </div>
             </div>
+              );
+            })()}
 
             {/* Clients Performance Table */}
             {(() => {
@@ -1712,6 +1757,13 @@ export default function ManagerDashboard() {
                         </React.Fragment>
                       );
                     })}
+                    {activeClientsForMonth.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                          No clients with assignments found for {monthOptions.find(m => m.value === selectedMonth)?.label}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

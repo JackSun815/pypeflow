@@ -104,6 +104,30 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   }>>([]);
   const [canUndo, setCanUndo] = useState(false);
 
+  // Unassigned clients modal state
+  const [showUnassignedModal, setShowUnassignedModal] = useState(false);
+  const [unassignedClients, setUnassignedClients] = useState<ClientWithAssignments[]>([]);
+
+  // Function to calculate unassigned clients
+  const calculateUnassignedClients = () => {
+    return clients.filter(client => {
+      const totalAssignedSetTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
+      const totalAssignedHoldTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
+      
+      const hasUnassignedSetTarget = client.monthly_set_target > totalAssignedSetTarget;
+      const hasUnassignedHoldTarget = client.monthly_hold_target > totalAssignedHoldTarget;
+      
+      return hasUnassignedSetTarget || hasUnassignedHoldTarget;
+    });
+  };
+
+  // Function to handle unassigned targets click
+  const handleUnassignedClick = () => {
+    const unassigned = calculateUnassignedClients();
+    setUnassignedClients(unassigned);
+    setShowUnassignedModal(true);
+  };
+
 
   useEffect(() => {
     fetchClients();
@@ -1093,8 +1117,17 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               </div>
 
               {/* Unassigned Targets */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Unassigned</h4>
+              <div 
+                className={`bg-white p-4 rounded-lg border border-gray-200 ${(unassignedSetTarget > 0 || unassignedHeldTarget > 0) ? 'cursor-pointer hover:bg-gray-50 hover:border-orange-300 transition-colors' : ''}`}
+                onClick={(unassignedSetTarget > 0 || unassignedHeldTarget > 0) ? handleUnassignedClick : undefined}
+                title={(unassignedSetTarget > 0 || unassignedHeldTarget > 0) ? 'Click to view unassigned clients' : 'No unassigned targets'}
+              >
+                <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Unassigned
+                  {(unassignedSetTarget > 0 || unassignedHeldTarget > 0) && (
+                    <span className="text-xs text-orange-600"></span>
+                  )}
+                </h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Set Target:</span>
@@ -1704,6 +1737,131 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Unassigned Clients Modal */}
+      {showUnassignedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Unassigned Clients - {monthOptions.find(m => m.value === selectedMonth)?.label}
+              </h2>
+              <button
+                onClick={() => setShowUnassignedModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto max-h-[60vh]">
+              {unassignedClients.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Target className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p>No unassigned clients found for this month.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {unassignedClients.map((client) => {
+                    const totalAssignedSetTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
+                    const totalAssignedHoldTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
+                    
+                    const unassignedSetTarget = client.monthly_set_target - totalAssignedSetTarget;
+                    const unassignedHoldTarget = client.monthly_hold_target - totalAssignedHoldTarget;
+                    
+                    return (
+                      <div key={client.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
+                          <button
+                            onClick={() => {
+                              setSelectedClient(client.id);
+                              setShowAssignForm(true);
+                              setShowUnassignedModal(false);
+                            }}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          >
+                            <Users className="w-4 h-4" />
+                            Assign SDR
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Set Targets</h4>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Total Target:</span>
+                                <span className="font-medium">{client.monthly_set_target}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Assigned:</span>
+                                <span className="font-medium text-green-600">{totalAssignedSetTarget}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Unassigned:</span>
+                                <span className="font-medium text-orange-600">{unassignedSetTarget}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Hold Targets</h4>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Total Target:</span>
+                                <span className="font-medium">{client.monthly_hold_target}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Assigned:</span>
+                                <span className="font-medium text-green-600">{totalAssignedHoldTarget}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Unassigned:</span>
+                                <span className="font-medium text-orange-600">{unassignedHoldTarget}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {client.assignments.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Current Assignments</h4>
+                            <div className="space-y-1">
+                              {client.assignments.map((assignment) => {
+                                const sdr = sdrs.find(s => s.id === assignment.sdr_id);
+                                return (
+                                  <div key={assignment.id} className="flex justify-between text-sm">
+                                    <span className="text-gray-600">{sdr?.full_name || 'Unknown SDR'}:</span>
+                                    <span className="font-medium">
+                                      Set: {assignment.monthly_set_target}, Hold: {assignment.monthly_hold_target}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowUnassignedModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
