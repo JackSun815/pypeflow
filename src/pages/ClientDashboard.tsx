@@ -1,7 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, Target, AlertCircle, ExternalLink, Building } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, History, Rocket, X } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import CalendarView from '../components/CalendarView';
+
+// Add custom CSS for flow animation
+const flowStyles = `
+  .flow-animation {
+    animation: flowPulse 0.6s ease-in-out;
+  }
+  
+  @keyframes flowPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .flow-particle {
+    animation: flowFloat 2s ease-out forwards;
+  }
+  
+  @keyframes flowFloat {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--flow-x, 100px), var(--flow-y, -100px)) scale(0);
+      opacity: 0;
+    }
+  }
+`;
+
+// Inject styles into document head
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = flowStyles;
+  document.head.appendChild(styleElement);
+}
 
 interface ClientInfo {
   id: string;
@@ -22,11 +59,62 @@ interface Meeting {
 
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
+  const location = useLocation();
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'history' | 'calendar'>('overview');
+  
+  // Modal state for clickable metrics
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'upcoming' | 'confirmed' | 'total' | null>(null);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalContent, setModalContent] = useState<any>(null);
+
+  // Confetti function
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
+  // Handle metric card clicks
+  const handleMetricClick = (type: 'upcoming' | 'confirmed' | 'total') => {
+    let title = '';
+    let content = null;
+
+    switch (type) {
+      case 'upcoming':
+        title = 'Upcoming Meetings';
+        content = {
+          type: 'upcoming',
+          data: upcomingMeetings
+        };
+        break;
+      case 'confirmed':
+        title = 'Confirmed Meetings';
+        content = {
+          type: 'confirmed',
+          data: confirmedMeetings
+        };
+        break;
+      case 'total':
+        title = 'All Meetings';
+        content = {
+          type: 'total',
+          data: meetings
+        };
+        break;
+    }
+
+    setModalType(type);
+    setModalTitle(title);
+    setModalContent(content);
+    setModalOpen(true);
+  };
 
   useEffect(() => {
     if (!token) {
@@ -147,102 +235,232 @@ export default function ClientDashboard() {
     new Date(meeting.scheduled_date) < new Date()
   );
 
+  const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center gap-3">
-              <Building className="w-8 h-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Client Dashboard</h1>
-                <p className="text-sm text-gray-600">{clientInfo?.name}</p>
-              </div>
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-4">
+              <h1 
+                className="text-2xl font-bold text-gray-900 cursor-pointer group transition-all duration-200 hover:scale-105"
+                onClick={() => {
+                  // Easter egg: confetti and flow animation
+                  confetti({
+                    particleCount: 50,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                  });
+                  
+                  // Add flow animation
+                  const logo = document.querySelector('.pypeflow-logo');
+                  if (logo) {
+                    logo.classList.add('flow-animation');
+                    
+                    // Create floating particles
+                    for (let i = 0; i < 5; i++) {
+                      setTimeout(() => {
+                        const particle = document.createElement('div');
+                        particle.className = 'flow-particle fixed w-2 h-2 bg-blue-500 rounded-full pointer-events-none z-50';
+                        particle.style.cssText = `
+                          --flow-x: ${Math.random() * 200 - 100}px;
+                          --flow-y: ${Math.random() * 200 - 100}px;
+                        `;
+                        
+                        // Position particles around the logo
+                        const rect = logo.getBoundingClientRect();
+                        const startX = rect.left + Math.random() * rect.width;
+                        const startY = rect.top + Math.random() * rect.height;
+                        
+                        particle.style.left = startX + 'px';
+                        particle.style.top = startY + 'px';
+                        
+                        document.body.appendChild(particle);
+                        
+                        // Animate particle flow
+                        const animation = particle.animate([
+                          { 
+                            transform: 'translate(0, 0) scale(1)',
+                            opacity: 1
+                          },
+                          { 
+                            transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`,
+                            opacity: 0
+                          }
+                        ], {
+                          duration: 2000,
+                          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                        });
+                        
+                        animation.onfinish = () => {
+                          particle.remove();
+                        };
+                      }, i * 100);
+                    }
+                    
+                    // Remove animation class after effect
+                    setTimeout(() => {
+                      logo.classList.remove('flow-animation');
+                    }, 3000);
+                  }
+                }}
+                title="🌊 Click for a flow effect!"
+              >
+                <span className="pypeflow-logo relative">
+                  Pype
+                  <span className="text-cyan-500">Flow</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded"></div>
+                </span>
+              </h1>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <p className="text-base font-medium text-gray-700">Client Dashboard</p>
             </div>
-            <div className="text-sm text-gray-500">
-              Last updated: {new Date().toLocaleString()}
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg shadow-sm">
+                {currentMonth}
+              </span>
+              <div 
+                className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-200 group"
+                onClick={() => {
+                  // Easter egg: confetti and rocket animation
+                  confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                  });
+                  
+                  // Add a subtle bounce effect to the rocket
+                  const rocket = document.querySelector('.rocket-easter-egg');
+                  if (rocket) {
+                    rocket.classList.add('animate-bounce');
+                    setTimeout(() => {
+                      rocket.classList.remove('animate-bounce');
+                    }, 1000);
+                  }
+                }}
+                title="🎉 Click for a surprise!"
+              >
+                <span className="text-sm font-medium text-blue-500 group-hover:text-blue-600 transition-colors">{clientInfo?.name}</span>
+                <Rocket className="w-4 h-4 text-blue-500 group-hover:text-blue-600 transition-colors rocket-easter-egg" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'overview'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`${
+                activeTab === 'overview'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
                 Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('meetings')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'meetings'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('meetings')}
+              className={`${
+                activeTab === 'meetings'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
                 Upcoming Meetings
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'history'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`${
+                activeTab === 'history'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <History className="w-4 h-4" />
                 Meeting History
-              </button>
-            </nav>
-          </div>
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`${
+                activeTab === 'calendar'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Calendar
+              </span>
+            </button>
+          </nav>
         </div>
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Calendar className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Upcoming Meetings</p>
-                    <p className="text-2xl font-semibold text-gray-900">{upcomingMeetings.length}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div 
+                className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleMetricClick('upcoming')}
+                title="Click to view upcoming meetings"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Upcoming Meetings</h3>
+                  <Calendar className="w-6 h-6 text-blue-500" />
+                </div>
+                <div className="space-y-1 bg-blue-50 p-3 rounded-md">
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-3xl font-bold text-blue-700">{upcomingMeetings.length}</span>
+                    <span className="text-sm text-gray-600">scheduled</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Clock className="w-8 h-8 text-green-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Confirmed Meetings</p>
-                    <p className="text-2xl font-semibold text-gray-900">{confirmedMeetings.length}</p>
+              <div 
+                className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleMetricClick('confirmed')}
+                title="Click to view confirmed meetings"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Confirmed Meetings</h3>
+                  <Clock className="w-6 h-6 text-green-500" />
+                </div>
+                <div className="space-y-1 bg-green-50 p-3 rounded-md">
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-3xl font-bold text-green-700">{confirmedMeetings.length}</span>
+                    <span className="text-sm text-gray-600">confirmed</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Users className="w-8 h-8 text-purple-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Meetings</p>
-                    <p className="text-2xl font-semibold text-gray-900">{meetings.length}</p>
+              <div 
+                className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-purple-200 transition-all duration-200 border-2 border-transparent"
+                onClick={() => handleMetricClick('total')}
+                title="Click to view all meetings"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Total Meetings</h3>
+                  <Users className="w-6 h-6 text-purple-500" />
+                </div>
+                <div className="space-y-1 bg-purple-50 p-3 rounded-md">
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-3xl font-bold text-purple-700">{meetings.length}</span>
+                    <span className="text-sm text-gray-600">total</span>
                   </div>
                 </div>
               </div>
@@ -388,6 +606,18 @@ export default function ClientDashboard() {
           </div>
         )}
 
+        {activeTab === 'calendar' && (
+          <div className="bg-white rounded-lg shadow-md">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Meeting Calendar</h3>
+              <p className="text-sm text-gray-600 mt-1">View all meetings in calendar format</p>
+            </div>
+            <div className="p-6">
+              <CalendarView meetings={meetings} colorByStatus={true} />
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>Client Dashboard - {clientInfo?.name}</p>
@@ -395,7 +625,102 @@ export default function ClientDashboard() {
             For support, please contact your account manager or SDR.
           </p>
         </div>
-      </div>
+      </main>
+
+      {/* Meeting Details Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">{modalTitle}</h2>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              {modalContent && modalContent.data && modalContent.data.length > 0 ? (
+                <div className="space-y-4">
+                  {modalContent.data.map((meeting: Meeting) => (
+                    <div key={meeting.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {meeting.contact_full_name || 'Meeting'}
+                          </h3>
+                          <div className="mt-2 space-y-1">
+                            <p className="text-sm text-gray-600">
+                              <strong>Date:</strong> {new Date(meeting.scheduled_date).toLocaleDateString()}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              <strong>Time:</strong> {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              <strong>SDR:</strong> {meeting.sdr_name}
+                            </p>
+                            {meeting.contact_email && (
+                              <p className="text-sm text-gray-600">
+                                <strong>Email:</strong> {meeting.contact_email}
+                              </p>
+                            )}
+                            {meeting.contact_phone && (
+                              <p className="text-sm text-gray-600">
+                                <strong>Phone:</strong> {meeting.contact_phone}
+                              </p>
+                            )}
+                            {meeting.company && (
+                              <p className="text-sm text-gray-600">
+                                <strong>Company:</strong> {meeting.company}
+                              </p>
+                            )}
+                            {meeting.notes && (
+                              <div className="mt-2">
+                                <p className="text-sm font-medium text-gray-700">Notes:</p>
+                                <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-1">
+                                  {meeting.notes}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            meeting.status === 'confirmed' 
+                              ? 'bg-green-100 text-green-800'
+                              : meeting.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {meeting.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No meetings found</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-4 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition duration-150"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
