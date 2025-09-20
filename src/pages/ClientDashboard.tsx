@@ -48,7 +48,7 @@ export default function ClientDashboard() {
         throw new Error('Invalid token format');
       }
 
-      if (!tokenData.clientId || tokenData.type !== 'client_access') {
+      if (!tokenData.id || tokenData.type !== 'client_access') {
         throw new Error('Invalid token');
       }
 
@@ -59,7 +59,7 @@ export default function ClientDashboard() {
 
       // For now, we'll need to get client info from the clients list
       // This is a temporary solution until we have the database migration
-      const clientId = tokenData.clientId;
+      const clientId = tokenData.id;
       
       // We'll need to fetch client info from the clients table
       const { data: clientData, error: clientError } = await supabase

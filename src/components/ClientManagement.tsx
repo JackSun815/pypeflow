@@ -1071,18 +1071,51 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         
         {/* Calculate overview metrics */}
         {(() => {
+          // Use the same calculation logic as the unassigned clients modal
+          const unassignedClients = clients.filter(client => {
+            const totalAssignedSetTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
+            const totalAssignedHoldTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
+            
+            const hasUnassignedSetTarget = client.monthly_set_target > totalAssignedSetTarget;
+            const hasUnassignedHoldTarget = client.monthly_hold_target > totalAssignedHoldTarget;
+            
+            return hasUnassignedSetTarget || hasUnassignedHoldTarget;
+          });
+
+          // Calculate unassigned amounts by adding up each client's unassigned amounts
+          const unassignedSetTarget = unassignedClients.reduce((sum, client) => {
+            const totalAssignedSetTarget = client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_set_target || 0), 0);
+            const unassignedAmount = client.monthly_set_target - totalAssignedSetTarget;
+            return sum + Math.max(0, unassignedAmount); // Only add positive unassigned amounts
+          }, 0);
+
+          const unassignedHeldTarget = unassignedClients.reduce((sum, client) => {
+            const totalAssignedHoldTarget = client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_hold_target || 0), 0);
+            const unassignedAmount = client.monthly_hold_target - totalAssignedHoldTarget;
+            return sum + Math.max(0, unassignedAmount); // Only add positive unassigned amounts
+          }, 0);
+
+          // Calculate total client targets for display
           const totalClientSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
           const totalClientHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
 
+          // Calculate total assigned targets for display
           const totalAssignedSetTarget = clients.reduce((sum, client) => 
-            sum + client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_set_target || 0), 0), 0
+            sum + (client.assignments || []).reduce((acc, assignment) => acc + (assignment.monthly_set_target || 0), 0), 0
           );
           const totalAssignedHeldTarget = clients.reduce((sum, client) => 
-            sum + client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_hold_target || 0), 0), 0
+            sum + (client.assignments || []).reduce((acc, assignment) => acc + (assignment.monthly_hold_target || 0), 0), 0
           );
 
-          const unassignedSetTarget = totalClientSetTarget - totalAssignedSetTarget;
-          const unassignedHeldTarget = totalClientHeldTarget - totalAssignedHeldTarget;
+          // Debug logging
+          console.log('🔍 Target Overview Debug for', selectedMonth);
+          console.log('📊 Unassigned clients:', unassignedClients.length);
+          console.log('📊 Total client set target:', totalClientSetTarget);
+          console.log('📊 Total client held target:', totalClientHeldTarget);
+          console.log('📊 Total assigned set target:', totalAssignedSetTarget);
+          console.log('📊 Total assigned held target:', totalAssignedHeldTarget);
+          console.log('📊 Unassigned set target (sum of individual):', unassignedSetTarget);
+          console.log('📊 Unassigned held target (sum of individual):', unassignedHeldTarget);
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

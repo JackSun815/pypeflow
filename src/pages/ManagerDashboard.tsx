@@ -152,6 +152,9 @@ export default function ManagerDashboard() {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
+  // State for client progress visualization
+  const [progressGoalType, setProgressGoalType] = useState<'set' | 'held'>('set');
+
   // Fetch assignments for the selected month
   useEffect(() => {
     async function fetchAssignments() {
@@ -1911,6 +1914,160 @@ export default function ManagerDashboard() {
                   }}
                 />
               </div>
+            </div>
+
+            {/* Client Progress Visualization */}
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <Target className="w-6 h-6 text-blue-600" />
+                  Client Progress Visualization
+                </h2>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Goal Type:</label>
+                    <select
+                      value={progressGoalType}
+                      onChange={(e) => setProgressGoalType(e.target.value as 'set' | 'held')}
+                      className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="set">Set Goals</option>
+                      <option value="held">Held Goals</option>
+                    </select>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {monthOptions.find(m => m.value === selectedMonth)?.label}
+                  </div>
+                </div>
+              </div>
+
+              {(() => {
+                // Filter clients that have assignments for the selected month
+                const activeClientsForProgress = clients.filter(client => {
+                  const hasAssignments = assignments.some(assignment => 
+                    assignment.client_id === client.id && 
+                    !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
+                    assignment.is_active !== false // Exclude inactive assignments
+                  );
+                  return hasAssignments;
+                });
+
+                // Calculate progress for each client
+                const clientsWithProgress = activeClientsForProgress.map(client => {
+                  const clientAssignments = assignments.filter(assignment => 
+                    assignment.client_id === client.id && 
+                    !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
+                    assignment.is_active !== false // Exclude inactive assignments
+                  );
+
+                  const totalAssignedSet = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
+                  const totalAssignedHeld = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
+
+                  const setProgress = client.monthly_set_target > 0 ? (totalAssignedSet / client.monthly_set_target) * 100 : 0;
+                  const heldProgress = client.monthly_hold_target > 0 ? (totalAssignedHeld / client.monthly_hold_target) * 100 : 0;
+
+                  return {
+                    ...client,
+                    setProgress: Math.min(setProgress, 100), // Cap at 100%
+                    heldProgress: Math.min(heldProgress, 100), // Cap at 100%
+                    totalAssignedSet,
+                    totalAssignedHeld,
+                    unassignedSet: Math.max(0, client.monthly_set_target - totalAssignedSet),
+                    unassignedHeld: Math.max(0, client.monthly_hold_target - totalAssignedHeld)
+                  };
+                });
+
+                // Sort by progress (least to most)
+                const sortedClients = clientsWithProgress.sort((a, b) => {
+                  const aProgress = progressGoalType === 'set' ? a.setProgress : a.heldProgress;
+                  const bProgress = progressGoalType === 'set' ? b.setProgress : b.heldProgress;
+                  return aProgress - bProgress;
+                });
+
+                return (
+                  <div className="space-y-1">
+                    {sortedClients.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        <Target className="w-6 h-6 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">No active clients found for {monthOptions.find(m => m.value === selectedMonth)?.label}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {/* Header Row */}
+                        <div className="flex items-center gap-2 p-1.5 bg-gray-50 border border-gray-200 rounded text-xs font-medium text-gray-700">
+                          <div className="flex-shrink-0 w-28">Client</div>
+                          <div className="flex-shrink-0 w-32">Progress</div>
+                          <div className="flex-shrink-0 w-10 text-right">%</div>
+                          <div className="flex-shrink-0 w-16 text-right">Assigned/Target</div>
+                        </div>
+                        
+                        {/* Client Rows */}
+                        {sortedClients.map((client) => {
+                          const progress = progressGoalType === 'set' ? client.setProgress : client.heldProgress;
+                          const totalTarget = progressGoalType === 'set' ? client.monthly_set_target : client.monthly_hold_target;
+                          const totalAssigned = progressGoalType === 'set' ? client.totalAssignedSet : client.totalAssignedHeld;
+                          const unassigned = progressGoalType === 'set' ? client.unassignedSet : client.unassignedHeld;
+
+                          // Color coding based on progress
+                          const getProgressColor = (progress: number) => {
+                            if (progress >= 100) return 'bg-green-500';
+                            if (progress >= 75) return 'bg-yellow-500';
+                            if (progress >= 50) return 'bg-orange-500';
+                            return 'bg-red-500';
+                          };
+
+                          const getTextColor = (progress: number) => {
+                            if (progress >= 100) return 'text-green-700';
+                            if (progress >= 75) return 'text-yellow-700';
+                            if (progress >= 50) return 'text-orange-700';
+                            return 'text-red-700';
+                          };
+
+                          return (
+                            <div key={client.id} className="flex items-center gap-2 p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors">
+                              {/* Client Name */}
+                              <div className="flex-shrink-0 w-28">
+                                <h3 className="text-xs font-medium text-gray-900 truncate" title={client.name}>
+                                  {client.name}
+                                </h3>
+                              </div>
+                              
+                              {/* Progress Bar */}
+                              <div className="flex-shrink-0 w-32">
+                                <div className="w-full bg-gray-200 rounded-full h-1">
+                                  <div
+                                    className={`h-1 rounded-full transition-all duration-300 ${getProgressColor(progress)}`}
+                                    style={{ width: `${Math.min(progress, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                              
+                              {/* Progress Percentage */}
+                              <div className="flex-shrink-0 w-10 text-right">
+                                <span className={`text-xs font-medium ${getTextColor(progress)}`}>
+                                  {progress.toFixed(0)}%
+                                </span>
+                              </div>
+                              
+                              {/* Numbers */}
+                              <div className="flex-shrink-0 w-16 text-right">
+                                <div className="text-xs text-gray-600">
+                                  {totalAssigned.toLocaleString()}/{totalTarget.toLocaleString()}
+                                </div>
+                                {unassigned > 0 && (
+                                  <div className="text-xs text-red-600">
+                                    -{unassigned.toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </>
         )}

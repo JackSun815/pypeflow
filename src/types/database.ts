@@ -26,6 +26,7 @@ export interface Assignment {
   monthly_set_target: number;
   monthly_hold_target: number;
   month: string;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }
