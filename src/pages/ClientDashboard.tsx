@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, History, Rocket, X } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -59,18 +59,65 @@ interface Meeting {
 
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
-  const location = useLocation();
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'history' | 'calendar'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'history' | 'calendar' | 'icp'>('overview');
   
   // Modal state for clickable metrics
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'upcoming' | 'confirmed' | 'total' | null>(null);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<any>(null);
+
+  // ICP Targeting state
+  const [jobTitles, setJobTitles] = useState({
+    include1: ['GM', 'Asst General Manager', 'CFO', 'IT Security Manager', 'IT Manager'],
+    include2: ['General Manager', 'Assistant GM', 'VP of Risk/Risk Officer', 'VP of Fraud', 'IT Director', 'ISO/CISO'],
+    include3: ['Director of IT', 'Information Security Manager', 'CISO', 'FSO', 'CFO'],
+    managementLevel: ['CXO', 'VP', 'Director']
+  });
+  
+  const [locations, setLocations] = useState({
+    personLocations: ['United States'],
+    companyLocations: {
+      banks: ['Indiana', 'Michigan', 'Illinois', 'Ohio', 'Wisconsin'],
+      criticalInfra: ['Colorado'],
+      dod: ['United States']
+    }
+  });
+  
+  const [industryKeywords, setIndustryKeywords] = useState({
+    companyKeywords: ['Banks', 'DoD Government Contractors', 'Manufacturing', 'Critical Infrastructure'],
+    industries: ['Manufacturing', 'Finance', 'Utilities']
+  });
+  
+  const [employeeCounts, setEmployeeCounts] = useState({
+    smallBanks: '50-500',
+    dodContractors: '100-2500',
+    criticalInfra: '50-500'
+  });
+  
+  const [revenue, setRevenue] = useState({
+    max: '10,000,000,000'
+  });
+  
+  const [companyTypes, setCompanyTypes] = useState(['Public', 'Private']);
+  
+  const [additionalParams, setAdditionalParams] = useState({
+    revenue: 'Is unknown',
+    companyType: ['Private Company', 'Public Company', 'Retail Locations'],
+    foundedYear: '-',
+    customParams: 'Include companies with unknown founding date'
+  });
+
+  // Input states for adding new items
+  const [newJobTitle, setNewJobTitle] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [newKeyword, setNewKeyword] = useState('');
+  const [newIndustry, setNewIndustry] = useState('');
+  const [newCompanyType, setNewCompanyType] = useState('');
 
   // Confetti function
   const triggerConfetti = () => {
@@ -114,6 +161,87 @@ export default function ClientDashboard() {
     setModalTitle(title);
     setModalContent(content);
     setModalOpen(true);
+  };
+
+  // ICP Targeting helper functions
+  const addJobTitle = (category: keyof typeof jobTitles, title: string) => {
+    if (title.trim()) {
+      setJobTitles(prev => ({
+        ...prev,
+        [category]: [...prev[category], title.trim()]
+      }));
+    }
+  };
+
+  const removeJobTitle = (category: keyof typeof jobTitles, index: number) => {
+    setJobTitles(prev => ({
+      ...prev,
+      [category]: prev[category].filter((_, i) => i !== index)
+    }));
+  };
+
+  const addLocation = (category: keyof typeof locations.companyLocations, location: string) => {
+    if (location.trim()) {
+      setLocations(prev => ({
+        ...prev,
+        companyLocations: {
+          ...prev.companyLocations,
+          [category]: [...prev.companyLocations[category], location.trim()]
+        }
+      }));
+    }
+  };
+
+  const removeLocation = (category: keyof typeof locations.companyLocations, index: number) => {
+    setLocations(prev => ({
+      ...prev,
+      companyLocations: {
+        ...prev.companyLocations,
+        [category]: prev.companyLocations[category].filter((_, i) => i !== index)
+      }
+    }));
+  };
+
+  const addKeyword = (keyword: string) => {
+    if (keyword.trim()) {
+      setIndustryKeywords(prev => ({
+        ...prev,
+        companyKeywords: [...prev.companyKeywords, keyword.trim()]
+      }));
+    }
+  };
+
+  const removeKeyword = (index: number) => {
+    setIndustryKeywords(prev => ({
+      ...prev,
+      companyKeywords: prev.companyKeywords.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addIndustry = (industry: string) => {
+    if (industry.trim()) {
+      setIndustryKeywords(prev => ({
+        ...prev,
+        industries: [...prev.industries, industry.trim()]
+      }));
+    }
+  };
+
+  const removeIndustry = (index: number) => {
+    setIndustryKeywords(prev => ({
+      ...prev,
+      industries: prev.industries.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addCompanyType = (type: string) => {
+    if (type.trim()) {
+      setCompanyTypes(prev => [...prev, type.trim()]);
+    }
+  };
+
+  const removeCompanyType = (index: number) => {
+    setCompanyTypes(prev => prev.filter((_, i) => i !== index));
   };
 
   useEffect(() => {
@@ -406,6 +534,19 @@ export default function ClientDashboard() {
                 Calendar
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab('icp')}
+              className={`${
+                activeTab === 'icp'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                ICP Targeting
+              </span>
+            </button>
           </nav>
         </div>
 
@@ -614,6 +755,336 @@ export default function ClientDashboard() {
             </div>
             <div className="p-6">
               <CalendarView meetings={meetings} colorByStatus={true} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'icp' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">ICP / Targeting Parameters</h2>
+                  <p className="text-sm text-green-600 mt-1">All changes saved</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Active Filters
+                  </div>
+                  <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    19 filters applied
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Job Titles Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Titles</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Include:</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {jobTitles.include1.map((title, index) => (
+                      <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        {title}
+                        <button
+                          onClick={() => removeJobTitle('include1', index)}
+                          className="hover:bg-blue-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newJobTitle}
+                      onChange={(e) => setNewJobTitle(e.target.value)}
+                      placeholder="Add job title..."
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => {
+                        addJobTitle('include1', newJobTitle);
+                        setNewJobTitle('');
+                      }}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Include:</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {jobTitles.include2.map((title, index) => (
+                      <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        {title}
+                        <button
+                          onClick={() => removeJobTitle('include2', index)}
+                          className="hover:bg-blue-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Include:</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {jobTitles.include3.map((title, index) => (
+                      <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        {title}
+                        <button
+                          onClick={() => removeJobTitle('include3', index)}
+                          className="hover:bg-blue-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Management Level:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {jobTitles.managementLevel.map((level, index) => (
+                      <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        {level}
+                        <button
+                          onClick={() => removeJobTitle('managementLevel', index)}
+                          className="hover:bg-green-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Location Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Location</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Person Locations:</label>
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">United States</span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Locations:</label>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-sm text-gray-600">For Banks: </span>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">Indiana, Michigan, Illinois, Ohio, Wisconsin</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600">Critical Infra: </span>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">Colorado</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600">DoD: </span>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">United States</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Industry & Keywords Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Industry & Keywords</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Keywords Contain ANY Of:</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {industryKeywords.companyKeywords.map((keyword, index) => (
+                      <span key={index} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        {keyword}
+                        <button
+                          onClick={() => removeKeyword(index)}
+                          className="hover:bg-purple-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newKeyword}
+                      onChange={(e) => setNewKeyword(e.target.value)}
+                      placeholder="Add keyword..."
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      onClick={() => {
+                        addKeyword(newKeyword);
+                        setNewKeyword('');
+                      }}
+                      className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry:</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {industryKeywords.industries.map((industry, index) => (
+                      <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        {industry}
+                        <button
+                          onClick={() => removeIndustry(index)}
+                          className="hover:bg-green-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newIndustry}
+                      onChange={(e) => setNewIndustry(e.target.value)}
+                      placeholder="Add industry..."
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    <button
+                      onClick={() => {
+                        addIndustry(newIndustry);
+                        setNewIndustry('');
+                      }}
+                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* # Employees Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4"># Employees</h3>
+              <div className="space-y-2">
+                <div>
+                  <span className="text-sm text-gray-600">Small Banks: </span>
+                  <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">50-500</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-600">DoD Contractors: </span>
+                  <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">100-2500</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-600">Critical Infra: </span>
+                  <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">50-500</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue</h3>
+              <div className="space-y-2">
+                <div>
+                  <span className="text-sm text-gray-600">Max: </span>
+                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">10,000,000,000</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Company Type Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Type</h3>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {companyTypes.map((type, index) => (
+                  <span key={index} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                    {type}
+                    <button
+                      onClick={() => removeCompanyType(index)}
+                      className="hover:bg-gray-200 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newCompanyType}
+                  onChange={(e) => setNewCompanyType(e.target.value)}
+                  placeholder="Add company type..."
+                  className="flex-1 px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+                />
+                <button
+                  onClick={() => {
+                    addCompanyType(newCompanyType);
+                    setNewCompanyType('');
+                  }}
+                  className="px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Additional Parameters */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Parameters</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Revenue</label>
+                  <p className="text-sm text-gray-500">Is unknown</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Type</label>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-500">Private Company</p>
+                    <p className="text-sm text-gray-500">Public Company</p>
+                    <p className="text-sm text-gray-500">Retail Locations</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Founded Year</label>
+                  <p className="text-sm text-gray-500">-</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Custom Parameters</label>
+                  <p className="text-sm text-gray-500">Include companies with unknown founding date</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    19 filters applied
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition duration-150">
+                    Clear All
+                  </button>
+                  <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition duration-150">
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
