@@ -671,88 +671,104 @@ export default function SDRDashboard() {
       </div>
     )}
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <header className="bg-white shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <h1 
-                className="text-2xl font-bold text-blue-500 cursor-pointer hover:text-blue-600 transition-colors duration-300 relative overflow-hidden group"
-                onClick={() => {
-                  // Easter egg: Flow effect animation
-                  const logo = document.querySelector('.pypeflow-logo');
-                  if (logo) {
-                    // Add flow animation class
-                    logo.classList.add('flow-animation');
-                    
-                    // Create flowing particles effect
-                    for (let i = 0; i < 8; i++) {
+      <header className="bg-gradient-to-r from-white via-blue-50/30 to-white shadow-lg border-b border-blue-100 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/20 to-transparent"></div>
+        <div className="absolute top-0 left-0 w-full h-full opacity-5">
+          <div className="absolute top-4 left-8 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+          <div className="absolute top-8 right-12 w-1 h-1 bg-cyan-400 rounded-full animate-pulse delay-300"></div>
+          <div className="absolute top-12 left-1/4 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-700"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                <h1 
+                  className="text-3xl font-bold cursor-pointer group transition-all duration-300 hover:scale-105 relative z-10"
+                  onClick={() => {
+                    // Easter egg: Flow effect animation
+                    const logo = document.querySelector('.pypeflow-logo-sdr');
+                    if (logo) {
+                      // Add flow animation class
+                      logo.classList.add('flow-animation');
+                      
+                      // Create flowing particles effect
+                      for (let i = 0; i < 8; i++) {
+                        setTimeout(() => {
+                          const particle = document.createElement('div');
+                          particle.className = 'flow-particle';
+                          particle.style.cssText = `
+                            position: absolute;
+                            width: 4px;
+                            height: 4px;
+                            background: linear-gradient(45deg, #3b82f6, #06b6d4);
+                            border-radius: 50%;
+                            pointer-events: none;
+                            z-index: 10;
+                          `;
+                          
+                          // Position particles around the logo
+                          const rect = logo.getBoundingClientRect();
+                          const startX = rect.left + Math.random() * rect.width;
+                          const startY = rect.top + Math.random() * rect.height;
+                          
+                          particle.style.left = startX + 'px';
+                          particle.style.top = startY + 'px';
+                          
+                          document.body.appendChild(particle);
+                          
+                          // Animate particle flow
+                          const animation = particle.animate([
+                            { 
+                              transform: 'translate(0, 0) scale(1)',
+                              opacity: 1
+                            },
+                            { 
+                              transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`,
+                              opacity: 0
+                            }
+                          ], {
+                            duration: 2000,
+                            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                          });
+                          
+                          animation.onfinish = () => {
+                            particle.remove();
+                          };
+                        }, i * 100);
+                      }
+                      
+                      // Remove animation class after effect
                       setTimeout(() => {
-                        const particle = document.createElement('div');
-                        particle.className = 'flow-particle';
-                        particle.style.cssText = `
-                          position: absolute;
-                          width: 4px;
-                          height: 4px;
-                          background: linear-gradient(45deg, #3b82f6, #06b6d4);
-                          border-radius: 50%;
-                          pointer-events: none;
-                          z-index: 10;
-                        `;
-                        
-                        // Position particles around the logo
-                        const rect = logo.getBoundingClientRect();
-                        const startX = rect.left + Math.random() * rect.width;
-                        const startY = rect.top + Math.random() * rect.height;
-                        
-                        particle.style.left = startX + 'px';
-                        particle.style.top = startY + 'px';
-                        
-                        document.body.appendChild(particle);
-                        
-                        // Animate particle flow
-                        const animation = particle.animate([
-                          { 
-                            transform: 'translate(0, 0) scale(1)',
-                            opacity: 1
-                          },
-                          { 
-                            transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`,
-                            opacity: 0
-                          }
-                        ], {
-                          duration: 2000,
-                          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                        });
-                        
-                        animation.onfinish = () => {
-                          particle.remove();
-                        };
-                      }, i * 100);
+                        logo.classList.remove('flow-animation');
+                      }, 3000);
                     }
-                    
-                    // Remove animation class after effect
-                    setTimeout(() => {
-                      logo.classList.remove('flow-animation');
-                    }, 3000);
-                  }
-                }}
-                title="🌊 Click for a flow effect!"
-              >
-                <span className="pypeflow-logo relative">
-                  Pype
-                  <span className="text-cyan-500">Flow</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded"></div>
-                </span>
-              </h1>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <p className="text-base font-medium text-gray-700">SDR Dashboard</p>
+                  }}
+                  title="🌊 Click for a flow effect!"
+                >
+                  <span className="pypeflow-logo-sdr relative">
+                    <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">Pype</span>
+                    <span className="bg-gradient-to-r from-cyan-600 to-teal-500 bg-clip-text text-transparent">Flow</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
+                  </span>
+                </h1>
+              </div>
+              
+              <div className="flex flex-col">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-px bg-gradient-to-b from-blue-300 to-blue-500"></div>
+                  <div className="flex flex-col">
+                    <p className="text-lg font-semibold text-gray-800">SDR Dashboard</p>
+                    <p className="text-sm text-gray-500 font-medium">{currentMonth}</p>
+                  </div>
+                </div>
+              </div>
             </div>
+            
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg shadow-sm">
-                {currentMonth}
-              </span>
               <div 
-                className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-200 group"
+                className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 group bg-gradient-to-r from-blue-100 to-cyan-100 px-4 py-2 rounded-xl border border-blue-200"
                 onClick={() => {
                   // Easter egg: confetti and rocket animation
                   confetti({
@@ -762,7 +778,7 @@ export default function SDRDashboard() {
                   });
                   
                   // Add a subtle bounce effect to the rocket
-                  const rocket = document.querySelector('.rocket-easter-egg');
+                  const rocket = document.querySelector('.rocket-easter-egg-sdr');
                   if (rocket) {
                     rocket.classList.add('animate-bounce');
                     setTimeout(() => {
@@ -772,8 +788,8 @@ export default function SDRDashboard() {
                 }}
                 title="🎉 Click for a surprise!"
               >
-                <span className="text-sm font-medium text-blue-500 group-hover:text-blue-600 transition-colors">{sdrName}</span>
-                <Rocket className="w-4 h-4 text-blue-500 group-hover:text-blue-600 transition-colors rocket-easter-egg" />
+                <span className="text-sm font-semibold text-blue-700 group-hover:text-blue-800 transition-colors">{sdrName}</span>
+                <Rocket className="w-4 h-4 text-blue-600 group-hover:text-blue-700 transition-colors rocket-easter-egg-sdr" />
               </div>
             </div>
           </div>

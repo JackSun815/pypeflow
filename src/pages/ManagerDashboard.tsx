@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
@@ -12,6 +12,7 @@ import ManagerMeetingHistory from '../components/ManagerMeetingHistory';
 import ICPCheck from './ICPCheck';
 import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
+import confetti from 'canvas-confetti';
 
 // Add custom CSS for flow animation
 const flowStyles = `
@@ -76,7 +77,7 @@ ChartJS.register(
 );
 
 export default function ManagerDashboard() {
-  const { } = useAuth();
+  const { profile } = useAuth();
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
   const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
   // Ensures useMeetings fetches all meetings (SDR ID: null)
@@ -729,95 +730,137 @@ export default function ManagerDashboard() {
   const totalPendingMeetings = meetings.filter(m => m.status === 'pending' && !m.no_show).length;
   const totalNoShowMeetings = meetings.filter(m => m.no_show).length;
 
+  const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <header className="bg-white shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <h1 
-                className="text-2xl font-bold text-blue-500 cursor-pointer hover:text-blue-600 transition-colors duration-300 relative overflow-hidden group"
-                onClick={() => {
-                  // Easter egg: Flow effect animation
-                  const logo = document.querySelector('.pypeflow-logo-manager');
-                  if (logo) {
-                    // Add flow animation class
-                    logo.classList.add('flow-animation');
-                    
-                    // Create flowing particles effect
-                    for (let i = 0; i < 8; i++) {
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <header className="bg-gradient-to-r from-white via-indigo-50/30 to-white shadow-lg border-b border-indigo-100 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-100/20 to-transparent"></div>
+        <div className="absolute top-0 left-0 w-full h-full opacity-5">
+          <div className="absolute top-4 left-8 w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+          <div className="absolute top-8 right-12 w-1 h-1 bg-purple-400 rounded-full animate-pulse delay-300"></div>
+          <div className="absolute top-12 left-1/4 w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-700"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                <h1 
+                  className="text-3xl font-bold cursor-pointer group transition-all duration-300 hover:scale-105 relative z-10"
+                  onClick={() => {
+                    // Easter egg: Flow effect animation
+                    const logo = document.querySelector('.pypeflow-logo-manager');
+                    if (logo) {
+                      // Add flow animation class
+                      logo.classList.add('flow-animation');
+                      
+                      // Create flowing particles effect
+                      for (let i = 0; i < 8; i++) {
+                        setTimeout(() => {
+                          const particle = document.createElement('div');
+                          particle.className = 'flow-particle';
+                          particle.style.cssText = `
+                            position: absolute;
+                            width: 4px;
+                            height: 4px;
+                            background: linear-gradient(45deg, #6366f1, #8b5cf6);
+                            border-radius: 50%;
+                            pointer-events: none;
+                            z-index: 10;
+                          `;
+                          
+                          // Position particles around the logo
+                          const rect = logo.getBoundingClientRect();
+                          const startX = rect.left + Math.random() * rect.width;
+                          const startY = rect.top + Math.random() * rect.height;
+                          
+                          particle.style.left = startX + 'px';
+                          particle.style.top = startY + 'px';
+                          
+                          document.body.appendChild(particle);
+                          
+                          // Animate particle flow
+                          const animation = particle.animate([
+                            { 
+                              transform: 'translate(0, 0) scale(1)',
+                              opacity: 1
+                            },
+                            { 
+                              transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`,
+                              opacity: 0
+                            }
+                          ], {
+                            duration: 2000,
+                            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                          });
+                          
+                          animation.onfinish = () => {
+                            particle.remove();
+                          };
+                        }, i * 100);
+                      }
+                      
+                      // Remove animation class after effect
                       setTimeout(() => {
-                        const particle = document.createElement('div');
-                        particle.className = 'flow-particle';
-                        particle.style.cssText = `
-                          position: absolute;
-                          width: 4px;
-                          height: 4px;
-                          background: linear-gradient(45deg, #3b82f6, #06b6d4);
-                          border-radius: 50%;
-                          pointer-events: none;
-                          z-index: 10;
-                        `;
-                        
-                        // Position particles around the logo
-                        const rect = logo.getBoundingClientRect();
-                        const startX = rect.left + Math.random() * rect.width;
-                        const startY = rect.top + Math.random() * rect.height;
-                        
-                        particle.style.left = startX + 'px';
-                        particle.style.top = startY + 'px';
-                        
-                        document.body.appendChild(particle);
-                        
-                        // Animate particle flow
-                        const animation = particle.animate([
-                          { 
-                            transform: 'translate(0, 0) scale(1)',
-                            opacity: 1
-                          },
-                          { 
-                            transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`,
-                            opacity: 0
-                          }
-                        ], {
-                          duration: 2000,
-                          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                        });
-                        
-                        animation.onfinish = () => {
-                          particle.remove();
-                        };
-                      }, i * 100);
+                        logo.classList.remove('flow-animation');
+                      }, 3000);
                     }
-                    
-                    // Remove animation class after effect
+                  }}
+                  title="🌊 Click for a flow effect!"
+                >
+                  <span className="pypeflow-logo-manager relative">
+                    <span className="bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">Pype</span>
+                    <span className="bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">Flow</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
+                  </span>
+                </h1>
+              </div>
+              
+              <div className="flex flex-col">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-px bg-gradient-to-b from-indigo-300 to-purple-500"></div>
+                  <div className="flex flex-col">
+                    <p className="text-lg font-semibold text-gray-800">Manager Dashboard</p>
+                    <p className="text-sm text-gray-500 font-medium">{currentMonth}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 group bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-xl border border-indigo-200"
+                onClick={() => {
+                  // Easter egg: confetti and rocket animation
+                  confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                  });
+                  
+                  // Add a subtle bounce effect to the rocket
+                  const rocket = document.querySelector('.rocket-easter-egg-manager');
+                  if (rocket) {
+                    rocket.classList.add('animate-bounce');
                     setTimeout(() => {
-                      logo.classList.remove('flow-animation');
-                    }, 3000);
+                      rocket.classList.remove('animate-bounce');
+                    }, 1000);
                   }
                 }}
-                title="🌊 Click for a flow effect!"
+                title="🎉 Click for a surprise!"
               >
-                <span className="pypeflow-logo-manager relative">
-                  Pype
-                  <span className="text-cyan-500">Flow</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded"></div>
-                </span>
-              </h1>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <p className="text-base font-medium text-gray-700">Manager Dashboard</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
-                {monthProgress.toFixed(1)}% Progress
-              </span>
+                <span className="text-sm font-semibold text-indigo-700 group-hover:text-indigo-800 transition-colors">{profile?.full_name || 'Manager'}</span>
+                <Rocket className="w-4 h-4 text-indigo-600 group-hover:text-indigo-700 transition-colors rocket-easter-egg-manager" />
+              </div>
               <button
                 onClick={() => {
                   if (confirm('Export meetings data to CSV?')) {
                     setExportModalOpen(true);
                   }
                 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -826,7 +869,7 @@ export default function ManagerDashboard() {
               </button>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
