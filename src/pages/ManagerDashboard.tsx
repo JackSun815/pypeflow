@@ -1960,7 +1960,7 @@ export default function ManagerDashboard() {
             </div>
 
             {/* Client Progress Visualization */}
-            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6 mt-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <Target className="w-6 h-6 text-blue-600" />
@@ -2028,84 +2028,116 @@ export default function ManagerDashboard() {
                 });
 
                 return (
-                  <div className="space-y-1">
+                  <div className="w-full">
                     {sortedClients.length === 0 ? (
-                      <div className="text-center py-4 text-gray-500">
-                        <Target className="w-6 h-6 mx-auto mb-2 text-gray-300" />
+                      <div className="text-center py-8 text-gray-500">
+                        <Target className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                         <p className="text-sm">No active clients found for {monthOptions.find(m => m.value === selectedMonth)?.label}</p>
                       </div>
                     ) : (
-                      <div className="space-y-1">
-                        {/* Header Row */}
-                        <div className="flex items-center gap-2 p-1.5 bg-gray-50 border border-gray-200 rounded text-xs font-medium text-gray-700">
-                          <div className="flex-shrink-0 w-28">Client</div>
-                          <div className="flex-shrink-0 w-32">Progress</div>
-                          <div className="flex-shrink-0 w-10 text-right">%</div>
-                          <div className="flex-shrink-0 w-16 text-right">Assigned/Target</div>
-                        </div>
-                        
-                        {/* Client Rows */}
-                        {sortedClients.map((client) => {
-                          const progress = progressGoalType === 'set' ? client.setProgress : client.heldProgress;
-                          const totalTarget = progressGoalType === 'set' ? client.monthly_set_target : client.monthly_hold_target;
-                          const totalAssigned = progressGoalType === 'set' ? client.totalAssignedSet : client.totalAssignedHeld;
-                          const unassigned = progressGoalType === 'set' ? client.unassignedSet : client.unassignedHeld;
-
-                          // Color coding based on progress
-                          const getProgressColor = (progress: number) => {
-                            if (progress >= 100) return 'bg-green-500';
-                            if (progress >= 75) return 'bg-yellow-500';
-                            if (progress >= 50) return 'bg-orange-500';
-                            return 'bg-red-500';
-                          };
-
-                          const getTextColor = (progress: number) => {
-                            if (progress >= 100) return 'text-green-700';
-                            if (progress >= 75) return 'text-yellow-700';
-                            if (progress >= 50) return 'text-orange-700';
-                            return 'text-red-700';
-                          };
-
-                          return (
-                            <div key={client.id} className="flex items-center gap-2 p-1.5 border border-gray-200 rounded hover:bg-gray-50 transition-colors">
-                              {/* Client Name */}
-                              <div className="flex-shrink-0 w-28">
-                                <h3 className="text-xs font-medium text-gray-900 truncate" title={client.name}>
-                                  {client.name}
-                                </h3>
-                              </div>
-                              
-                              {/* Progress Bar */}
-                              <div className="flex-shrink-0 w-32">
-                                <div className="w-full bg-gray-200 rounded-full h-1">
-                                  <div
-                                    className={`h-1 rounded-full transition-all duration-300 ${getProgressColor(progress)}`}
-                                    style={{ width: `${Math.min(progress, 100)}%` }}
-                                  />
+                      <div className="w-full">
+                        {/* Chart Container */}
+                        <div className="bg-white border border-gray-300 rounded-lg p-6">
+                          {/* Y-axis and Chart */}
+                          <div className="flex">
+                            {/* Y-axis labels */}
+                            <div className="w-16 flex flex-col justify-between h-64 text-sm text-gray-600 font-medium">
+                              <div className="text-right">100%</div>
+                              <div className="text-right">75%</div>
+                              <div className="text-right">50%</div>
+                              <div className="text-right">25%</div>
+                              <div className="text-right">0%</div>
+                            </div>
+                            
+                            {/* Chart area with horizontal scroll */}
+                            <div className="flex-1 overflow-x-auto">
+                              <div className="relative h-64" style={{ width: `${Math.max(400, sortedClients.length * 80)}px` }}>
+                                {/* Grid lines */}
+                                <div className="absolute inset-0">
+                                  <div className="absolute top-0 left-0 right-0 h-px bg-gray-200"></div>
+                                  <div className="absolute left-0 right-0 h-px bg-gray-100" style={{ top: '25%' }}></div>
+                                  <div className="absolute left-0 right-0 h-px bg-gray-100" style={{ top: '50%' }}></div>
+                                  <div className="absolute left-0 right-0 h-px bg-gray-100" style={{ top: '75%' }}></div>
+                                  <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200"></div>
                                 </div>
-                              </div>
-                              
-                              {/* Progress Percentage */}
-                              <div className="flex-shrink-0 w-10 text-right">
-                                <span className={`text-xs font-medium ${getTextColor(progress)}`}>
-                                  {progress.toFixed(0)}%
-                                </span>
-                              </div>
-                              
-                              {/* Numbers */}
-                              <div className="flex-shrink-0 w-16 text-right">
-                                <div className="text-xs text-gray-600">
-                                  {totalAssigned.toLocaleString()}/{totalTarget.toLocaleString()}
-                                </div>
-                                {unassigned > 0 && (
-                                  <div className="text-xs text-red-600">
-                                    -{unassigned.toLocaleString()}
+                                
+                                {/* Chart content */}
+                                <div className="relative h-full">
+                                  {/* Client bars and names in a single container */}
+                                  <div className="flex items-end h-full">
+                                    {sortedClients.map((client) => {
+                                      const progress = progressGoalType === 'set' ? client.setProgress : client.heldProgress;
+                                      const totalAssigned = progressGoalType === 'set' ? client.totalAssignedSet : client.totalAssignedHeld;
+                                      const totalTarget = progressGoalType === 'set' ? client.monthly_set_target : client.monthly_hold_target;
+                                      const unassigned = progressGoalType === 'set' ? client.unassignedSet : client.unassignedHeld;
+
+                                      const getBarColor = (progress: number) => {
+                                        if (progress >= 100) return 'bg-green-300';
+                                        if (progress >= 75) return 'bg-yellow-300';
+                                        if (progress >= 50) return 'bg-orange-300';
+                                        return 'bg-red-300';
+                                      };
+
+                                      const barHeight = Math.min(progress, 100) * 2.56; // 256px / 100% = 2.56px per %
+                                      const isOver100 = progress > 100;
+
+                                      return (
+                                        <div key={client.id} className="flex flex-col items-center group relative" style={{ width: '80px' }}>
+                                          {/* Bar container */}
+                                          <div className="relative w-8 h-full flex flex-col justify-end mb-2">
+                                            {/* Main bar */}
+                                            <div
+                                              className={`w-full ${getBarColor(progress)} rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer`}
+                                              style={{ 
+                                                height: `${barHeight}px`,
+                                                minHeight: progress > 0 ? '2px' : '0px'
+                                              }}
+                                              title={`${client.name}: ${progress.toFixed(1)}% (${totalAssigned.toLocaleString()}/${totalTarget.toLocaleString()})`}
+                                            />
+                                            
+                                            {/* Over-100 indicator */}
+                                            {isOver100 && (
+                                              <div className="absolute -top-1 left-0 right-0 h-1 bg-green-400 rounded-full" />
+                                            )}
+                                          </div>
+                                          
+                                          {/* Client name and percentage below the bar */}
+                                          <div className="w-full text-center">
+                                            <div className="text-xs text-gray-700 font-medium truncate" title={client.name}>
+                                              {client.name}
+                                            </div>
+                                            <div className="text-xs font-bold text-gray-900 mt-1">
+                                              {progress.toFixed(0)}%
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Hover tooltip - Fixed position */}
+                                          <div className="fixed top-4 right-4 px-4 py-3 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[9999] shadow-2xl border border-gray-600 min-w-max max-w-xs">
+                                            <div className="font-semibold text-sm">{client.name}</div>
+                                            <div className="mt-1">Progress: {progress.toFixed(1)}%</div>
+                                            <div>Assigned: {totalAssigned.toLocaleString()}</div>
+                                            <div>Target: {totalTarget.toLocaleString()}</div>
+                                            {unassigned > 0 && (
+                                              <div className="text-red-300">Unassigned: {unassigned.toLocaleString()}</div>
+                                            )}
+                                            {isOver100 && (
+                                              <div className="text-green-300">Exceeds target!</div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
-                                )}
+                                </div>
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        </div>
+                        
+                        {/* X-axis label */}
+                        <div className="mt-4 text-center text-sm text-gray-600 font-medium">
+                          Clients (sorted by progress: least to most)
+                        </div>
                       </div>
                     )}
                   </div>

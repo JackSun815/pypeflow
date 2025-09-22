@@ -319,7 +319,7 @@ export default function TeamMeetings({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 px-2">
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between">
@@ -376,15 +376,17 @@ export default function TeamMeetings({
           </div>
         </div>
       </div>
-      {/* Manager Calendar View */}
-      <div className="mb-8">
-        <CalendarView meetings={filteredMeetings} />
-      </div>
+        {/* Manager Calendar View */}
+        <div className="mb-32 px-4">
+          <CalendarView meetings={filteredMeetings} />
+        </div>
 
-  
+        {/* Visual Separator */}
+        <div className="border-t-2 border-gray-200 my-8"></div>
 
-      {/* Meeting Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Meeting Lists */}
+        <div className="bg-gray-50 rounded-lg p-6 mt-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ScrollableMeetingList
           title="Today's Meetings"
           icon={<Calendar className="w-5 h-5 text-indigo-600" />}
@@ -410,10 +412,12 @@ export default function TeamMeetings({
             onEdit={handleEditMeeting}
             editingMeetingId={editingMeetingId}
           />
+          </div>
         </div>
-      </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-gray-50 rounded-lg p-6 mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ScrollableMeetingList
           title="Confirmed Meetings"
           icon={<CheckCircle className="w-5 h-5 text-green-600" />}
@@ -439,7 +443,8 @@ export default function TeamMeetings({
           onEdit={handleEditMeeting}
           editingMeetingId={editingMeetingId}
         />
-      </div>
+          </div>
+        </div>
 
       {/* Export Modal */}
       {exportModalOpen && (
