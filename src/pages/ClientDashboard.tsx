@@ -71,31 +71,13 @@ export default function ClientDashboard() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<any>(null);
 
-  // ICP Targeting state - simplified structure with localStorage persistence
-  const [jobTitles, setJobTitles] = useState<string[]>(() => {
-    const saved = localStorage.getItem('icp_jobTitles');
-    return saved ? JSON.parse(saved) : ['CEO', 'founder', 'owner', 'president', 'project managers', 'sales managers'];
-  });
-  const [companyTypes, setCompanyTypes] = useState<string[]>(() => {
-    const saved = localStorage.getItem('icp_companyTypes');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [locations, setLocations] = useState<string[]>(() => {
-    const saved = localStorage.getItem('icp_locations');
-    return saved ? JSON.parse(saved) : ['united states'];
-  });
-  const [employeeCounts, setEmployeeCounts] = useState<string[]>(() => {
-    const saved = localStorage.getItem('icp_employeeCounts');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [revenue, setRevenue] = useState<string[]>(() => {
-    const saved = localStorage.getItem('icp_revenue');
-    return saved ? JSON.parse(saved) : ['1M - 100M'];
-  });
-  const [industries, setIndustries] = useState<string[]>(() => {
-    const saved = localStorage.getItem('icp_industries');
-    return saved ? JSON.parse(saved) : ['utilities', 'construction', 'commercial construction'];
-  });
+  // ICP Targeting state - client-specific localStorage persistence
+  const [jobTitles, setJobTitles] = useState<string[]>([]);
+  const [companyTypes, setCompanyTypes] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [employeeCounts, setEmployeeCounts] = useState<string[]>([]);
+  const [revenue, setRevenue] = useState<string[]>([]);
+  const [industries, setIndustries] = useState<string[]>([]);
 
   // Input states for adding new items
   const [newJobTitle, setNewJobTitle] = useState('');
@@ -105,23 +87,33 @@ export default function ClientDashboard() {
   const [newRevenue, setNewRevenue] = useState('');
   const [newIndustry, setNewIndustry] = useState('');
 
-  // Cold Calling state
-  const [sdrs, setSdrs] = useState<Array<{id: string, name: string, title: string, profilePic: string, isActive: boolean}>>(() => {
-    const saved = localStorage.getItem('icp_sdrs');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [talkTracks, setTalkTracks] = useState<Array<{id: string, name: string, content: string}>>(() => {
-    const saved = localStorage.getItem('icp_talkTracks');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Agentic AI Battle Card', content: 'This is a battle card for Agentic AI discussions...' },
-      { id: '2', name: 'Call Script', content: 'Hello, this is [Name] from [Company]...' }
-    ];
-  });
+  // Cold Calling state - client-specific localStorage persistence
+  const [sdrs, setSdrs] = useState<Array<{id: string, name: string, title: string, profilePic: string, isActive: boolean}>>([]);
+  const [talkTracks, setTalkTracks] = useState<Array<{id: string, name: string, content: string}>>([]);
   const [newTalkTrackName, setNewTalkTrackName] = useState('');
   const [newTalkTrackContent, setNewTalkTrackContent] = useState('');
   
   // SDR form state
   const [showSDRForm, setShowSDRForm] = useState(false);
+
+  // Helper functions for client-specific localStorage
+  const getClientKey = (key: string) => {
+    return clientInfo ? `client_${clientInfo.id}_${key}` : null;
+  };
+
+  const loadClientData = (key: string, defaultValue: any) => {
+    const clientKey = getClientKey(key);
+    if (!clientKey) return defaultValue;
+    const saved = localStorage.getItem(clientKey);
+    return saved ? JSON.parse(saved) : defaultValue;
+  };
+
+  const saveClientData = (key: string, data: any) => {
+    const clientKey = getClientKey(key);
+    if (clientKey) {
+      localStorage.setItem(clientKey, JSON.stringify(data));
+    }
+  };
   const [newSDRName, setNewSDRName] = useState('');
   const [newSDRTitle, setNewSDRTitle] = useState('');
   const [newSDRProfilePic, setNewSDRProfilePic] = useState('');
@@ -193,38 +185,71 @@ export default function ClientDashboard() {
   // Calculate total active filters
   const totalActiveFilters = jobTitles.length + companyTypes.length + locations.length + employeeCounts.length + revenue.length + industries.length;
 
-  // Save ICP data to localStorage whenever it changes
+  // Load client-specific data when client info is available
   useEffect(() => {
-    localStorage.setItem('icp_jobTitles', JSON.stringify(jobTitles));
-  }, [jobTitles]);
+    if (clientInfo) {
+      setJobTitles(loadClientData('icp_jobTitles', ['CEO', 'founder', 'owner', 'president', 'project managers', 'sales managers']));
+      setCompanyTypes(loadClientData('icp_companyTypes', []));
+      setLocations(loadClientData('icp_locations', ['united states']));
+      setEmployeeCounts(loadClientData('icp_employeeCounts', []));
+      setRevenue(loadClientData('icp_revenue', ['1M - 100M']));
+      setIndustries(loadClientData('icp_industries', ['utilities', 'construction', 'commercial construction']));
+      setSdrs(loadClientData('icp_sdrs', []));
+      setTalkTracks(loadClientData('icp_talkTracks', [
+        { id: '1', name: 'Agentic AI Battle Card', content: 'This is a battle card for Agentic AI discussions...' },
+        { id: '2', name: 'Call Script', content: 'Hello, this is [Name] from [Company]...' }
+      ]));
+    }
+  }, [clientInfo]);
+
+  // Save client-specific data to localStorage whenever it changes
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('icp_jobTitles', jobTitles);
+    }
+  }, [jobTitles, clientInfo]);
 
   useEffect(() => {
-    localStorage.setItem('icp_companyTypes', JSON.stringify(companyTypes));
-  }, [companyTypes]);
+    if (clientInfo) {
+      saveClientData('icp_companyTypes', companyTypes);
+    }
+  }, [companyTypes, clientInfo]);
 
   useEffect(() => {
-    localStorage.setItem('icp_locations', JSON.stringify(locations));
-  }, [locations]);
+    if (clientInfo) {
+      saveClientData('icp_locations', locations);
+    }
+  }, [locations, clientInfo]);
 
   useEffect(() => {
-    localStorage.setItem('icp_employeeCounts', JSON.stringify(employeeCounts));
-  }, [employeeCounts]);
+    if (clientInfo) {
+      saveClientData('icp_employeeCounts', employeeCounts);
+    }
+  }, [employeeCounts, clientInfo]);
 
   useEffect(() => {
-    localStorage.setItem('icp_revenue', JSON.stringify(revenue));
-  }, [revenue]);
+    if (clientInfo) {
+      saveClientData('icp_revenue', revenue);
+    }
+  }, [revenue, clientInfo]);
 
   useEffect(() => {
-    localStorage.setItem('icp_industries', JSON.stringify(industries));
-  }, [industries]);
+    if (clientInfo) {
+      saveClientData('icp_industries', industries);
+    }
+  }, [industries, clientInfo]);
 
   useEffect(() => {
-    localStorage.setItem('icp_talkTracks', JSON.stringify(talkTracks));
-  }, [talkTracks]);
+    if (clientInfo) {
+      saveClientData('icp_talkTracks', talkTracks);
+    }
+  }, [talkTracks, clientInfo]);
 
   useEffect(() => {
-    localStorage.setItem('icp_sdrs', JSON.stringify(sdrs));
-  }, [sdrs]);
+    if (clientInfo) {
+      saveClientData('icp_sdrs', sdrs);
+    }
+  }, [sdrs, clientInfo]);
 
   // Cold Calling helper functions
   const addSDR = () => {
