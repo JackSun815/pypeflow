@@ -156,7 +156,7 @@ export default function ManagerDashboard() {
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
   // State for client progress visualization
-  const [progressGoalType, setProgressGoalType] = useState<'set' | 'held'>('set');
+  const [progressGoalType, setProgressGoalType] = useState<'set' | 'held' | 'setProgress' | 'heldProgress'>('set');
 
   // Fetch assignments for the selected month
   useEffect(() => {
@@ -1980,11 +1980,13 @@ export default function ManagerDashboard() {
                     <label className="text-sm font-medium text-gray-700">Goal Type:</label>
                     <select
                       value={progressGoalType}
-                      onChange={(e) => setProgressGoalType(e.target.value as 'set' | 'held')}
+                      onChange={(e) => setProgressGoalType(e.target.value as 'set' | 'held' | 'setProgress' | 'heldProgress')}
                       className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="set">Set Goals</option>
                       <option value="held">Held Goals</option>
+                      <option value="setProgress">Set Progress %</option>
+                      <option value="heldProgress">Held Progress %</option>
                     </select>
                   </div>
                   <div className="text-sm text-gray-500">
@@ -2015,15 +2017,54 @@ export default function ManagerDashboard() {
                   const totalAssignedSet = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
                   const totalAssignedHeld = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
 
+                  // Calculate actual meetings for this client in the selected month
+                  // Use the same logic as the client performance table
+                  const [year, month] = selectedMonth.split('-');
+                  const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
+                  const monthEnd = new Date(parseInt(year), parseInt(month), 0);
+                  
+                  // Filter meetings by created_at date (same as client performance table)
+                  const clientMeetings = meetings.filter(meeting => {
+                    const createdDate = new Date(meeting.created_at);
+                    return createdDate >= monthStart && createdDate <= monthEnd;
+                  });
+
+                  // Only count meetings from assigned SDRs for this client (same as client performance table)
+                  const assignedSDRs = clientAssignments.map(assignment => {
+                    const sdr = sdrs.find(s => s.id === assignment.sdr_id);
+                    return sdr ? sdr.id : null;
+                  }).filter(Boolean);
+
+                  const actualMeetingsSet = clientMeetings.filter(m => 
+                    m.client_id === client.id && 
+                    assignedSDRs.includes(m.sdr_id)
+                  ).length;
+
+                  const actualMeetingsHeld = clientMeetings.filter(m => 
+                    m.client_id === client.id && 
+                    assignedSDRs.includes(m.sdr_id) &&
+                    m.status === 'confirmed' && 
+                    !m.no_show && 
+                    m.held_at !== null
+                  ).length;
+
                   const setProgress = client.monthly_set_target > 0 ? (totalAssignedSet / client.monthly_set_target) * 100 : 0;
                   const heldProgress = client.monthly_hold_target > 0 ? (totalAssignedHeld / client.monthly_hold_target) * 100 : 0;
+                  
+                  // Calculate actual progress percentages (meetings vs goals)
+                  const setProgressActual = client.monthly_set_target > 0 ? (actualMeetingsSet / client.monthly_set_target) * 100 : 0;
+                  const heldProgressActual = client.monthly_hold_target > 0 ? (actualMeetingsHeld / client.monthly_hold_target) * 100 : 0;
 
                   return {
                     ...client,
                     setProgress: Math.min(setProgress, 100), // Cap at 100%
                     heldProgress: Math.min(heldProgress, 100), // Cap at 100%
+                    setProgressActual: Math.min(setProgressActual, 100), // Cap at 100%
+                    heldProgressActual: Math.min(heldProgressActual, 100), // Cap at 100%
                     totalAssignedSet,
                     totalAssignedHeld,
+                    actualMeetingsSet,
+                    actualMeetingsHeld,
                     unassignedSet: Math.max(0, client.monthly_set_target - totalAssignedSet),
                     unassignedHeld: Math.max(0, client.monthly_hold_target - totalAssignedHeld)
                   };
@@ -2031,8 +2072,30 @@ export default function ManagerDashboard() {
 
                 // Sort by progress (least to most)
                 const sortedClients = clientsWithProgress.sort((a, b) => {
-                  const aProgress = progressGoalType === 'set' ? a.setProgress : a.heldProgress;
-                  const bProgress = progressGoalType === 'set' ? b.setProgress : b.heldProgress;
+                  let aProgress, bProgress;
+                  
+                  switch (progressGoalType) {
+                    case 'set':
+                      aProgress = a.setProgress;
+                      bProgress = b.setProgress;
+                      break;
+                    case 'held':
+                      aProgress = a.heldProgress;
+                      bProgress = b.heldProgress;
+                      break;
+                    case 'setProgress':
+                      aProgress = a.setProgressActual;
+                      bProgress = b.setProgressActual;
+                      break;
+                    case 'heldProgress':
+                      aProgress = a.heldProgressActual;
+                      bProgress = b.heldProgressActual;
+                      break;
+                    default:
+                      aProgress = a.setProgress;
+                      bProgress = b.setProgress;
+                  }
+                  
                   return aProgress - bProgress;
                 });
 
@@ -2075,10 +2138,44 @@ export default function ManagerDashboard() {
                                   {/* Client bars and names in a single container */}
                                   <div className="flex items-end h-full">
                                     {sortedClients.map((client) => {
-                                      const progress = progressGoalType === 'set' ? client.setProgress : client.heldProgress;
-                                      const totalAssigned = progressGoalType === 'set' ? client.totalAssignedSet : client.totalAssignedHeld;
-                                      const totalTarget = progressGoalType === 'set' ? client.monthly_set_target : client.monthly_hold_target;
-                                      const unassigned = progressGoalType === 'set' ? client.unassignedSet : client.unassignedHeld;
+                                      let progress, totalAssigned, totalTarget, unassigned, actualMeetings;
+                                      
+                                      switch (progressGoalType) {
+                                        case 'set':
+                                          progress = client.setProgress;
+                                          totalAssigned = client.totalAssignedSet;
+                                          totalTarget = client.monthly_set_target;
+                                          unassigned = client.unassignedSet;
+                                          actualMeetings = client.actualMeetingsSet;
+                                          break;
+                                        case 'held':
+                                          progress = client.heldProgress;
+                                          totalAssigned = client.totalAssignedHeld;
+                                          totalTarget = client.monthly_hold_target;
+                                          unassigned = client.unassignedHeld;
+                                          actualMeetings = client.actualMeetingsHeld;
+                                          break;
+                                        case 'setProgress':
+                                          progress = client.setProgressActual;
+                                          totalAssigned = client.actualMeetingsSet;
+                                          totalTarget = client.monthly_set_target;
+                                          unassigned = Math.max(0, client.monthly_set_target - client.actualMeetingsSet);
+                                          actualMeetings = client.actualMeetingsSet;
+                                          break;
+                                        case 'heldProgress':
+                                          progress = client.heldProgressActual;
+                                          totalAssigned = client.actualMeetingsHeld;
+                                          totalTarget = client.monthly_hold_target;
+                                          unassigned = Math.max(0, client.monthly_hold_target - client.actualMeetingsHeld);
+                                          actualMeetings = client.actualMeetingsHeld;
+                                          break;
+                                        default:
+                                          progress = client.setProgress;
+                                          totalAssigned = client.totalAssignedSet;
+                                          totalTarget = client.monthly_set_target;
+                                          unassigned = client.unassignedSet;
+                                          actualMeetings = client.actualMeetingsSet;
+                                      }
 
                                       const getBarColor = (progress: number) => {
                                         if (progress >= 100) return 'bg-green-300';
@@ -2101,7 +2198,11 @@ export default function ManagerDashboard() {
                                                 height: `${barHeight}px`,
                                                 minHeight: progress > 0 ? '2px' : '0px'
                                               }}
-                                              title={`${client.name}: ${progress.toFixed(1)}% (${totalAssigned.toLocaleString()}/${totalTarget.toLocaleString()})`}
+                                              title={
+                                                progressGoalType === 'setProgress' || progressGoalType === 'heldProgress'
+                                                  ? `${client.name}: ${progress.toFixed(1)}% (${actualMeetings.toLocaleString()}/${totalTarget.toLocaleString()} meetings)`
+                                                  : `${client.name}: ${progress.toFixed(1)}% (${totalAssigned.toLocaleString()}/${totalTarget.toLocaleString()})`
+                                              }
                                             />
                                             
                                             {/* Over-100 indicator */}
@@ -2146,6 +2247,86 @@ export default function ManagerDashboard() {
                         {/* X-axis label */}
                         <div className="mt-4 text-center text-sm text-gray-600 font-medium">
                           Clients (sorted by progress: least to most)
+                        </div>
+                        
+                        {/* Summary statistics */}
+                        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          {(() => {
+                            const totalTarget = sortedClients.reduce((sum, client) => {
+                              return sum + (progressGoalType === 'set' || progressGoalType === 'setProgress' 
+                                ? client.monthly_set_target 
+                                : client.monthly_hold_target);
+                            }, 0);
+                            
+                            const totalAssigned = sortedClients.reduce((sum, client) => {
+                              if (progressGoalType === 'set') return sum + client.totalAssignedSet;
+                              if (progressGoalType === 'held') return sum + client.totalAssignedHeld;
+                              if (progressGoalType === 'setProgress') return sum + client.actualMeetingsSet;
+                              if (progressGoalType === 'heldProgress') return sum + client.actualMeetingsHeld;
+                              return sum;
+                            }, 0);
+                            
+                            const totalUnassigned = sortedClients.reduce((sum, client) => {
+                              if (progressGoalType === 'set') return sum + client.unassignedSet;
+                              if (progressGoalType === 'held') return sum + client.unassignedHeld;
+                              if (progressGoalType === 'setProgress') return sum + Math.max(0, client.monthly_set_target - client.actualMeetingsSet);
+                              if (progressGoalType === 'heldProgress') return sum + Math.max(0, client.monthly_hold_target - client.actualMeetingsHeld);
+                              return sum;
+                            }, 0);
+                            
+                            const overallProgress = totalTarget > 0 ? (totalAssigned / totalTarget) * 100 : 0;
+                            
+                            const getProgressLabel = () => {
+                              switch (progressGoalType) {
+                                case 'set': return 'Goal Assignment';
+                                case 'held': return 'Goal Assignment';
+                                case 'setProgress': return 'Meeting Progress';
+                                case 'heldProgress': return 'Meeting Progress';
+                                default: return 'Goal Assignment';
+                              }
+                            };
+                            
+                            const getAssignedLabel = () => {
+                              switch (progressGoalType) {
+                                case 'set': return 'Assigned';
+                                case 'held': return 'Assigned';
+                                case 'setProgress': return 'Meetings Set';
+                                case 'heldProgress': return 'Meetings Held';
+                                default: return 'Assigned';
+                              }
+                            };
+                            
+                            const getUnassignedLabel = () => {
+                              switch (progressGoalType) {
+                                case 'set': return 'Unassigned';
+                                case 'held': return 'Unassigned';
+                                case 'setProgress': return 'Remaining';
+                                case 'heldProgress': return 'Remaining';
+                                default: return 'Unassigned';
+                              }
+                            };
+                            
+                            return (
+                              <>
+                                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <div className="text-lg font-bold text-gray-900">{totalTarget.toLocaleString()}</div>
+                                  <div className="text-xs text-gray-600">Total Target</div>
+                                </div>
+                                <div className="bg-blue-50 rounded-lg p-3 text-center">
+                                  <div className="text-lg font-bold text-blue-600">{totalAssigned.toLocaleString()}</div>
+                                  <div className="text-xs text-blue-600">{getAssignedLabel()}</div>
+                                </div>
+                                <div className="bg-orange-50 rounded-lg p-3 text-center">
+                                  <div className="text-lg font-bold text-orange-600">{totalUnassigned.toLocaleString()}</div>
+                                  <div className="text-xs text-orange-600">{getUnassignedLabel()}</div>
+                                </div>
+                                <div className="bg-green-50 rounded-lg p-3 text-center">
+                                  <div className="text-lg font-bold text-green-600">{overallProgress.toFixed(1)}%</div>
+                                  <div className="text-xs text-green-600">{getProgressLabel()}</div>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
