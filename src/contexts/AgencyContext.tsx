@@ -61,9 +61,15 @@ export function AgencyProvider({ children }: AgencyProviderProps) {
           console.log('Fetching agency by URL parameter:', agencyParam);
           await fetchAgencyBySubdomain(agencyParam);
         } else {
-          // Load default agency
+          // Load default agency, but don't fail if it doesn't exist
           console.log('No agency specified, loading default agency');
-          await fetchDefaultAgency();
+          try {
+            await fetchDefaultAgency();
+          } catch (err) {
+            console.log('Default agency not found, continuing without agency');
+            setAgency(null);
+            setError(null); // Don't treat this as an error for public pages
+          }
         }
       }
     } catch (err) {
@@ -90,6 +96,10 @@ export function AgencyProvider({ children }: AgencyProviderProps) {
     
     // For pypeflow.com domain structure: agency.pypeflow.com
     if (parts.length >= 2 && parts[parts.length - 1] === 'com' && parts[parts.length - 2] === 'pypeflow') {
+      // Ignore 'www' as it's not a real subdomain
+      if (parts[0] === 'www') {
+        return null;
+      }
       return parts[0]; // Return the subdomain part
     }
     

@@ -30,8 +30,9 @@ function AppRoutes() {
     );
   }
 
-  // Show error if agency loading failed
-  if (!agency) {
+  // Show error if agency loading failed, but allow public pages to work
+  if (!agency && (user && profile)) {
+    // Only show agency error for authenticated users who need agency access
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
