@@ -113,6 +113,11 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
     meetingDetails: any
   ) {
     try {
+      // Ensure we have an agency before creating a meeting
+      if (!agency?.id) {
+        throw new Error('Agency context is required to create meetings. Please refresh the page and try again.');
+      }
+
       const { status: _, ...cleanDetails } = meetingDetails;
     
       // Create the insert data without ICP fields first
@@ -124,6 +129,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         no_show: false,     // Explicit defaults
         held_at: null,
         created_at: new Date().toISOString(),
+        agency_id: agency.id, // Add agency_id from context (already checked above)
         ...cleanDetails
       };
 
