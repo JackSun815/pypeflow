@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAgency } from '../contexts/AgencyContext';
 import type { Database } from '../types/supabase';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -20,6 +21,8 @@ interface SDRWithMetrics extends Profile {
 }
 
 export function useSDRs() {
+  const { agency } = useAgency();
+  
   const [sdrs, setSDRs] = useState<SDRWithMetrics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,17 +35,23 @@ export function useSDRs() {
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
       // Fetch all SDRs
-      const { data: sdrProfiles, error: sdrError } = await supabase
+      let sdrQuery = supabase
         .from('profiles')
         .select('id, full_name, role, active')
-        .eq('role', 'sdr')
-        .eq('active', true)
-        .order('full_name', { ascending: true });
+        .eq('role', 'sdr' as any)
+        .eq('active', true as any);
+      
+      if (agency) {
+        sdrQuery = sdrQuery.eq('agency_id', agency.id as any);
+      }
+      
+      const { data: sdrProfiles, error: sdrError } = await sdrQuery
+        .order('full_name', { ascending: true }) as any;
 
       if (sdrError) throw sdrError;
 
       // Fetch assignments for all SDRs
-      const { data: assignments, error: assignmentsError } = await supabase
+      let assignmentsQuery = supabase
         .from('assignments')
         .select(`
           sdr_id,
@@ -56,15 +65,27 @@ export function useSDRs() {
             monthly_hold_target
           )
         `)
-        .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`)
+        .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any);
+      
+      if (agency) {
+        assignmentsQuery = assignmentsQuery.eq('agency_id', agency.id as any);
+      }
+      
+      const { data: assignments, error: assignmentsError } = await assignmentsQuery as any;
       if (assignmentsError) throw assignmentsError;
 
       // Fetch meetings for this month
-      const { data: meetings, error: meetingsError } = await supabase
+      let meetingsQuery = supabase
         .from('meetings')
         .select('*')
         .gte('scheduled_date', monthStart.toISOString())
         .lte('scheduled_date', monthEnd.toISOString());
+      
+      if (agency) {
+        meetingsQuery = meetingsQuery.eq('agency_id', agency.id as any);
+      }
+      
+      const { data: meetings, error: meetingsError } = await meetingsQuery as any;
 
       if (meetingsError) throw meetingsError;
 
@@ -72,7 +93,7 @@ export function useSDRs() {
       const sdrsWithMetrics = sdrProfiles?.map((sdr: Profile) => {
         // Get all meetings for this SDR
         const sdrMeetings = meetings?.filter(
-          (meeting) => meeting.sdr_id === sdr.id
+          (meeting: any) => meeting.sdr_id === sdr.id
         ) || [];
 
         // Calculate client-specific metrics
@@ -80,12 +101,12 @@ export function useSDRs() {
           .filter((assignment: any) => assignment.sdr_id === sdr.id)
           .map((assignment: any) => {
             const clientMeetings = sdrMeetings.filter(
-              (meeting) => meeting.client_id === assignment.client_id
+              (meeting: any) => meeting.client_id === assignment.client_id
             );
 
             // Match the exact pending meetings calculation from Team Meetings
             const pendingMeetings = clientMeetings.filter(
-              meeting => meeting.status === 'pending' && !meeting.no_show
+              (meeting: any) => meeting.status === 'pending' && !meeting.no_show
             ).length;
 
             return {
@@ -94,7 +115,7 @@ export function useSDRs() {
               monthly_set_target: assignment.monthly_set_target || 0,
               monthly_hold_target: assignment.monthly_hold_target || 0,
               confirmedMeetings: clientMeetings.filter(
-                (meeting) => meeting.status === 'confirmed' && !meeting.no_show
+                (meeting: any) => meeting.status === 'confirmed' && !meeting.no_show
               ).length,
               pendingMeetings
             };
@@ -102,20 +123,20 @@ export function useSDRs() {
 
         // Calculate total meetings for this SDR
         const totalConfirmedMeetings = sdrMeetings.filter(
-          (meeting) => meeting.status === 'confirmed' && !meeting.no_show
+          (meeting: any) => meeting.status === 'confirmed' && !meeting.no_show
         ).length;
 
         // Match the exact pending meetings calculation from Team Meetings
         const totalPendingMeetings = sdrMeetings.filter(
-          meeting => meeting.status === 'pending' && !meeting.no_show
+          (meeting: any) => meeting.status === 'pending' && !meeting.no_show
         ).length;
 
         const totalHeldMeetings = sdrMeetings.filter(
-          (meeting) => meeting.held_at !== null
+          (meeting: any) => meeting.held_at !== null
         ).length;
 
         const totalNoShows = sdrMeetings.filter(
-          (meeting) => meeting.no_show === true
+          (meeting: any) => meeting.no_show === true
         ).length;
 
         return {
@@ -139,43 +160,45 @@ export function useSDRs() {
   }
 
   useEffect(() => {
-    fetchSDRs();
+    if (agency) {
+      fetchSDRs();
 
-    // Subscribe to changes
-    const channel = supabase.channel('sdr-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles'
-        },
-        () => fetchSDRs()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'assignments'
-        },
-        () => fetchSDRs()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'meetings'
-        },
-        () => fetchSDRs()
-      )
-      .subscribe();
+      // Subscribe to changes
+      const channel = supabase.channel('sdr-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'profiles'
+          },
+          () => fetchSDRs()
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'assignments'
+          },
+          () => fetchSDRs()
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'meetings'
+          },
+          () => fetchSDRs()
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [agency]);
 
   return { sdrs, loading, error, fetchSDRs };
 }

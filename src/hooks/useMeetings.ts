@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAgency } from '../contexts/AgencyContext';
 import type { Meeting } from '../types/database';
 
 interface MeetingContact {
@@ -8,7 +9,10 @@ interface MeetingContact {
   contact_phone?: string;
 }
 
-export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fetchAll: boolean = false) {
+export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAll: boolean = false) {
+  const { agency } = useAgency();
+  const client = supabaseClient || supabase;
+  
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,11 +21,16 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
     // Only fetch all meetings if fetchAll is true (manager dashboard)
     if (fetchAll) {
       try {
-        let query = supabaseClient
+        let query = client
           .from('meetings')
           .select('*, clients(name)')
           .order('scheduled_date', { ascending: true });
-        const { data, error } = await query;
+        
+        if (agency) {
+          query = query.eq('agency_id', agency.id);
+        }
+        
+        const { data, error } = await query as any;
         if (error) throw error;
         setMeetings((data || []) as unknown as Meeting[]);
         setError(null);
@@ -41,12 +50,17 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
       return;
     }
     try {
-      let query = supabaseClient
+      let query = client
         .from('meetings')
         .select('*, clients(name)')
         .order('scheduled_date', { ascending: true })
         .eq('sdr_id', sdrId as any);
-      const { data, error } = await query;
+      
+      if (agency) {
+        query = query.eq('agency_id', agency.id);
+      }
+      
+      const { data, error } = await query as any;
       if (error) throw error;
       setMeetings((data || []) as unknown as Meeting[]);
       setError(null);
@@ -60,35 +74,37 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
   }
 
   useEffect(() => {
-    // Reset meetings state when sdrId changes
-    setMeetings([]);
-    setLoading(true);
-    setError(null);
-    fetchMeetings();
+    if (agency) {
+      // Reset meetings state when sdrId changes
+      setMeetings([]);
+      setLoading(true);
+      setError(null);
+      fetchMeetings();
 
-    // Subscribe to meeting changes, but only trigger refresh if the change affects this SDR
-    const subscription = supabaseClient
-      .channel('meetings-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'meetings'
-        },
-        (payload) => {
-          const changedMeetingSdrId = (payload.new as any)?.sdr_id;
-          if (fetchAll || (sdrId && changedMeetingSdrId === sdrId)) {
-            fetchMeetings();
+      // Subscribe to meeting changes, but only trigger refresh if the change affects this SDR
+      const subscription = client
+        .channel('meetings-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'meetings'
+          },
+          (payload: any) => {
+            const changedMeetingSdrId = (payload.new as any)?.sdr_id;
+            if (fetchAll || (sdrId && changedMeetingSdrId === sdrId)) {
+              fetchMeetings();
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabaseClient.removeChannel(subscription);
-    };
-  }, [sdrId, supabaseClient, fetchAll]);
+      return () => {
+        client.removeChannel(subscription);
+      };
+    }
+  }, [sdrId, client, fetchAll, agency]);
 
   async function addMeeting(
     clientId: string,
@@ -119,7 +135,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
         console.log('ICP status column not available, skipping');
       }
 
-      const { error } = await supabaseClient
+      const { error } = await client
         .from('meetings')
         .insert([insertData]);
 
@@ -129,7 +145,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
           console.log('Retrying without ICP status field');
           delete insertData.icp_status;
           
-          const { error: retryError } = await supabaseClient
+          const { error: retryError } = await client
             .from('meetings')
             .insert([insertData]);
             
@@ -176,7 +192,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
       updateData.icp_checked_at = new Date().toISOString();
       updateData.icp_checked_by = null; // Optionally set to SDR id if available
     }
-    const { error } = await supabaseClient
+    const { error } = await client
       .from('meetings')
       .update(updateData)
       .eq('id', updatedMeeting.id as any);
@@ -201,7 +217,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
       } else {
         updateData.held_at = null;
         
-        const { data: meeting } = await supabaseClient
+        const { data: meeting } = await client
           .from('meetings')
           .select('scheduled_date')
           .eq('id', meetingId as any)
@@ -217,7 +233,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
         }
       }
 
-      const { error } = await supabaseClient
+      const { error } = await client
         .from('meetings')
         .update(updateData)
         .eq('id', meetingId as any);
@@ -244,7 +260,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
         updateData.status = 'pending';
       }
 
-      const { error } = await supabaseClient
+      const { error } = await client
         .from('meetings')
         .update(updateData)
         .eq('id', meetingId as any);
@@ -259,7 +275,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient = supabase, fe
 
   async function deleteMeeting(meetingId: string) {
     try {
-      const { error } = await supabaseClient
+      const { error } = await client
         .from('meetings')
         .delete()
         .eq('id', meetingId as any);

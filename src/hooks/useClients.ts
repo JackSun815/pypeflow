@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase, withRetry } from '../lib/supabase';
+import { useAgency } from '../contexts/AgencyContext';
 import type { Client, Meeting } from '../types/database';
 
 interface ClientWithMetrics extends Client {
@@ -12,7 +13,10 @@ interface ClientWithMetrics extends Client {
   totalMeetingsSet: number;
 }
 
-export function useClients(sdrId?: string | null, supabaseClient = supabase) {
+export function useClients(sdrId?: string | null, supabaseClient?: any) {
+  const { agency } = useAgency();
+  const client = supabaseClient || supabase;
+  
   const [clients, setClients] = useState<ClientWithMetrics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,27 +38,31 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
       // Fetch assigned clients with their targets for the current month
-      const assignmentsResult = await (async () => await withRetry(() =>
-        supabaseClient
-          .from('assignments')
-          .select(`
+      let assignmentsQuery = client
+        .from('assignments')
+        .select(`
+          monthly_set_target,
+          monthly_hold_target,
+          clients!inner (
+            id,
+            name,
             monthly_set_target,
             monthly_hold_target,
-            clients!inner (
-              id,
-              name,
-              monthly_set_target,
-              monthly_hold_target,
-              created_at,
-              updated_at,
-              archived_at
-            )
-          `)
-          .is('clients.archived_at', null) // Only fetch assignments for non-archived clients
-          .eq('sdr_id', sdrId as any)
-          .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any)
-          .eq('is_active', true) // Only fetch active assignments
-      ))();
+            created_at,
+            updated_at,
+            archived_at
+          )
+        `)
+        .is('clients.archived_at', null) // Only fetch assignments for non-archived clients
+        .eq('sdr_id', sdrId as any)
+        .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any)
+        .eq('is_active', true); // Only fetch active assignments
+      
+      if (agency) {
+        assignmentsQuery = assignmentsQuery.eq('agency_id', agency.id);
+      }
+      
+      const assignmentsResult = await (async () => await withRetry(() => assignmentsQuery))() as any;
       const assignmentsData = (typeof assignmentsResult === 'object' && assignmentsResult !== null && 'data' in assignmentsResult) ? assignmentsResult.data : [];
       const assignmentsError = (typeof assignmentsResult === 'object' && assignmentsResult !== null && 'error' in assignmentsResult) ? assignmentsResult.error : null;
       if (assignmentsError) throw assignmentsError;
@@ -84,12 +92,16 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
       setTotalMeetingGoal(totalGoal);
 
       // Fetch all meetings for this SDR (filter by created_at in JS)
-      const meetingsResult = await (async () => await withRetry(() =>
-        supabaseClient
-          .from('meetings')
-          .select('*, clients(name)')
-          .eq('sdr_id', sdrId as any)
-      ))();
+      let meetingsQuery = client
+        .from('meetings')
+        .select('*, clients(name)')
+        .eq('sdr_id', sdrId as any);
+      
+      if (agency) {
+        meetingsQuery = meetingsQuery.eq('agency_id', agency.id);
+      }
+      
+      const meetingsResult = await (async () => await withRetry(() => meetingsQuery))() as any;
       const meetingsData = (typeof meetingsResult === 'object' && meetingsResult !== null && 'data' in meetingsResult) ? meetingsResult.data : [];
       const meetingsError = (typeof meetingsResult === 'object' && meetingsResult !== null && 'error' in meetingsResult) ? meetingsResult.error : null;
       if (meetingsError) throw meetingsError;
@@ -189,34 +201,36 @@ export function useClients(sdrId?: string | null, supabaseClient = supabase) {
   }
 
   useEffect(() => {
-    fetchClients();
+    if (agency) {
+      fetchClients();
 
-    // Subscribe to changes in meetings and assignments
-    const channel = supabaseClient.channel('client-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'assignments'
-        },
-        () => fetchClients()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'meetings'
-        },
-        () => fetchClients()
-      )
-      .subscribe();
+      // Subscribe to changes in meetings and assignments
+      const channel = client.channel('client-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'assignments'
+          },
+          () => fetchClients()
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'meetings'
+          },
+          () => fetchClients()
+        )
+        .subscribe();
 
-    return () => {
-      supabaseClient.removeChannel(channel);
-    };
-  }, [sdrId, supabaseClient]);
+      return () => {
+        client.removeChannel(channel);
+      };
+    }
+  }, [sdrId, client, agency]);
 
   return { 
     clients, 

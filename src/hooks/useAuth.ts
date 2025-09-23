@@ -9,6 +9,7 @@ type Profile = {
   updated_at: string;
   active: boolean;
   super_admin?: boolean;
+  developer?: boolean;
 };
 
 export function useAuth() {
@@ -37,7 +38,8 @@ export function useAuth() {
         created_at: now,
         updated_at: now,
         active: true,
-        super_admin: userData.super_admin || false
+        super_admin: userData.super_admin || false,
+        developer: userData.developer || false
       };
 
       setUser({ id: userProfile.id });

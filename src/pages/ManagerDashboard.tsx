@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
+import { useAgency } from '../contexts/AgencyContext';
 import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
@@ -78,6 +79,7 @@ ChartJS.register(
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
+  const { agency } = useAgency();
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
   const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
   // Ensures useMeetings fetches all meetings (SDR ID: null)
@@ -822,7 +824,14 @@ export default function ManagerDashboard() {
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-px bg-gradient-to-b from-indigo-300 to-purple-500"></div>
                   <div className="flex flex-col">
-                    <p className="text-lg font-semibold text-gray-800">Manager Dashboard</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-semibold text-gray-800">Manager Dashboard</p>
+                      {agency && (
+                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          {agency.name}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500 font-medium">{currentMonth}</p>
                   </div>
                 </div>

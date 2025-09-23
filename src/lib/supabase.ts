@@ -127,6 +127,8 @@ export const supabasePublic = createClient<Database>(supabaseUrl, supabaseAnonKe
   )
 });
 
+// Note: Agency-aware client is now handled in useAgencyClient hook
+
 // Add online/offline detection
 if (typeof window !== 'undefined') {
   let reconnectTimeout: number;

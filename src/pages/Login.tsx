@@ -13,6 +13,18 @@ export default function Login() {
     setError(null);
 
     try {
+      // Developer admin login - goes directly to agency management
+      if (email === 'jack.sun121601@gmail.com' && password === 'asdfasdf') {
+        localStorage.setItem('currentUser', JSON.stringify({
+          email,
+          role: 'manager',
+          super_admin: true,
+          developer: true
+        }));
+        window.location.href = '/admin/agencies';
+        return;
+      }
+
       // Super admin login
       if (email === 'eric@parakeet.io' && password === 'asdfasdf') {
         localStorage.setItem('currentUser', JSON.stringify({
