@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAgency } from '../contexts/AgencyContext';
 import { Mail, Trash2, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield } from 'lucide-react';
 import CompensationManagement from './CompensationManagement';
 
-interface Manager {
-  email: string;
-  fullName: string;
-  password: string;
-}
 
 interface ClientToken {
   id: string;
@@ -49,6 +45,7 @@ interface UnifiedUserManagementProps {
 }
 
 export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: UnifiedUserManagementProps) {
+  const { agency } = useAgency();
   const [activeTab, setActiveTab] = useState<'managers' | 'sdrs' | 'clients'>('managers');
   
   // Manager state
@@ -60,10 +57,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
   const [success, setSuccess] = useState<string | null>(null);
   const [editingManager, setEditingManager] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
-  const [managers, setManagers] = useState<Manager[]>(() => {
-    const savedManagers = localStorage.getItem('managers');
-    return savedManagers ? JSON.parse(savedManagers) : [];
-  });
+  const [managers, setManagers] = useState<any[]>([]);
 
   // SDR state
   const [sdrEmail, setSdrEmail] = useState('');
@@ -74,10 +68,34 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
   // Client state
   const [clientTokens, setClientTokens] = useState<ClientToken[]>([]);
 
-  // Load client tokens when clients change
+  // Load managers and client tokens when agency changes
   useEffect(() => {
-    fetchClientTokens();
-  }, [clients]);
+    if (agency) {
+      fetchManagers();
+      fetchClientTokens();
+    }
+  }, [agency, clients]);
+
+  async function fetchManagers() {
+    try {
+      if (!agency) return;
+
+      const { data: managers, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role, active, created_at')
+        .eq('agency_id', agency.id as any)
+        .eq('role', 'manager' as any)
+        .order('created_at', { ascending: false }) as any;
+
+      if (error) throw error;
+
+      setManagers(managers || []);
+    } catch (err) {
+      console.error('Error fetching managers:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch managers');
+      setManagers([]);
+    }
+  }
 
   async function fetchClientTokens() {
     try {
@@ -142,6 +160,10 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
     setSuccess(null);
 
     try {
+      if (!agency) {
+        throw new Error('Agency context is required to create managers');
+      }
+
       if (!email || !fullName || !password) {
         throw new Error('All fields are required');
       }
@@ -150,14 +172,51 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
         throw new Error('Password must be at least 6 characters long');
       }
 
+      // Check if manager already exists
       if (managers.some(m => m.email === email)) {
         throw new Error('A manager with this email already exists');
       }
 
-      const newManager = { email, fullName, password };
-      const updatedManagers = [...managers, newManager];
-      localStorage.setItem('managers', JSON.stringify(updatedManagers));
-      setManagers(updatedManagers);
+      // Create manager profile in database
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          email: email.trim(),
+          full_name: fullName.trim(),
+          role: 'manager' as any,
+          active: true,
+          agency_id: agency.id as any,
+          created_at: new Date().toISOString()
+        } as any)
+        .select()
+        .single() as any;
+
+      if (profileError) {
+        if (profileError.code === '23505') {
+          throw new Error('A user with this email already exists');
+        } else {
+          throw profileError;
+        }
+      }
+
+      // Store user credentials in localStorage for login simulation
+      const agencyCredentials = localStorage.getItem('agencyCredentials');
+      const credentials = agencyCredentials ? JSON.parse(agencyCredentials) : {};
+      
+      credentials[email] = {
+        email: email.trim(),
+        password: password,
+        full_name: fullName.trim(),
+        role: 'manager',
+        agency_id: agency.id,
+        agency_subdomain: agency.subdomain,
+        profile_id: profileData?.id
+      };
+      
+      localStorage.setItem('agencyCredentials', JSON.stringify(credentials));
+
+      // Refresh managers list
+      await fetchManagers();
 
       setSuccess('Manager added successfully');
       setEmail('');
@@ -415,15 +474,25 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
           <div className="space-y-3">
             {managers.map((manager) => (
               <div
-                key={manager.email}
+                key={manager.id}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{manager.fullName}</p>
+                  <p className="text-sm font-medium text-gray-900">{manager.full_name}</p>
                   <p className="text-xs text-gray-500">{manager.email}</p>
+                  <p className="text-xs text-gray-400">
+                    Created: {new Date(manager.created_at).toLocaleDateString()}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {editingManager === manager.email ? (
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    manager.active 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {manager.active ? 'Active' : 'Inactive'}
+                  </span>
+                  {editingManager === manager.id ? (
                     <div className="flex items-center gap-2">
                       <input
                         type="password"
@@ -443,7 +512,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                   ) : (
                     <button
                       onClick={() => {
-                        setEditingManager(manager.email);
+                        setEditingManager(manager.id);
                         setNewPassword('');
                         setError(null);
                       }}

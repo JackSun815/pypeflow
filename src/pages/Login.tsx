@@ -46,7 +46,10 @@ export default function Login() {
         
         // Dispatch custom event to notify agency context of login
         window.dispatchEvent(new CustomEvent('userLogin', { 
-          detail: { agencyId: userCredential.agency_id } 
+          detail: { 
+            agencyId: userCredential.agency_id,
+            agencySubdomain: userCredential.agency_subdomain 
+          } 
         }));
         
         // Redirect based on role, preserving agency context

@@ -44,8 +44,14 @@ export function AgencyProvider({ children }: AgencyProviderProps) {
       determineAgency();
     };
 
-    const handleUserLogin = () => {
-      determineAgency();
+    const handleUserLogin = (event: any) => {
+      // If we have agency subdomain info from the login event, use it
+      if (event.detail?.agencySubdomain) {
+        console.log('UserLogin event received with agency subdomain:', event.detail.agencySubdomain);
+        fetchAgencyBySubdomain(event.detail.agencySubdomain);
+      } else {
+        determineAgency();
+      }
     };
 
     // Listen for localStorage changes (user login/logout)
@@ -91,7 +97,7 @@ export function AgencyProvider({ children }: AgencyProviderProps) {
           console.log('Fetching agency by URL parameter:', agencyParam);
           await fetchAgencyBySubdomain(agencyParam);
         } else {
-          // Check if user is logged in and has agency information
+          // Check if user is logged in and has agency information (lower priority than URL params)
           const currentUser = localStorage.getItem('currentUser');
           if (currentUser) {
             try {

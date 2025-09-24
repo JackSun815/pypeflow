@@ -36,6 +36,12 @@ export default function AgencyManagement() {
     role: 'manager' as 'manager' | 'sdr'
   });
 
+  // Manager management state
+  const [showManagersModal, setShowManagersModal] = useState(false);
+  const [agencyManagers, setAgencyManagers] = useState<any[]>([]);
+  const [editingManager, setEditingManager] = useState<any>(null);
+  const [showEditManagerModal, setShowEditManagerModal] = useState(false);
+
   useEffect(() => {
     // Only fetch agencies if user is super admin
     if (profile?.super_admin) {
@@ -197,14 +203,14 @@ export default function AgencyManagement() {
     const hostname = window.location.hostname;
     const port = window.location.port;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return `http://localhost:${port}?agency=${subdomain}`;
+      return `http://localhost:${port}/dashboard/manager?agency=${subdomain}`;
     }
     
     if (useSubdomain) {
       return `https://${subdomain}.pypeflow.com`;
     } else {
-      // Use parameter-based URL as fallback
-      return `https://www.pypeflow.com?agency=${subdomain}`;
+      // Use parameter-based URL as fallback - redirect to manager dashboard
+      return `https://www.pypeflow.com/dashboard/manager?agency=${subdomain}`;
     }
   }
 
@@ -288,6 +294,111 @@ export default function AgencyManagement() {
     } catch (err) {
       console.error('Error creating user:', err);
       setError(err instanceof Error ? err.message : 'Failed to create user');
+    }
+  }
+
+  async function viewAgencyManagers(agency: Agency) {
+    try {
+      setSelectedAgency(agency);
+      setLoading(true);
+      setError(null);
+
+      const client = supabaseAdmin || supabase;
+      
+      const { data: managers, error } = await client
+        .from('profiles')
+        .select('id, email, full_name, role, active, created_at')
+        .eq('agency_id', agency.id)
+        .eq('role', 'manager')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setAgencyManagers(managers || []);
+      setShowManagersModal(true);
+    } catch (err) {
+      console.error('Error fetching managers:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch managers');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function editManager(manager: any) {
+    setEditingManager(manager);
+    setShowEditManagerModal(true);
+  }
+
+  async function updateManager(updatedManager: any) {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const client = supabaseAdmin || supabase;
+      
+      const { error } = await client
+        .from('profiles')
+        .update({
+          email: updatedManager.email.trim(),
+          full_name: updatedManager.full_name.trim(),
+          active: updatedManager.active
+        })
+        .eq('id', updatedManager.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setAgencyManagers(prev => 
+        prev.map(manager => 
+          manager.id === updatedManager.id ? updatedManager : manager
+        )
+      );
+
+      setShowEditManagerModal(false);
+      setEditingManager(null);
+      alert('Manager updated successfully!');
+      
+    } catch (err) {
+      console.error('Error updating manager:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update manager');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteManager(managerId: string) {
+    if (!confirm('Are you sure you want to delete this manager? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const client = supabaseAdmin || supabase;
+      
+      // Soft delete by setting active to false
+      const { error } = await client
+        .from('profiles')
+        .update({ active: false })
+        .eq('id', managerId);
+
+      if (error) throw error;
+
+      // Update local state
+      setAgencyManagers(prev => 
+        prev.map(manager => 
+          manager.id === managerId ? { ...manager, active: false } : manager
+        )
+      );
+
+      alert('Manager deleted successfully!');
+      
+    } catch (err) {
+      console.error('Error deleting manager:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete manager');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -414,7 +525,7 @@ export default function AgencyManagement() {
                       {agency.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap space-x-2">
                     <button
                       onClick={() => {
                         setSelectedAgency(agency);
@@ -423,6 +534,12 @@ export default function AgencyManagement() {
                       className="px-3 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium hover:bg-purple-200"
                     >
                       Assign Manager
+                    </button>
+                    <button
+                      onClick={() => viewAgencyManagers(agency)}
+                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200"
+                    >
+                      View Managers
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -686,6 +803,191 @@ export default function AgencyManagement() {
                   className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                 >
                   Create Manager
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Managers Modal */}
+      {showManagersModal && selectedAgency && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Managers for {selectedAgency.name}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowManagersModal(false);
+                    setSelectedAgency(null);
+                    setAgencyManagers([]);
+                    setError(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="overflow-y-auto max-h-96">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {agencyManagers.map((manager) => (
+                      <tr key={manager.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {manager.full_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {manager.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            manager.active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {manager.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(manager.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                          <button
+                            onClick={() => editManager(manager)}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteManager(manager.id)}
+                            className="px-3 py-1 bg-red-100 text-red-800 rounded text-xs font-medium hover:bg-red-200"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {agencyManagers.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No managers found for this agency.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Manager Modal */}
+      {showEditManagerModal && editingManager && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Edit Manager
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowEditManagerModal(false);
+                    setEditingManager(null);
+                    setError(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingManager.full_name}
+                    onChange={(e) => setEditingManager(prev => ({ ...prev, full_name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., John Smith"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    value={editingManager.email}
+                    onChange={(e) => setEditingManager(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., john@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingManager.active}
+                      onChange={(e) => setEditingManager(prev => ({ ...prev, active: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Active</span>
+                  </label>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowEditManagerModal(false);
+                    setEditingManager(null);
+                    setError(null);
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => updateManager(editingManager)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  Update Manager
                 </button>
               </div>
             </div>
