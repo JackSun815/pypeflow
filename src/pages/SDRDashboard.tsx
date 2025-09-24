@@ -340,30 +340,7 @@ export default function SDRDashboard() {
     });
   };
 
-  useEffect(() => {
-    async function fetchSDRProfile() {
-      const { data: { user } } = await supabasePublic.auth.getUser();
-      if (!user) {
-        setError('Not authenticated. Please log in.');
-        setSdrId(null);
-        setSdrName(null);
-        return;
-      }
-      setSdrId(user.id);
-      // Fetch SDR profile for name
-      const { data, error } = await supabasePublic
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id as any)
-        .maybeSingle();
-      if (error || !data) {
-        setSdrName('SDR');
-      } else {
-        setSdrName((data as { full_name: string | null }).full_name || 'SDR');
-      }
-    }
-    fetchSDRProfile();
-  }, []);
+  // Removed conflicting Supabase auth check - SDR dashboard uses token-based authentication
 
   // Debug: Show SDR ID and decoded token in dev mode
   const isDev = import.meta.env.MODE === 'development';

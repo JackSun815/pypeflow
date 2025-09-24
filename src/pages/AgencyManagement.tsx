@@ -25,6 +25,16 @@ export default function AgencyManagement() {
     subdomain: '',
     settings: {}
   });
+  
+  // User management state
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    role: 'manager' as 'manager' | 'sdr'
+  });
 
   useEffect(() => {
     // Only fetch agencies if user is super admin
@@ -183,13 +193,102 @@ export default function AgencyManagement() {
     setError(null);
   }
 
-  function getAgencyUrl(subdomain: string): string {
+  function getAgencyUrl(subdomain: string, useSubdomain: boolean = false): string {
     const hostname = window.location.hostname;
     const port = window.location.port;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return `http://localhost:${port}?agency=${subdomain}`;
     }
-    return `https://${subdomain}.pypeflow.com`;
+    
+    if (useSubdomain) {
+      return `https://${subdomain}.pypeflow.com`;
+    } else {
+      // Use parameter-based URL as fallback
+      return `https://www.pypeflow.com?agency=${subdomain}`;
+    }
+  }
+
+  async function createAgencyUser() {
+    try {
+      if (!selectedAgency || !newUser.email || !newUser.password || !newUser.full_name) {
+        setError('Please fill in all required fields');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newUser.email)) {
+        setError('Please enter a valid email address');
+        return;
+      }
+
+      // Validate password length
+      if (newUser.password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        return;
+      }
+
+      const client = supabaseAdmin || supabase;
+      
+      // Create user profile
+      const { data: profileData, error: profileError } = await client
+        .from('profiles')
+        .insert({
+          email: newUser.email.trim(),
+          full_name: newUser.full_name.trim(),
+          role: newUser.role,
+          active: true,
+          agency_id: selectedAgency.id,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        if (profileError.code === '23505') {
+          setError('A user with this email already exists');
+        } else {
+          throw profileError;
+        }
+        return;
+      }
+
+      // Store user credentials in localStorage for login simulation
+      // In a real app, this would be handled by proper authentication
+      const userCredentials = {
+        email: newUser.email,
+        password: newUser.password,
+        fullName: newUser.full_name,
+        role: newUser.role,
+        agency_id: selectedAgency.id,
+        agency_name: selectedAgency.name,
+        agency_subdomain: selectedAgency.subdomain,
+        super_admin: false,
+        developer: false
+      };
+
+      // Store in a way that can be retrieved during login
+      const existingCredentials = JSON.parse(localStorage.getItem('agencyCredentials') || '{}');
+      existingCredentials[newUser.email] = userCredentials;
+      localStorage.setItem('agencyCredentials', JSON.stringify(existingCredentials));
+
+      // Reset form and close modal
+      setNewUser({
+        email: '',
+        password: '',
+        full_name: '',
+        role: 'manager'
+      });
+      setShowUserModal(false);
+      setSelectedAgency(null);
+      setError(null);
+
+      alert(`Manager created successfully! They can now log in at: ${getAgencyUrl(selectedAgency.subdomain, false)}`);
+      
+    } catch (err) {
+      console.error('Error creating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+    }
   }
 
   if (loading) {
@@ -266,6 +365,9 @@ export default function AgencyManagement() {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Manager
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -283,14 +385,25 @@ export default function AgencyManagement() {
                     <div className="text-sm text-gray-500">{agency.subdomain}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <a
-                      href={getAgencyUrl(agency.subdomain)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      {getAgencyUrl(agency.subdomain)}
-                    </a>
+                    <div className="space-y-1">
+                      <div>
+                        <a
+                          href={getAgencyUrl(agency.subdomain, false)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          {getAgencyUrl(agency.subdomain, false)}
+                        </a>
+                        <span className="text-xs text-green-600 ml-2">✓ Working</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-400">
+                          {getAgencyUrl(agency.subdomain, true)}
+                        </span>
+                        <span className="text-xs text-orange-600 ml-2">⚠ Needs DNS setup</span>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -300,6 +413,17 @@ export default function AgencyManagement() {
                     }`}>
                       {agency.is_active ? 'Active' : 'Inactive'}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => {
+                        setSelectedAgency(agency);
+                        setShowUserModal(true);
+                      }}
+                      className="px-3 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium hover:bg-purple-200"
+                    >
+                      Assign Manager
+                    </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(agency.created_at).toLocaleDateString()}
@@ -323,7 +447,7 @@ export default function AgencyManagement() {
                     </button>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(getAgencyUrl(agency.subdomain));
+                        navigator.clipboard.writeText(getAgencyUrl(agency.subdomain, false));
                         // You could add a toast notification here
                       }}
                       className="px-3 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium hover:bg-gray-200"
@@ -453,6 +577,115 @@ export default function AgencyManagement() {
                   className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                 >
                   Update Agency
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showUserModal && selectedAgency && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Create Manager for {selectedAgency.name}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setSelectedAgency(null);
+                    setNewUser({ email: '', password: '', full_name: '', role: 'manager' });
+                    setError(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.full_name}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., John Smith"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., john@company.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Minimum 6 characters"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role
+                  </label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value as 'manager' | 'sdr' }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="manager">Manager</option>
+                    <option value="sdr">SDR</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <p className="text-sm text-blue-800">
+                  <strong>Login URL:</strong> {getAgencyUrl(selectedAgency.subdomain, false)}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  The manager will be able to log in using these credentials at the URL above.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setSelectedAgency(null);
+                    setNewUser({ email: '', password: '', full_name: '', role: 'manager' });
+                    setError(null);
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={createAgencyUser}
+                  className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                >
+                  Create Manager
                 </button>
               </div>
             </div>

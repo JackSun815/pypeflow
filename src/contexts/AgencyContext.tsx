@@ -34,6 +34,36 @@ export function AgencyProvider({ children }: AgencyProviderProps) {
     determineAgency();
   }, []);
 
+  // Re-run agency determination when URL changes or user logs in/out
+  useEffect(() => {
+    const handleStorageChange = () => {
+      determineAgency();
+    };
+
+    const handleLocationChange = () => {
+      determineAgency();
+    };
+
+    const handleUserLogin = () => {
+      determineAgency();
+    };
+
+    // Listen for localStorage changes (user login/logout)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Listen for URL changes
+    window.addEventListener('popstate', handleLocationChange);
+    
+    // Listen for custom user login event
+    window.addEventListener('userLogin', handleUserLogin);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('userLogin', handleUserLogin);
+    };
+  }, []);
+
   async function determineAgency() {
     try {
       setLoading(true);
@@ -61,6 +91,21 @@ export function AgencyProvider({ children }: AgencyProviderProps) {
           console.log('Fetching agency by URL parameter:', agencyParam);
           await fetchAgencyBySubdomain(agencyParam);
         } else {
+          // Check if user is logged in and has agency information
+          const currentUser = localStorage.getItem('currentUser');
+          if (currentUser) {
+            try {
+              const userData = JSON.parse(currentUser);
+              if (userData.agency_id) {
+                console.log('Loading agency from user context:', userData.agency_id);
+                await fetchAgencyById(userData.agency_id);
+                return;
+              }
+            } catch (err) {
+              console.log('Failed to parse user data:', err);
+            }
+          }
+          
           // Load default agency, but don't fail if it doesn't exist
           console.log('No agency specified, loading default agency');
           try {

@@ -36,7 +36,31 @@ export default function Login() {
         return;
       }
 
-      // Check for manager credentials in local storage
+      // Check for agency credentials in local storage
+      const agencyCredentials = localStorage.getItem('agencyCredentials');
+      const credentials = agencyCredentials ? JSON.parse(agencyCredentials) : {};
+      const userCredential = credentials[email];
+
+      if (userCredential && userCredential.password === password) {
+        localStorage.setItem('currentUser', JSON.stringify(userCredential));
+        
+        // Dispatch custom event to notify agency context of login
+        window.dispatchEvent(new CustomEvent('userLogin', { 
+          detail: { agencyId: userCredential.agency_id } 
+        }));
+        
+        // Redirect based on role, preserving agency context
+        const agencyParam = userCredential.agency_subdomain ? `?agency=${userCredential.agency_subdomain}` : '';
+        
+        if (userCredential.role === 'manager') {
+          window.location.href = `/dashboard/manager${agencyParam}`;
+        } else {
+          window.location.href = `/dashboard/sdr${agencyParam}`;
+        }
+        return;
+      }
+
+      // Check for manager credentials in local storage (legacy)
       const savedManagers = localStorage.getItem('managers');
       const managers = savedManagers ? JSON.parse(savedManagers) : [];
       const manager = managers.find((m: any) => m.email === email && m.password === password);
