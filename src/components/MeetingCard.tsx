@@ -317,13 +317,15 @@ export function MeetingCard({
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => onEdit?.(meeting)}
-                        className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
-                        title="Edit meeting"
-                      >
-                        <Edit2 className="w-5 h-5" />
-                      </button>
+                      editable && onEdit && (
+                        <button
+                          onClick={() => onEdit(meeting)}
+                          className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
+                          title="Edit meeting"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                      )
                     )}
                     {editable && onDelete && (
                       <button

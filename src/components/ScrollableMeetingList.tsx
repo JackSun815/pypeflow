@@ -42,7 +42,7 @@ export default function ScrollableMeetingList({
   });
 
   return (
-    <div className="bg-white rounded-lg shadow-md h-[calc(100vh-24rem)] flex flex-col">
+    <div className="bg-white rounded-lg shadow-md h-[calc(100vh-16rem)] flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export default function ScrollableMeetingList({
                 showDateControls={!!showDateControls}
                 showDetails={true}
                 onEdit={onEdit}
-                isEditing={editingMeetingId === meeting.id}
+                editingMeetingId={editingMeetingId}
                 onSave={onSave}
                 onCancel={onCancel}
               />
