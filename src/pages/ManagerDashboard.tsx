@@ -14,6 +14,7 @@ import ICPCheck from './ICPCheck';
 import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
 import confetti from 'canvas-confetti';
+import html2canvas from 'html2canvas';
 
 // Add custom CSS for flow animation
 const flowStyles = `
@@ -79,6 +80,78 @@ ChartJS.register(
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
+
+  // Export chart as PNG
+  const exportChartAsPNG = async () => {
+    const chartContainer = document.getElementById('client-progress-chart');
+    if (!chartContainer) return;
+
+    try {
+      // Find the scrollable chart area within the container
+      const scrollableArea = chartContainer.querySelector('.overflow-x-auto') as HTMLElement;
+      if (!scrollableArea) {
+        alert('Chart area not found. Please try again.');
+        return;
+      }
+
+      // Store original styles
+      const originalOverflow = scrollableArea.style.overflow;
+      const originalWidth = scrollableArea.style.width;
+      const originalHeight = scrollableArea.style.height;
+
+      // Temporarily remove scroll and expand to full content
+      scrollableArea.style.overflow = 'visible';
+      scrollableArea.style.width = 'auto';
+      scrollableArea.style.height = 'auto';
+
+      // Get the full dimensions of the scrollable content
+      const scrollableWidth = scrollableArea.scrollWidth;
+
+      // Wait a moment for the layout to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Calculate the total width needed (Y-axis width + scrollable width)
+      const yAxisWidth = 64; // w-16 = 64px
+      const totalWidth = yAxisWidth + scrollableWidth;
+      
+      // Calculate the full height needed:
+      // - Chart height (256px for h-64)
+      // - Client names below bars (approximately 40px for text + padding)
+      // - X-axis label (approximately 60px for text + margin)
+      // - Extra padding for safety
+      const chartHeight = 256; // h-64 = 256px
+      const clientNamesHeight = 40; // Space for client names below bars
+      const xAxisLabelHeight = 60; // Space for X-axis label
+      const extraPadding = 40; // Extra padding for safety
+      const totalHeight = chartHeight + clientNamesHeight + xAxisLabelHeight + extraPadding;
+
+      const canvas = await html2canvas(chartContainer, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher resolution
+        useCORS: true,
+        allowTaint: true,
+        width: totalWidth,
+        height: totalHeight,
+        // Ensure we capture the entire container including Y-axis and X-axis labels
+        x: 0,
+        y: 0
+      });
+
+      // Restore original styles
+      scrollableArea.style.overflow = originalOverflow;
+      scrollableArea.style.width = originalWidth;
+      scrollableArea.style.height = originalHeight;
+
+      // Create download link
+      const link = document.createElement('a');
+      link.download = `client-progress-${progressGoalType}-${selectedMonth}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error exporting chart:', error);
+      alert('Failed to export chart. Please try again.');
+    }
+  };
   const { agency } = useAgency();
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
   const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
@@ -1992,6 +2065,15 @@ export default function ManagerDashboard() {
                   <div className="text-sm text-gray-500">
                     {monthOptions.find(m => m.value === selectedMonth)?.label}
                   </div>
+                  <button
+                    onClick={exportChartAsPNG}
+                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export PNG
+                  </button>
                 </div>
               </div>
 
@@ -2109,7 +2191,7 @@ export default function ManagerDashboard() {
                     ) : (
                       <div className="w-full">
                         {/* Chart Container */}
-                        <div className="bg-white border border-gray-300 rounded-lg p-6">
+                        <div id="client-progress-chart" className="bg-white border border-gray-300 rounded-lg p-6">
                           {/* Y-axis and Chart */}
                           <div className="flex">
                             {/* Y-axis labels */}
