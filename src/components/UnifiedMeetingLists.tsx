@@ -11,7 +11,7 @@ interface UnifiedMeetingListsProps {
   onCancel?: () => void;
   pendingMeetings: Meeting[];
   confirmedMeetings: Meeting[];
-  completedMeetings: Meeting[];
+  heldMeetings: Meeting[];
   noShowMeetings: Meeting[];
   notIcpQualifiedMeetings?: Meeting[];
   noLongerInterestedMeetings?: Meeting[];
@@ -23,7 +23,7 @@ interface UnifiedMeetingListsProps {
 export default function UnifiedMeetingLists({
   pendingMeetings,
   confirmedMeetings,
-  completedMeetings,
+  heldMeetings,
   noShowMeetings,
   notIcpQualifiedMeetings = [],
   noLongerInterestedMeetings = [],
@@ -42,7 +42,7 @@ export default function UnifiedMeetingLists({
     pending: true,
     confirmed: true,
     pastDue: true,
-    completed: true,
+    held: true,
     noShow: true,
     notIcp: true,
     noLongerInterested: true,
@@ -60,7 +60,7 @@ export default function UnifiedMeetingLists({
 
   const filteredPendingMeetings = filterMeetings(pendingMeetings);
   const filteredConfirmedMeetings = filterMeetings(confirmedMeetings);
-  const filteredCompletedMeetings = filterMeetings(completedMeetings);
+  const filteredHeldMeetings = filterMeetings(heldMeetings);
   const filteredNoShowMeetings = filterMeetings(noShowMeetings);
   const filteredNotIcpQualifiedMeetings = filterMeetings(notIcpQualifiedMeetings);
   const filteredNoLongerInterestedMeetings = filterMeetings(noLongerInterestedMeetings);
@@ -218,20 +218,20 @@ export default function UnifiedMeetingLists({
           )}
         </div>
       </div>
-      {/* Completed Meetings and No Shows - Side by Side */}
+      {/* Held Meetings and No Shows - Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {/* Completed Meetings */}
+        {/* Held Meetings */}
         <div className="bg-white rounded-lg shadow-md border-t-4 border-green-400">
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-green-50 cursor-pointer select-none" onClick={() => toggleSection('completed')}>
+          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-green-50 cursor-pointer select-none" onClick={() => toggleSection('held')}>
             <CheckCircle className="w-5 h-5 text-green-500" />
-            <h3 className="text-lg font-semibold text-green-800 flex-1">Completed Meetings</h3>
-            <span className="text-sm text-green-600">{filteredCompletedMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.completed ? '' : 'rotate-180'}`} />
+            <h3 className="text-lg font-semibold text-green-800 flex-1">Held Meetings</h3>
+            <span className="text-sm text-green-600">{filteredHeldMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.held ? '' : 'rotate-180'}`} />
           </div>
-          {openSections.completed && (
+          {openSections.held && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredCompletedMeetings.length > 0 ? (
-                filteredCompletedMeetings.map((meeting) => (
+              {filteredHeldMeetings.length > 0 ? (
+                filteredHeldMeetings.map((meeting) => (
                   <div key={meeting.id} className="mb-4 border border-green-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
                     <MeetingCard
                       meeting={meeting}

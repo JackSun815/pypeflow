@@ -599,7 +599,7 @@ export default function Commissions({ sdrId }: { sdrId: string }) {
                   <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">No historical commission data available</p>
                   <p className="text-sm text-gray-400 mt-1">
-                    Historical data will appear here once you have completed months with meetings
+                    Historical data will appear here once you have held months with meetings
                   </p>
                 </div>
               )}

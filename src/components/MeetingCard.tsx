@@ -402,7 +402,7 @@ export function MeetingCard({
                         value={(() => {
                           if (editedData.no_longer_interested) return 'no_longer_interested';
                           if (editedData.no_show) return 'no_show';
-                          if (editedData.held_at) return 'completed';
+                          if (editedData.held_at) return 'held';
                           if (editedData.status === 'pending') return 'pending';
                           if (editedData.status === 'confirmed' && !editedData.held_at && !editedData.no_show && !editedData.no_longer_interested && new Date(editedData.scheduled_date) < new Date()) return 'past_due';
                           if (editedData.status === 'confirmed') return 'confirmed';
@@ -416,7 +416,7 @@ export function MeetingCard({
                             setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'past_due') {
                             setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false, no_longer_interested: false }));
-                          } else if (newStatus === 'completed') {
+                          } else if (newStatus === 'held') {
                             setEditedData(d => ({ ...d, status: 'confirmed', held_at: new Date().toISOString(), no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'no_show') {
                             setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: true, no_longer_interested: false }));
@@ -428,7 +428,7 @@ export function MeetingCard({
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
                         <option value="past_due">Past Due Pending</option>
-                        <option value="completed">Completed</option>
+                        <option value="held">Held</option>
                         <option value="no_show">No Show</option>
                         <option value="no_longer_interested">No Longer Interested</option>
                       </select>
@@ -517,7 +517,7 @@ export function MeetingCard({
                             value={
                               meeting.no_longer_interested ? 'no_longer_interested' :
                               meeting.no_show ? 'no_show' :
-                              meeting.held_at ? 'completed' :
+                              meeting.held_at ? 'held' :
                               meeting.status === 'pending' ? 'pending' :
                               meeting.status === 'confirmed' && !meeting.held_at && !meeting.no_show && !meeting.no_longer_interested && new Date(meeting.scheduled_date) < new Date() ? 'past_due' :
                               meeting.status === 'confirmed' ? 'confirmed' :
@@ -529,7 +529,7 @@ export function MeetingCard({
                                 pending: 'Pending',
                                 confirmed: 'Confirmed',
                                 past_due: 'Past Due Pending',
-                                completed: 'Completed',
+                                held: 'Held',
                                 no_show: 'No Show',
                                 no_longer_interested: 'No Longer Interested',
                               }[newStatus] || newStatus;
@@ -550,7 +550,7 @@ export function MeetingCard({
                                 updated.held_at = null;
                                 updated.no_show = false;
                                 updated.no_longer_interested = false;
-                              } else if (newStatus === 'completed') {
+                              } else if (newStatus === 'held') {
                                 updated.status = 'confirmed';
                                 updated.held_at = new Date().toISOString();
                                 updated.no_show = false;
@@ -574,7 +574,7 @@ export function MeetingCard({
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="past_due">Past Due Pending</option>
-                            <option value="completed">Completed</option>
+                            <option value="held">Held</option>
                             <option value="no_show">No Show</option>
                             <option value="no_longer_interested">No Longer Interested</option>
                           </select>
@@ -597,7 +597,7 @@ export function MeetingCard({
                               : meeting.no_show
                               ? 'No Show'
                               : meeting.held_at
-                              ? 'Completed'
+                              ? 'Held'
                               : meeting.status === 'confirmed' && new Date(meeting.scheduled_date) < new Date() && !meeting.held_at
                               ? 'Past Due Pending'
                               : meeting.status === 'confirmed'

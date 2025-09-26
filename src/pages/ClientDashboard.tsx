@@ -935,7 +935,7 @@ export default function ClientDashboard() {
                       <History className="w-8 h-8 text-gray-400" />
                     </div>
                     <p className="text-gray-500 font-medium">No past meetings found</p>
-                    <p className="text-sm text-gray-400 mt-1">Completed meetings will appear here</p>
+                    <p className="text-sm text-gray-400 mt-1">Held meetings will appear here</p>
                   </div>
                 )}
               </div>

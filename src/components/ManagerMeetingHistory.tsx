@@ -465,7 +465,7 @@ export default function ManagerMeetingHistory({
                   'text-blue-600'
                 }`}>
                   {modalType === 'booked' ? 'Total meetings scheduled' :
-                   modalType === 'held' ? 'Successfully completed meetings' :
+                   modalType === 'held' ? 'Successfully held meetings' :
                    modalType === 'noShows' ? 'Meetings marked as no-shows' :
                    'Number of SDRs with meetings'}
                 </p>

@@ -268,7 +268,7 @@ export default function SDRDashboard() {
       new Date(meeting.scheduled_date) >= nowDate
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  const completedMeetings = meetings.filter(
+  const heldMeetings = meetings.filter(
     meeting => 
       meeting.status === 'confirmed' && 
       meeting.held_at && 
@@ -289,13 +289,6 @@ export default function SDRDashboard() {
     meeting => meeting.no_longer_interested && (meeting.icp_status || 'pending') !== 'denied'
   ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  const heldMeetings = meetings.filter(
-    meeting => 
-      meeting.status === 'confirmed' &&
-      !meeting.no_show &&
-      new Date(meeting.scheduled_date) < new Date() &&
-      new Date(meeting.scheduled_date) >= new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-  ).length;
 
   const triggerConfetti = () => {
     const count = 200;
@@ -961,7 +954,7 @@ export default function SDRDashboard() {
               <UnifiedMeetingLists
                 pendingMeetings={pendingMeetings}
                 confirmedMeetings={confirmedMeetings}
-                completedMeetings={completedMeetings}
+                heldMeetings={heldMeetings}
                 noShowMeetings={noShowMeetings}
                 notIcpQualifiedMeetings={notIcpQualifiedMeetings}
                 noLongerInterestedMeetings={noLongerInterestedMeetings}

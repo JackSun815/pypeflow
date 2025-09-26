@@ -23,7 +23,7 @@ export default function LandingPage() {
       { icon: Target, title: 'Real-Time Goal Tracking', description: 'Track monthly set and held meeting targets with live progress bars, client-specific goals, and performance metrics that update instantly' },
       { icon: Calendar, title: 'Advanced Meeting Management', description: 'Schedule meetings with timezone support, contact details, LinkedIn integration, and automated status tracking (pending, confirmed, held, no-show)' },
       { icon: BarChart3, title: 'Comprehensive Analytics', description: 'View detailed performance charts, meeting distribution, client performance comparisons, and monthly progress visualizations' },
-      { icon: Clock, title: 'Smart Meeting Lists', description: 'Organized meeting lists by status: pending, confirmed, completed, no-shows, and ICP-qualified meetings with easy filtering and management' }
+      { icon: Clock, title: 'Smart Meeting Lists', description: 'Organized meeting lists by status: pending, confirmed, held, no-shows, and ICP-qualified meetings with easy filtering and management' }
     ],
     manager: [
       { icon: Users, title: 'Complete Team Oversight', description: 'Manage SDRs, assign clients, set individual targets, track team performance, and generate comprehensive reports' },
