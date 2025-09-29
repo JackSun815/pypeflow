@@ -268,6 +268,10 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
     setSuccess(null);
 
     try {
+      if (!agency) {
+        throw new Error('Agency context is required to create SDRs');
+      }
+
       if (!isValidEmail(sdrEmail)) {
         throw new Error('Please enter a valid email address');
       }
@@ -310,7 +314,8 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
           email: sdrEmail,
           full_name: sdrFullName,
           role: 'sdr',
-          active: true
+          active: true,
+          agency_id: agency?.id
         }] as any);
 
       if (createError) throw createError;

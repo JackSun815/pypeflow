@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {Plus, Trash2, AlertCircle, Users, Target, Edit } from 'lucide-react';
 import type { Client, Profile, Meeting } from '../types/database';
+import { useAgency } from '../contexts/AgencyContext';
 
 interface ClientManagementProps {
   sdrs: Profile[];
@@ -30,6 +31,7 @@ interface MeetingMetrics {
 }
 
 export default function ClientManagement({ sdrs, onUpdate }: ClientManagementProps) {
+  const { agency } = useAgency();
   const [clients, setClients] = useState<ClientWithAssignments[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -335,13 +337,18 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   setSuccess(null);
 
   try {
+    if (!agency?.id) {
+      setError('Agency information not available. Please refresh the page and try again.');
+      return;
+    }
     // Insert the client with proper targets
     const { data: insertedClient, error: insertError } = await supabase
       .from('clients')
       .insert([{ 
         name: newClientName,
         monthly_set_target: newClientSetTarget,
-        monthly_hold_target: newClientHoldTarget
+        monthly_hold_target: newClientHoldTarget,
+        agency_id: agency?.id
       }])
       .select()
       .single();
@@ -669,6 +676,12 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       setLoading(true);
       setError(null);
       
+      // Check if agency is available
+      if (!agency?.id) {
+        setError('Agency information not available. Please refresh the page and try again.');
+        return;
+      }
+      
       // Get the previous month (the month before the currently selected month)
       const currentMonthIndex = monthOptions.findIndex(m => m.value === selectedMonth);
       const previousMonth = monthOptions[currentMonthIndex + 1]?.value;
@@ -753,15 +766,49 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
         monthly_set_target: assignment.monthly_set_target,
         monthly_hold_target: assignment.monthly_hold_target,
         month: selectedMonth,
+        is_active: assignment.is_active !== false, // Ensure is_active is properly set
+        agency_id: agency?.id, // Add agency_id from context
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }));
+
+      console.log('Copying assignments:', newAssignments);
+      console.log('Number of assignments to insert:', newAssignments.length);
+
+      // Validate the data before inserting
+      const validAssignments = newAssignments.filter(assignment => {
+        const isValid = assignment.client_id && 
+                       assignment.sdr_id && 
+                       assignment.month && 
+                       typeof assignment.monthly_set_target === 'number' && 
+                       typeof assignment.monthly_hold_target === 'number';
+        
+        if (!isValid) {
+          console.warn('Invalid assignment found:', assignment);
+        }
+        return isValid;
+      });
+
+      if (validAssignments.length !== newAssignments.length) {
+        console.warn(`Filtered out ${newAssignments.length - validAssignments.length} invalid assignments`);
+      }
+
+      if (validAssignments.length === 0) {
+        setError('No valid assignments to copy after validation');
+        return;
+      }
 
       const { error: insertError } = await supabase
         .from('assignments')
-        .insert(newAssignments);
+        .insert(validAssignments);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error details:', insertError);
+        console.error('Data being inserted:', newAssignments);
+        throw insertError;
+      }
 
-      setSuccess(`Successfully copied ${newAssignments.length} client assignments from ${monthOptions.find(m => m.value === previousMonth)?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}`);
+      setSuccess(`Successfully copied ${validAssignments.length} client assignments from ${monthOptions.find(m => m.value === previousMonth)?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}`);
       
       // Refresh the client list
       await fetchClients();
