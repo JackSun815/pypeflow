@@ -199,25 +199,24 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             a.is_active !== false
           );
           
-          // Check if client was created in this month
+          // Check if client was created recently (within last 7 days)
           const clientCreatedDate = new Date(client.created_at);
-          const selectedMonthDate = new Date(selectedMonth + '-01'); // First day of selected month
-          const nextMonthDate = new Date(selectedMonthDate);
-          nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
           
-          const wasCreatedThisMonth = clientCreatedDate >= selectedMonthDate && clientCreatedDate < nextMonthDate;
+          const wasCreatedRecently = clientCreatedDate >= sevenDaysAgo;
           
           console.log(`🔍 Client "${client.name}":`, {
             hasAssignments,
-            wasCreatedThisMonth,
+            wasCreatedRecently,
             clientCreatedDate: clientCreatedDate.toISOString(),
-            selectedMonthDate: selectedMonthDate.toISOString(),
-            nextMonthDate: nextMonthDate.toISOString(),
+            sevenDaysAgo: sevenDaysAgo.toISOString(),
             assignments: client.assignments
           });
           
-          // Show client if it has assignments OR was created this month
-          const shouldShow = hasAssignments || wasCreatedThisMonth;
+          // Show client if it has assignments OR was created recently
+          // This allows newly added clients to appear in any month for assignment
+          const shouldShow = hasAssignments || wasCreatedRecently;
           if (!shouldShow) {
             console.log(`🔍 Client "${client.name}" excluded: no assignments and not created this month`);
           }
@@ -566,6 +565,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             monthly_set_target: -1, // Special marker value
             monthly_hold_target: -1, // Special marker value
             month: selectedMonth,
+            agency_id: agency?.id, // Add agency_id for multi-tenant support
           }]);
 
         if (hideError) throw hideError;
