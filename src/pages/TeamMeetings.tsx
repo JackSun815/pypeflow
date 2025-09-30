@@ -3,6 +3,7 @@ import { Calendar, CheckCircle, Clock, XCircle, Edit2, Trash2 } from 'lucide-rea
 import { useSDRs } from '../hooks/useSDRs';
 import { useAllClients } from '../hooks/useAllClients';
 import { useMeetings } from '../hooks/useMeetings';
+import { useAgency } from '../contexts/AgencyContext';
 import { supabase } from '../lib/supabase';
 import ScrollableMeetingList from '../components/ScrollableMeetingList';
 import type { Meeting } from '../types/database';
@@ -15,6 +16,7 @@ export default function TeamMeetings({
   meetings: Meeting[];
   fetchSDRs: () => void;
 }) {
+  const { agency } = useAgency();
   const [highlightPending, setHighlightPending] = useState(true);
 
   useEffect(() => {
@@ -52,12 +54,13 @@ export default function TeamMeetings({
   // Effect to combine all SDR meetings when "all" is selected
   useEffect(() => {
     async function fetchAllMeetings() {
-      if (selectedSDR === 'all') {
+      if (selectedSDR === 'all' && agency?.id) {
         const allSDRMeetings = await Promise.all(
           sdrs.map(async (sdr) => {
             const { data } = await supabase
               .from('meetings')
               .select('*, clients(name)')
+              .eq('agency_id', agency.id)
               .eq('sdr_id', sdr.id);
             
             return (data || []).map(meeting => ({
@@ -77,7 +80,7 @@ export default function TeamMeetings({
     }
 
     fetchAllMeetings();
-  }, [selectedSDR, sdrs, selectedSDRMeetings]);
+  }, [selectedSDR, sdrs, selectedSDRMeetings, agency?.id]);
 
   // Filter meetings by selected client
   const filteredMeetings = allMeetings.filter(meeting => {

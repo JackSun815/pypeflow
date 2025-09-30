@@ -16,8 +16,29 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sdrAgencyId, setSdrAgencyId] = useState<string | null>(null);
 
   async function fetchMeetings() {
+    // Get the agency ID to use
+    let agencyIdToUse = agency?.id;
+    if ((!agencyIdToUse || agencyIdToUse === '00000000-0000-0000-0000-000000000000') && sdrId) {
+      if (!sdrAgencyId) {
+        // Fetch SDR's agency_id
+        const { data: sdrData } = await client
+          .from('profiles')
+          .select('agency_id')
+          .eq('id', sdrId)
+          .single();
+        
+        if (sdrData?.agency_id) {
+          agencyIdToUse = sdrData.agency_id;
+          setSdrAgencyId(sdrData.agency_id);
+        }
+      } else {
+        agencyIdToUse = sdrAgencyId;
+      }
+    }
+
     // Only fetch all meetings if fetchAll is true (manager dashboard)
     if (fetchAll) {
       try {
@@ -26,8 +47,8 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
           .select('*, clients(name)')
           .order('scheduled_date', { ascending: true });
         
-        if (agency) {
-          query = query.eq('agency_id', agency.id);
+        if (agencyIdToUse) {
+          query = query.eq('agency_id', agencyIdToUse);
         }
         
         const { data, error } = await query as any;
@@ -56,8 +77,8 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         .order('scheduled_date', { ascending: true })
         .eq('sdr_id', sdrId as any);
       
-      if (agency) {
-        query = query.eq('agency_id', agency.id);
+      if (agencyIdToUse) {
+        query = query.eq('agency_id', agencyIdToUse);
       }
       
       const { data, error } = await query as any;

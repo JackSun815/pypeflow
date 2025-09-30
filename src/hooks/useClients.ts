@@ -23,6 +23,7 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
   const [totalMeetingGoal, setTotalMeetingGoal] = useState(0);
   const [totalBookedMeetings, setTotalBookedMeetings] = useState(0);
   const [totalPendingMeetings, setTotalPendingMeetings] = useState(0);
+  const [sdrAgencyId, setSdrAgencyId] = useState<string | null>(null);
 
   async function fetchClients() {
     try {
@@ -30,6 +31,27 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
         setClients([]);
         setLoading(false);
         return;
+      }
+
+      // If no agency from context, fetch SDR's agency_id
+      let agencyIdToUse = agency?.id;
+      if (!agencyIdToUse || agencyIdToUse === '00000000-0000-0000-0000-000000000000') {
+        if (!sdrAgencyId) {
+          // Fetch SDR's agency_id
+          const { data: sdrData } = await client
+            .from('profiles')
+            .select('agency_id')
+            .eq('id', sdrId)
+            .single();
+          
+          if (sdrData?.agency_id) {
+            agencyIdToUse = sdrData.agency_id;
+            setSdrAgencyId(sdrData.agency_id);
+            console.log('📌 Fetched SDR agency_id:', sdrData.agency_id);
+          }
+        } else {
+          agencyIdToUse = sdrAgencyId;
+        }
       }
 
       // Get current month's start and end dates
@@ -58,8 +80,8 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
         .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any)
         .eq('is_active', true); // Only fetch active assignments
       
-      if (agency) {
-        assignmentsQuery = assignmentsQuery.eq('agency_id', agency.id);
+      if (agencyIdToUse) {
+        assignmentsQuery = assignmentsQuery.eq('agency_id', agencyIdToUse);
       }
       
       const assignmentsResult = await (async () => await withRetry(() => assignmentsQuery))() as any;
@@ -68,11 +90,16 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
       if (assignmentsError) throw assignmentsError;
       const assignments = assignmentsData || [];
 
-      // Debug: Log assignments data in development
-      if (import.meta.env.MODE === 'development' && sdrId) {
-        console.log('🔍 useClients Debug:');
-        console.log('SDR ID filter:', sdrId);
-        console.log('Assignments count:', assignments.length);
+      // Debug: Log assignments data
+      console.log('🔍 useClients Debug:');
+      console.log('SDR ID filter:', sdrId);
+      console.log('Agency ID from context:', agency?.id);
+      console.log('Agency ID used for query:', agencyIdToUse);
+      console.log('Month filter:', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`);
+      console.log('Assignments count:', assignments.length);
+      console.log('Assignments data:', assignments);
+      
+      if (sdrId) {
         console.log('All SDR IDs in assignments:', [...new Set(assignments.map((a: any) => a.sdr_id))]);
         
         // Check if assignments filtering is working
@@ -84,6 +111,11 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
           console.warn('Expected only SDR ID:', sdrId);
           console.warn('Found SDR IDs:', [...new Set(assignments.map((a: any) => a.sdr_id))]);
         }
+      }
+      
+      if (assignments.length === 0) {
+        console.warn('⚠️ No assignments found for this SDR in the current month');
+        console.warn('Check: 1) SDR has assignments 2) Month is correct (September) 3) agency_id matches');
       }
 
       // Calculate total meeting goal from assignments (using set target)
@@ -97,8 +129,8 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
         .select('*, clients(name)')
         .eq('sdr_id', sdrId as any);
       
-      if (agency) {
-        meetingsQuery = meetingsQuery.eq('agency_id', agency.id);
+      if (agencyIdToUse) {
+        meetingsQuery = meetingsQuery.eq('agency_id', agencyIdToUse);
       }
       
       const meetingsResult = await (async () => await withRetry(() => meetingsQuery))() as any;

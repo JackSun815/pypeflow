@@ -235,10 +235,17 @@ export default function ManagerDashboard() {
   useEffect(() => {
     async function fetchAssignments() {
       try {
+        if (!agency?.id) {
+          setAssignments([]);
+          setAssignmentsLoading(false);
+          return;
+        }
+
         setAssignmentsLoading(true);
         const { data: assignmentsData, error: assignmentsError } = await supabase
           .from('assignments')
           .select('*')
+          .eq('agency_id', agency.id)
           .eq('month', selectedMonth as any);
 
         if (assignmentsError) throw assignmentsError;
@@ -252,7 +259,7 @@ export default function ManagerDashboard() {
     }
 
     fetchAssignments();
-  }, [selectedMonth]);
+  }, [selectedMonth, agency?.id]);
 
   // Debug: Log raw meetings and loading state
   useEffect(() => {
@@ -809,7 +816,7 @@ export default function ManagerDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <header className="bg-gradient-to-r from-white via-indigo-50/30 to-white shadow-lg border-b border-indigo-100 relative overflow-hidden">
+      <header className="bg-gradient-to-r from-white via-indigo-50/30 to-white shadow-lg border-b border-indigo-100 relative">
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-100/20 to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-5">
@@ -912,50 +919,58 @@ export default function ManagerDashboard() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div 
-                className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 group bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-xl border border-indigo-200"
-                onClick={() => {
-                  // Easter egg: confetti and rocket animation
-                  confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                  });
-                  
-                  // Add a subtle bounce effect to the rocket
-                  const rocket = document.querySelector('.rocket-easter-egg-manager');
-                  if (rocket) {
-                    rocket.classList.add('animate-bounce');
-                    setTimeout(() => {
-                      rocket.classList.remove('animate-bounce');
-                    }, 1000);
-                  }
-                }}
-                title="🎉 Click for a surprise!"
-              >
-                <span className="text-sm font-semibold text-indigo-700 group-hover:text-indigo-800 transition-colors">{profile?.full_name || 'Manager'}</span>
-                <Rocket className="w-4 h-4 text-indigo-600 group-hover:text-indigo-700 transition-colors rocket-easter-egg-manager" />
+              <div className="relative group">
+                <div 
+                  className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-xl border border-indigo-200"
+                  onClick={() => {
+                    // Easter egg: confetti and rocket animation
+                    confetti({
+                      particleCount: 100,
+                      spread: 70,
+                      origin: { y: 0.6 }
+                    });
+                    
+                    // Add a subtle bounce effect to the rocket
+                    const rocket = document.querySelector('.rocket-easter-egg-manager');
+                    if (rocket) {
+                      rocket.classList.add('animate-bounce');
+                      setTimeout(() => {
+                        rocket.classList.remove('animate-bounce');
+                      }, 1000);
+                    }
+                  }}
+                  title="🎉 Click for a surprise!"
+                >
+                  <span className="text-sm font-semibold text-indigo-700 group-hover:text-indigo-800 transition-colors">{profile?.full_name || 'Manager'}</span>
+                  <Rocket className="w-4 h-4 text-indigo-600 group-hover:text-indigo-700 transition-colors rocket-easter-egg-manager" />
+                </div>
+                
+                {/* Dropdown menu */}
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0">
+                  <div className="py-2">
+                    <button
+                      onClick={() => {
+                        if (confirm('Export meetings data to CSV?')) {
+                          setExportModalOpen(true);
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => {
-                  if (confirm('Export meetings data to CSV?')) {
-                    setExportModalOpen(true);
-                  }
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export
-              </button>
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
             </div>
           </div>
         </div>

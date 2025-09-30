@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
 import { useAllClients } from '../hooks/useAllClients';
+import { useAgency } from '../contexts/AgencyContext';
 import type { Meeting } from '../types/database';
 import { MeetingCard } from '../components/MeetingCard';
 
@@ -15,6 +16,7 @@ interface MeetingWithDetails extends Meeting {
 
 export default function ICPCheck() {
   const { profile } = useAuth();
+  const { agency } = useAgency();
   const { sdrs } = useSDRs();
   const { clients } = useAllClients();
   const [meetings, setMeetings] = useState<MeetingWithDetails[]>([]);
@@ -27,12 +29,19 @@ export default function ICPCheck() {
 
   // Fetch meetings that need ICP review
   useEffect(() => {
-    fetchICPMeetings();
-  }, []);
+    if (agency?.id) {
+      fetchICPMeetings();
+    }
+  }, [agency?.id]);
 
   async function fetchICPMeetings() {
     try {
       setLoading(true);
+      
+      if (!agency?.id) {
+        setError('Agency information not available. Please refresh the page.');
+        return;
+      }
       
       // Try to fetch meetings with ICP status filter first
       let query = supabase
@@ -42,6 +51,7 @@ export default function ICPCheck() {
           clients(name),
           profiles!meetings_sdr_id_fkey(full_name)
         `)
+        .eq('agency_id', agency.id)
         .order('created_at', { ascending: false });
 
       // Try to filter by icp_status if the column exists
@@ -66,6 +76,7 @@ export default function ICPCheck() {
               clients(name),
               profiles!meetings_sdr_id_fkey(full_name)
             `)
+            .eq('agency_id', agency.id)
             .order('created_at', { ascending: false });
             
           if (retryError) {

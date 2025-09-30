@@ -140,9 +140,15 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
   async function fetchClients() {
     try {
+      if (!agency?.id) {
+        setError('Agency information not available. Please refresh the page.');
+        return;
+      }
+
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
+        .eq('agency_id', agency.id)
         .is('archived_at', null); // Only fetch non-archived clients
 
       if (clientsError) throw clientsError;
@@ -150,6 +156,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
         .select('*')
+        .eq('agency_id', agency.id)
         .eq('month', String(selectedMonth));
 
       if (assignmentsError) throw assignmentsError;
@@ -443,6 +450,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
           monthly_set_target: monthlySetTarget,
           monthly_hold_target: monthlyHoldTarget,
           month: String(currentMonth),
+          agency_id: agency?.id,
         }])
         .select()
         .single();
@@ -695,6 +703,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { data: previousClients, error: clientsError } = await supabase
         .from('clients')
         .select('*')
+        .eq('agency_id', agency.id)
         .is('archived_at', null);
 
       if (clientsError) throw clientsError;
@@ -702,6 +711,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { data: previousAssignments, error: fetchError } = await supabase
         .from('assignments')
         .select('*')
+        .eq('agency_id', agency.id)
         .eq('month', previousMonth);
 
       if (fetchError) throw fetchError;
@@ -742,6 +752,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { data: existingAssignments, error: fetchExistingError } = await supabase
         .from('assignments')
         .select('*')
+        .eq('agency_id', agency.id)
         .eq('month', selectedMonth);
 
       if (fetchExistingError) throw fetchExistingError;
@@ -750,6 +761,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { error: deleteError } = await supabase
         .from('assignments')
         .delete()
+        .eq('agency_id', agency.id)
         .eq('month', selectedMonth);
 
       if (deleteError) throw deleteError;
@@ -822,9 +834,14 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
   async function fetchAllClients() {
     try {
+      if (!agency?.id) {
+        return;
+      }
+
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
+        .eq('agency_id', agency.id)
         .is('archived_at', null) // Only fetch non-archived clients
         .order('name', { ascending: true });
 
@@ -837,6 +854,10 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
   async function fetchMeetings() {
     try {
+      if (!agency?.id) {
+        return;
+      }
+
       const [year, month] = selectedMonth.split('-');
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const endDate = new Date(parseInt(year), parseInt(month), 0);
@@ -844,6 +865,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const { data: meetingsData, error: meetingsError } = await supabase
         .from('meetings')
         .select('*')
+        .eq('agency_id', agency.id)
         .gte('scheduled_date', startDate.toISOString().split('T')[0])
         .lte('scheduled_date', endDate.toISOString().split('T')[0]);
 

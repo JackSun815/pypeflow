@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { useMeetings } from '../hooks/useMeetings';
 import { supabasePublic } from '../lib/supabase';
+import { AgencyProvider } from '../contexts/AgencyContext';
 import ClientCard from '../components/ClientCard';
 import MeetingsList from '../components/MeetingsList';
 import DashboardMetrics from '../components/DashboardMetrics';
@@ -77,11 +78,12 @@ ChartJS.register(
   Filler
 );
 
-export default function SDRDashboard() {
+function SDRDashboardContent() {
   const { token } = useParams();
   const location = useLocation();
   const [sdrId, setSdrId] = useState<string | null>(null);
   const [sdrName, setSdrName] = useState<string | null>(null);
+  const [sdrAgencyId, setSdrAgencyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [addMeetingError, setAddMeetingError] = useState<string | null>(null);
@@ -141,7 +143,7 @@ export default function SDRDashboard() {
       }
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${decodedToken.id}&role=eq.sdr&active=eq.true&select=id,full_name`, {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${decodedToken.id}&role=eq.sdr&active=eq.true&select=id,full_name,agency_id`, {
           headers: {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
@@ -158,13 +160,16 @@ export default function SDRDashboard() {
           throw new Error('Invalid or inactive SDR account');
         }
 
+        console.log('🔍 SDR Profile loaded:', sdrProfile);
         setSdrId(decodedToken.id);
         setSdrName(sdrProfile.full_name);
+        setSdrAgencyId(sdrProfile.agency_id);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Invalid or expired access token');
         setSdrId(null);
         setSdrName(null);
+        setSdrAgencyId(null);
       }
     }
 
@@ -226,6 +231,20 @@ export default function SDRDashboard() {
       }
     }
   }, [sdrId, meetings]);
+
+  // Debug: Log clients data
+  useEffect(() => {
+    console.log('📊 SDR Dashboard Clients Debug:');
+    console.log('SDR ID:', sdrId);
+    console.log('Clients count:', clients.length);
+    console.log('Clients loading:', clientsLoading);
+    console.log('Clients error:', clientsError);
+    console.log('Total meeting goal:', totalMeetingGoal);
+    console.log('Clients data:', clients);
+    if (clients.length === 0 && !clientsLoading) {
+      console.warn('⚠️ No clients found for this SDR. Check if assignments exist for current month.');
+    }
+  }, [sdrId, clients, clientsLoading, clientsError, totalMeetingGoal]);
 
   const handleSaveMeeting = async (updatedMeeting: Meeting) => {
   console.log('Saving meeting:', updatedMeeting);
@@ -1194,4 +1213,10 @@ export default function SDRDashboard() {
   </div>
   </>
 );
+}export default function SDRDashboard() {
+  return (
+    <AgencyProvider>
+      <SDRDashboardContent />
+    </AgencyProvider>
+  );
 }
