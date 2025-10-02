@@ -950,7 +950,13 @@ export default function ClientDashboard() {
               <p className="text-sm text-gray-600 mt-1">View all meetings in calendar format</p>
             </div>
             <div className="p-6">
-              <CalendarView meetings={meetings as any} colorByStatus={true} />
+              <CalendarView 
+                meetings={meetings.filter(m => {
+                  const icpStatus = (m as any).icp_status;
+                  return icpStatus !== 'not_qualified' && icpStatus !== 'rejected' && icpStatus !== 'denied';
+                }) as any} 
+                colorByStatus={true} 
+              />
             </div>
           </div>
         )}

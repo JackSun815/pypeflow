@@ -9,7 +9,7 @@ import MeetingsList from '../components/MeetingsList';
 import DashboardMetrics from '../components/DashboardMetrics';
 import MeetingsHistory from './MeetingsHistory';
 import Commissions from './Commissions';
-import { AlertCircle, Calendar, DollarSign, History, Info, Rocket } from 'lucide-react';
+import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
@@ -102,6 +102,36 @@ function SDRDashboardContent() {
   const [notes, setNotes] = useState('');
   const [prospectTimezone, setProspectTimezone] = useState('America/New_York'); // Default to EST
   const [allSDRs, setAllSDRs] = useState<{ id: string; full_name: string | null }[]>([]);
+  
+  // Theme and chart visibility settings (SDR-specific)
+  const [darkTheme, setDarkTheme] = useState(() => {
+    if (!sdrId) return false;
+    const saved = localStorage.getItem(`sdrDashboardTheme_${sdrId}`);
+    return saved === 'dark';
+  });
+  const [chartVisibility, setChartVisibility] = useState(() => {
+    if (!sdrId) return { clientPerformance: true, progressChart: true, meetingsBreakdown: true };
+    const saved = localStorage.getItem(`sdrChartVisibility_${sdrId}`);
+    return saved ? JSON.parse(saved) : {
+      clientPerformance: true,
+      progressChart: true,
+      meetingsBreakdown: true
+    };
+  });
+
+  // Save theme preference (SDR-specific)
+  useEffect(() => {
+    if (sdrId) {
+      localStorage.setItem(`sdrDashboardTheme_${sdrId}`, darkTheme ? 'dark' : 'light');
+    }
+  }, [darkTheme, sdrId]);
+
+  // Save chart visibility preferences (SDR-specific)
+  useEffect(() => {
+    if (sdrId) {
+      localStorage.setItem(`sdrChartVisibility_${sdrId}`, JSON.stringify(chartVisibility));
+    }
+  }, [chartVisibility, sdrId]);
 
   useEffect(() => {
     function isValidBase64(str: string) {
@@ -524,11 +554,23 @@ function SDRDashboardContent() {
     }
   };
 
-  // Map sdr_id to full_name for meetings
-  const meetingsWithSDR = meetings.map(m => ({
-    ...m,
-    sdr_name: allSDRs.find(s => s.id === m.sdr_id)?.full_name || 'Unknown SDR',
-  }));
+  // Map sdr_id to full_name for meetings and filter out non-ICP-qualified meetings for calendar
+  const meetingsWithSDR = meetings
+    .filter(m => {
+      // Exclude meetings that are marked as not ICP qualified
+      const icpStatus = (m as any).icp_status;
+      const isNotQualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+      
+      if (icpStatus) {
+        console.log(`Meeting ${m.id} ICP status:`, icpStatus, 'Excluded:', isNotQualified);
+      }
+      
+      return !isNotQualified;
+    })
+    .map(m => ({
+      ...m,
+      sdr_name: allSDRs.find(s => s.id === m.sdr_id)?.full_name || 'Unknown SDR',
+    }));
 
   return (
     <>
@@ -659,8 +701,8 @@ function SDRDashboardContent() {
         </div>
       </div>
     )}
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <header className="bg-gradient-to-r from-white via-blue-50/30 to-white shadow-lg border-b border-blue-100 relative overflow-hidden">
+    <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900' : 'bg-gradient-to-br from-blue-50 via-white to-cyan-50'}`}>
+      <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-r from-slate-800/95 via-blue-900/95 to-slate-800/95 border-blue-800/50 backdrop-blur-sm' : 'bg-gradient-to-r from-white via-blue-50/30 to-white border-blue-100'}`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/20 to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-5">
@@ -748,37 +790,108 @@ function SDRDashboardContent() {
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-px bg-gradient-to-b from-blue-300 to-blue-500"></div>
                   <div className="flex flex-col">
-                    <p className="text-lg font-semibold text-gray-800">SDR Dashboard</p>
-                    <p className="text-sm text-gray-500 font-medium">{currentMonth}</p>
+                    <p className={`text-lg font-semibold transition-colors ${darkTheme ? 'text-blue-100' : 'text-gray-800'}`}>SDR Dashboard</p>
+                    <p className={`text-sm font-medium transition-colors ${darkTheme ? 'text-blue-200/80' : 'text-gray-500'}`}>{currentMonth}</p>
                   </div>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div 
-                className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 group bg-gradient-to-r from-blue-100 to-cyan-100 px-4 py-2 rounded-xl border border-blue-200"
-                onClick={() => {
-                  // Easter egg: confetti and rocket animation
-                  confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                  });
-                  
-                  // Add a subtle bounce effect to the rocket
-                  const rocket = document.querySelector('.rocket-easter-egg-sdr');
-                  if (rocket) {
-                    rocket.classList.add('animate-bounce');
-                    setTimeout(() => {
-                      rocket.classList.remove('animate-bounce');
-                    }, 1000);
-                  }
-                }}
-                title="🎉 Click for a surprise!"
-              >
-                <span className="text-sm font-semibold text-blue-700 group-hover:text-blue-800 transition-colors">{sdrName}</span>
-                <Rocket className="w-4 h-4 text-blue-600 group-hover:text-blue-700 transition-colors rocket-easter-egg-sdr" />
+              <div className="relative group">
+                <div 
+                  className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 bg-gradient-to-r from-blue-100 to-cyan-100 px-4 py-2 rounded-xl border border-blue-200"
+                  onClick={() => {
+                    // Easter egg: confetti and rocket animation
+                    confetti({
+                      particleCount: 100,
+                      spread: 70,
+                      origin: { y: 0.6 }
+                    });
+                    
+                    // Add a subtle bounce effect to the rocket
+                    const rocket = document.querySelector('.rocket-easter-egg-sdr');
+                    if (rocket) {
+                      rocket.classList.add('animate-bounce');
+                      setTimeout(() => {
+                        rocket.classList.remove('animate-bounce');
+                      }, 1000);
+                    }
+                  }}
+                  title="🎉 Click for a surprise!"
+                >
+                  <span className="text-sm font-semibold text-blue-700 group-hover:text-blue-800 transition-colors">{sdrName}</span>
+                  <Rocket className="w-4 h-4 text-blue-600 group-hover:text-blue-700 transition-colors rocket-easter-egg-sdr" />
+                </div>
+                
+                {/* Dropdown menu */}
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0">
+                  <div className="py-2">
+                    {/* Theme Toggle */}
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Theme</span>
+                        <button
+                          onClick={() => setDarkTheme(!darkTheme)}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                        >
+                          {darkTheme ? (
+                            <>
+                              <Moon className="w-4 h-4 text-gray-700" />
+                              <span className="text-sm text-gray-700">Dark</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sun className="w-4 h-4 text-gray-700" />
+                              <span className="text-sm text-gray-700">Light</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Chart Visibility Toggles */}
+                    <div className="px-4 py-3">
+                      <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Chart Visibility</div>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, clientPerformance: !prev.clientPerformance }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>Client Performance</span>
+                        {chartVisibility.clientPerformance ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, progressChart: !prev.progressChart }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>Progress Chart</span>
+                        {chartVisibility.progressChart ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, meetingsBreakdown: !prev.meetingsBreakdown }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <span>Meetings Breakdown</span>
+                        {chartVisibility.meetingsBreakdown ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -945,8 +1058,8 @@ function SDRDashboardContent() {
                   />
                 ))}
                 {clients.length === 0 && (
-                  <div className="col-span-full p-6 bg-white rounded-lg shadow-md text-center">
-                    <p className="text-gray-500">No clients assigned for this month</p>
+                  <div className={`col-span-full p-6 rounded-lg shadow-md text-center transition-colors ${darkTheme ? 'bg-slate-800/80 text-blue-200 border border-blue-800/30' : 'bg-white text-gray-500'}`}>
+                    <p>No clients assigned for this month</p>
                   </div>
                 )}
               </div>
@@ -1021,57 +1134,68 @@ function SDRDashboardContent() {
 
                 return (
                   <>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-8">
-                      {/* Monthly Performance Chart */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Performance</h3>
-                        <div className="h-64">
-                          <Bar
-                            data={{
-                              labels: ['Set Meetings', 'Held Meetings'],
-                              datasets: [
-                                {
-                                  label: 'Target',
-                                  data: [metrics.totalSetTarget, metrics.totalHeldTarget],
-                                  backgroundColor: ['rgba(59, 130, 246, 0.3)', 'rgba(34, 197, 94, 0.3)'],
-                                  borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
-                                  borderWidth: 2,
+                    {chartVisibility.progressChart && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-8">
+                        {/* Monthly Performance Chart */}
+                        <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-blue-800/30' : 'bg-white'}`}>
+                            <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-blue-100' : 'text-gray-900'}`}>Monthly Performance</h3>
+                          <div className="h-64">
+                              <Bar
+                              data={{
+                                labels: ['Set Meetings', 'Held Meetings'],
+                                datasets: [
+                                  {
+                                    label: 'Target',
+                                    data: [metrics.totalSetTarget, metrics.totalHeldTarget],
+                                    backgroundColor: ['rgba(59, 130, 246, 0.3)', 'rgba(34, 197, 94, 0.3)'],
+                                    borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                                    borderWidth: 2,
+                                  },
+                                  {
+                                    label: 'Actual',
+                                    data: [metrics.totalMeetingsSet, metrics.totalMeetingsHeld],
+                                    backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)'],
+                                    borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                                    borderWidth: 2,
+                                  },
+                                ],
+                              }}
+                              options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                  legend: {
+                                    position: 'top' as const,
+                                    labels: {
+                                      color: darkTheme ? '#E0E7FF' : '#374151'
+                                    }
+                                  },
+                                  title: {
+                                    display: false,
+                                  },
                                 },
-                                {
-                                  label: 'Actual',
-                                  data: [metrics.totalMeetingsSet, metrics.totalMeetingsHeld],
-                                  backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)'],
-                                  borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
-                                  borderWidth: 2,
+                                scales: {
+                                  x: {
+                                    ticks: { color: darkTheme ? '#93C5FD' : '#6B7280' },
+                                    grid: { color: darkTheme ? '#1E3A8A20' : '#E5E7EB' }
+                                  },
+                                  y: {
+                                    beginAtZero: true,
+                                    ticks: { color: darkTheme ? '#93C5FD' : '#6B7280' },
+                                    grid: { color: darkTheme ? '#1E3A8A20' : '#E5E7EB' }
+                                  },
                                 },
-                              ],
-                            }}
-                            options={{
-                              responsive: true,
-                              maintainAspectRatio: false,
-                              plugins: {
-                                legend: {
-                                  position: 'top' as const,
-                                },
-                                title: {
-                                  display: false,
-                                },
-                              },
-                              scales: {
-                                y: {
-                                  beginAtZero: true,
-                                },
-                              },
-                            }}
-                          />
+                              }}
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Meeting Status Distribution */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Meeting Status Distribution</h3>
-                        <div className="h-64">
-                          <Doughnut
+                        {/* Meeting Status Distribution */}
+                        {chartVisibility.meetingsBreakdown && (
+                          <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-blue-800/30' : 'bg-white'}`}>
+                            <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-blue-100' : 'text-gray-900'}`}>Meeting Status Distribution</h3>
+                            <div className="h-64">
+                              <Doughnut
                             data={{
                               labels: ['Held', 'Pending', 'No-Show'],
                               datasets: [
@@ -1097,21 +1221,26 @@ function SDRDashboardContent() {
                               plugins: {
                                 legend: {
                                   position: 'bottom' as const,
+                                  labels: {
+                                    color: darkTheme ? '#E0E7FF' : '#374151'
+                                  }
                                 },
                                 title: {
                                   display: false,
                                 },
                               },
                             }}
-                          />
-                        </div>
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
 
                     {/* Client Performance Chart */}
-                    {clients.length > 0 && (
-                      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Client Performance</h3>
+                    {clients.length > 0 && chartVisibility.clientPerformance && (
+                      <div className={`rounded-lg shadow-md p-6 mb-8 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-blue-800/30' : 'bg-white'}`}>
+                        <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-blue-100' : 'text-gray-900'}`}>Client Performance</h3>
                         <div className="h-80">
                           <Bar
                             data={{
@@ -1172,14 +1301,23 @@ function SDRDashboardContent() {
                               plugins: {
                                 legend: {
                                   position: 'top' as const,
+                                  labels: {
+                                    color: darkTheme ? '#E0E7FF' : '#374151'
+                                  }
                                 },
                                 title: {
                                   display: false,
                                 },
                               },
                               scales: {
+                                x: {
+                                  ticks: { color: darkTheme ? '#93C5FD' : '#6B7280' },
+                                  grid: { color: darkTheme ? '#1E3A8A20' : '#E5E7EB' }
+                                },
                                 y: {
                                   beginAtZero: true,
+                                  ticks: { color: darkTheme ? '#93C5FD' : '#6B7280' },
+                                  grid: { color: darkTheme ? '#1E3A8A20' : '#E5E7EB' }
                                 },
                               },
                             }}

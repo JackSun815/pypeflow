@@ -82,8 +82,13 @@ export default function TeamMeetings({
     fetchAllMeetings();
   }, [selectedSDR, sdrs, selectedSDRMeetings, agency?.id]);
 
-  // Filter meetings by selected client
+  // Filter meetings by selected client and exclude non-ICP-qualified meetings
   const filteredMeetings = allMeetings.filter(meeting => {
+    // Exclude meetings that are marked as not ICP qualified
+    const icpStatus = (meeting as any).icp_status;
+    const isNotQualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    if (isNotQualified) return false;
+    
     if (selectedClient === 'all') return true;
     return meeting.client_id === selectedClient;
   });

@@ -134,9 +134,28 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
     meetingDetails: any
   ) {
     try {
-      // Ensure we have an agency before creating a meeting
-      if (!agency?.id) {
-        throw new Error('Agency context is required to create meetings. Please refresh the page and try again.');
+      // Get the agency ID to use
+      let agencyIdToUse = agency?.id;
+      if (!agencyIdToUse || agencyIdToUse === '00000000-0000-0000-0000-000000000000') {
+        if (!sdrAgencyId && sdrId) {
+          // Fetch SDR's agency_id
+          const { data: sdrData } = await client
+            .from('profiles')
+            .select('agency_id')
+            .eq('id', sdrId)
+            .single();
+          
+          if (sdrData?.agency_id) {
+            agencyIdToUse = sdrData.agency_id;
+            setSdrAgencyId(sdrData.agency_id);
+          }
+        } else {
+          agencyIdToUse = sdrAgencyId;
+        }
+      }
+
+      if (!agencyIdToUse) {
+        throw new Error('Agency information is required to create meetings. Please refresh the page and try again.');
       }
 
       const { status: _, ...cleanDetails } = meetingDetails;
@@ -150,9 +169,11 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         no_show: false,     // Explicit defaults
         held_at: null,
         created_at: new Date().toISOString(),
-        agency_id: agency.id, // Add agency_id from context (already checked above)
+        agency_id: agencyIdToUse, // Use the agency_id we determined
         ...cleanDetails
       };
+
+      console.log('📝 Creating meeting with agency_id:', agencyIdToUse);
 
       // Try to add ICP status if the column exists
       try {

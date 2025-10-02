@@ -2103,6 +2103,13 @@ export default function ManagerDashboard() {
                   return hasAssignments;
                 });
 
+                console.log('📊 Client Progress Visualization Debug:');
+                console.log('Selected month:', selectedMonth);
+                console.log('Total clients from useAllClients:', clients.length);
+                console.log('Total assignments fetched:', assignments.length);
+                console.log('Active clients for progress:', activeClientsForProgress.length);
+                console.log('All assignments:', assignments);
+
                 // Calculate progress for each client
                 const clientsWithProgress = activeClientsForProgress.map(client => {
                   const clientAssignments = assignments.filter(assignment => 
@@ -2110,6 +2117,8 @@ export default function ManagerDashboard() {
                     !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
                     assignment.is_active !== false // Exclude inactive assignments
                   );
+
+                  console.log(`Client "${client.name}" assignments:`, clientAssignments);
 
                   const totalAssignedSet = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
                   const totalAssignedHeld = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
