@@ -38,6 +38,7 @@ export function MeetingCard({
     contact_email: meeting.contact_email || '',
     contact_phone: meeting.contact_phone || '',
     scheduled_date: meeting.scheduled_date, // Full ISO string
+    created_at: meeting.created_at, // Add created_at for editing
     status: meeting.status,
     no_show: meeting.no_show,
     no_longer_interested: meeting.no_longer_interested,
@@ -99,6 +100,7 @@ export function MeetingCard({
       contact_email: editedData.contact_email,
       contact_phone: editedData.contact_phone,
       scheduled_date: editedData.scheduled_date,
+      created_at: editedData.created_at, // Include created_at in update
       status: editedData.status || 'pending',
       no_show: editedData.no_show,
       no_longer_interested: editedData.no_longer_interested,
@@ -393,6 +395,23 @@ export function MeetingCard({
                           value={editedData.scheduled_date}
                           onChange={handleTimeChange}
                           className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Creation Time (EST)</label>
+                        <input
+                          type="datetime-local"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          value={(() => {
+                            // Convert created_at to datetime-local format in EST
+                            const dt = DateTime.fromISO(editedData.created_at, { zone: 'America/New_York' });
+                            return dt.toFormat("yyyy-MM-dd'T'HH:mm");
+                          })()}
+                          onChange={(e) => {
+                            // Convert the local datetime input back to ISO string in EST
+                            const dt = DateTime.fromFormat(e.target.value, "yyyy-MM-dd'T'HH:mm", { zone: 'America/New_York' });
+                            setEditedData({ ...editedData, created_at: dt.toISO() || editedData.created_at });
+                          }}
                         />
                       </div>
                     </div>

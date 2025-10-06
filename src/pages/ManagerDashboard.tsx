@@ -434,7 +434,13 @@ export default function ManagerDashboard() {
           const now = new Date();
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          return meetingDate >= monthStart && meetingDate <= monthEnd;
+          const isInMonth = meetingDate >= monthStart && meetingDate <= monthEnd;
+          
+          // Exclude non-ICP-qualified meetings
+          const icpStatus = (meeting as any).icp_status;
+          const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+          
+          return isInMonth && !isICPDisqualified;
         });
 
         const totalMeetings = monthlyMeetings.length;
@@ -518,7 +524,13 @@ export default function ManagerDashboard() {
           const now = new Date();
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          return meetingDate >= monthStart && meetingDate <= monthEnd;
+          const isInMonth = meetingDate >= monthStart && meetingDate <= monthEnd;
+          
+          // Exclude non-ICP-qualified meetings
+          const icpStatus = (meeting as any).icp_status;
+          const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+          
+          return isInMonth && !isICPDisqualified;
         });
 
         const totalMeetings = monthlyMeetings.length;
@@ -766,7 +778,13 @@ export default function ManagerDashboard() {
 
   const monthlyMeetings = meetings.filter(meeting => {
     const createdDate = new Date(meeting.created_at);
-    return createdDate >= monthStart && createdDate <= monthEnd;
+    const isInMonth = createdDate >= monthStart && createdDate <= monthEnd;
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (meeting as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && !isICPDisqualified;
   });
 
   // Calculate total targets from all SDRs (separate set and held targets)
@@ -2129,10 +2147,16 @@ export default function ManagerDashboard() {
                   const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
                   const monthEnd = new Date(parseInt(year), parseInt(month), 0);
                   
-                  // Filter meetings by created_at date (same as client performance table)
+                  // Filter meetings by created_at date AND exclude non-ICP-qualified
                   const clientMeetings = meetings.filter(meeting => {
                     const createdDate = new Date(meeting.created_at);
-                    return createdDate >= monthStart && createdDate <= monthEnd;
+                    const isInMonth = createdDate >= monthStart && createdDate <= monthEnd;
+                    
+                    // Exclude non-ICP-qualified meetings
+                    const icpStatus = (meeting as any).icp_status;
+                    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                    
+                    return isInMonth && !isICPDisqualified;
                   });
 
                   // Only count meetings from assigned SDRs for this client (same as client performance table)

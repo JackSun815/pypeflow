@@ -239,11 +239,17 @@ export default function MeetingsHistory({
     );
   }
 
-  // Calculate all-time statistics
+  // Calculate all-time statistics (exclude non-ICP-qualified meetings)
   const calculateAllTimeStats = (): MeetingStats => {
-    const totalBooked = meetings.length;
-    const totalHeld = meetings.filter(m => m.held_at !== null && !m.no_show).length;
-    const totalNoShow = meetings.filter(m => m.no_show).length;
+    // Filter out non-ICP-qualified meetings
+    const icpQualifiedMeetings = meetings.filter(m => {
+      const icpStatus = (m as any).icp_status;
+      return icpStatus !== 'not_qualified' && icpStatus !== 'rejected' && icpStatus !== 'denied';
+    });
+    
+    const totalBooked = icpQualifiedMeetings.length;
+    const totalHeld = icpQualifiedMeetings.filter(m => m.held_at !== null && !m.no_show).length;
+    const totalNoShow = icpQualifiedMeetings.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
     const monthlyTarget = 50; // Example monthly target
     const averageMonthlyBookings = totalBooked / 12; // Simplified calculation
@@ -258,10 +264,16 @@ export default function MeetingsHistory({
     };
   };
 
-  // Filter meetings for selected month (use created_at instead of scheduled_date)
-  const monthMeetings = meetings.filter(meeting => 
-    meeting.created_at.startsWith(selectedMonth)
-  );
+  // Filter meetings for selected month (use created_at) AND exclude non-ICP-qualified
+  const monthMeetings = meetings.filter(meeting => {
+    const isInMonth = meeting.created_at.startsWith(selectedMonth);
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (meeting as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && !isICPDisqualified;
+  });
 
   // Calculate monthly statistics (align with dashboard)
   const calculateMonthlyStats = (monthMeetings: Meeting[]): MeetingStats => {

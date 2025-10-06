@@ -976,7 +976,7 @@ function SDRDashboardContent() {
                 const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
                 const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                 
-                // Filter meetings for current month only (by created_at)
+                // Filter meetings for current month only (by created_at) AND exclude non-ICP-qualified
                 const now = new Date();
                 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
                 const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -984,7 +984,13 @@ function SDRDashboardContent() {
                 const monthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
                 const monthlyMeetings = meetings.filter(meeting => {
                   const createdDate = new Date(meeting.created_at);
-                  return createdDate >= monthStart && createdDate <= monthEnd;
+                  const isInMonth = createdDate >= monthStart && createdDate <= monthEnd;
+                  
+                  // Exclude non-ICP-qualified meetings
+                  const icpStatus = (meeting as any).icp_status;
+                  const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                  
+                  return isInMonth && !isICPDisqualified;
                 });
 
                 // Debug: Print out meetings used for dashboard stats

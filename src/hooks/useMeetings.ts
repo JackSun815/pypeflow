@@ -150,7 +150,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
             setSdrAgencyId(sdrData.agency_id);
           }
         } else {
-          agencyIdToUse = sdrAgencyId;
+          agencyIdToUse = sdrAgencyId || undefined;
         }
       }
 
@@ -218,6 +218,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       contact_email: updatedMeeting.contact_email,
       contact_phone: updatedMeeting.contact_phone,
       scheduled_date: updatedMeeting.scheduled_date,
+      created_at: updatedMeeting.created_at, // Allow editing creation time
       status: updatedMeeting.status,
       no_show: updatedMeeting.no_show,
       no_longer_interested: updatedMeeting.no_longer_interested,
