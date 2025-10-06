@@ -5,7 +5,7 @@ import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { useAgency } from '../contexts/AgencyContext';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
@@ -80,6 +80,38 @@ ChartJS.register(
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
+
+  // Theme and chart visibility settings (Manager-specific)
+  const [darkTheme, setDarkTheme] = useState(() => {
+    const saved = localStorage.getItem(`managerDashboardTheme_${profile?.id}`);
+    return saved === 'dark';
+  });
+  const [chartVisibility, setChartVisibility] = useState(() => {
+    const saved = localStorage.getItem(`managerChartVisibility_${profile?.id}`);
+    return saved ? JSON.parse(saved) : {
+      cumulativePerformance: true,
+      monthlyPerformance: true,
+      meetingStatusDistribution: true,
+      sdrPerformance: true,
+      clientsPerformance: true,
+      sdrPerformanceComparison: true,
+      clientProgressVisualization: true
+    };
+  });
+
+  // Save theme preference (Manager-specific)
+  useEffect(() => {
+    if (profile?.id) {
+      localStorage.setItem(`managerDashboardTheme_${profile.id}`, darkTheme ? 'dark' : 'light');
+    }
+  }, [darkTheme, profile?.id]);
+
+  // Save chart visibility preferences (Manager-specific)
+  useEffect(() => {
+    if (profile?.id) {
+      localStorage.setItem(`managerChartVisibility_${profile.id}`, JSON.stringify(chartVisibility));
+    }
+  }, [chartVisibility, profile?.id]);
 
   // Export chart as PNG
   const exportChartAsPNG = async () => {
@@ -833,8 +865,8 @@ export default function ManagerDashboard() {
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <header className="bg-gradient-to-r from-white via-indigo-50/30 to-white shadow-lg border-b border-indigo-100 relative">
+    <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
+      <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-r from-slate-800/95 via-indigo-900/95 to-slate-800/95 border-indigo-800/50 backdrop-blur-sm' : 'bg-gradient-to-r from-white via-indigo-50/30 to-white border-indigo-100'}`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-100/20 to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-5">
@@ -923,14 +955,14 @@ export default function ManagerDashboard() {
                   <div className="h-8 w-px bg-gradient-to-b from-indigo-300 to-purple-500"></div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <p className="text-lg font-semibold text-gray-800">Manager Dashboard</p>
+                      <p className={`text-lg font-semibold transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-800'}`}>Manager Dashboard</p>
                       {agency && (
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${darkTheme ? 'bg-indigo-900/50 text-indigo-200' : 'bg-blue-100 text-blue-800'}`}>
                           {agency.name}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 font-medium">{currentMonth}</p>
+                    <p className={`text-sm font-medium transition-colors ${darkTheme ? 'text-indigo-200/80' : 'text-gray-500'}`}>{currentMonth}</p>
                   </div>
                 </div>
               </div>
@@ -964,28 +996,143 @@ export default function ManagerDashboard() {
                 </div>
                 
                 {/* Dropdown menu */}
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0">
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0">
                   <div className="py-2">
-                    <button
-                      onClick={() => {
-                        if (confirm('Export meetings data to CSV?')) {
-                          setExportModalOpen(true);
-                        }
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Export
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
+                    {/* Theme Toggle */}
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Theme</span>
+                        <button
+                          onClick={() => setDarkTheme(!darkTheme)}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                        >
+                          {darkTheme ? (
+                            <>
+                              <Moon className="w-4 h-4 text-gray-700" />
+                              <span className="text-sm text-gray-700">Dark</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sun className="w-4 h-4 text-gray-700" />
+                              <span className="text-sm text-gray-700">Light</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Chart Visibility Toggles */}
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Chart Visibility</div>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, cumulativePerformance: !prev.cumulativePerformance }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>Cumulative Performance</span>
+                        {chartVisibility.cumulativePerformance ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, monthlyPerformance: !prev.monthlyPerformance }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>Monthly Performance</span>
+                        {chartVisibility.monthlyPerformance ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, meetingStatusDistribution: !prev.meetingStatusDistribution }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>Meeting Status</span>
+                        {chartVisibility.meetingStatusDistribution ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, sdrPerformance: !prev.sdrPerformance }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>SDR Performance</span>
+                        {chartVisibility.sdrPerformance ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, clientsPerformance: !prev.clientsPerformance }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>Clients Performance</span>
+                        {chartVisibility.clientsPerformance ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, sdrPerformanceComparison: !prev.sdrPerformanceComparison }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                      >
+                        <span>SDR Comparison</span>
+                        {chartVisibility.sdrPerformanceComparison ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => setChartVisibility((prev: any) => ({ ...prev, clientProgressVisualization: !prev.clientProgressVisualization }))}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <span>Client Progress</span>
+                        {chartVisibility.clientProgressVisualization ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Export and Logout */}
+                    <div className="px-4 py-2">
+                      <button
+                        onClick={() => {
+                          if (confirm('Export meetings data to CSV?')) {
+                            setExportModalOpen(true);
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors mb-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1185,24 +1332,25 @@ export default function ManagerDashboard() {
             </div>
 
             {/* Cumulative Performance Section */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Cumulative Performance (All Time)</h2>
+            {chartVisibility.cumulativePerformance && (
+              <div className={`rounded-lg shadow-md p-6 mb-8 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
+                <h2 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Cumulative Performance (All Time)</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">{totalMeetingsSet}</p>
-                  <p className="text-sm text-gray-600">Total Meetings Set</p>
+                  <p className={`text-2xl font-bold transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>{totalMeetingsSet}</p>
+                  <p className={`text-sm transition-colors ${darkTheme ? 'text-indigo-300' : 'text-gray-600'}`}>Total Meetings Set</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">{totalHeldMeetings}</p>
-                  <p className="text-sm text-gray-600">Total Meetings Held</p>
+                  <p className={`text-2xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{totalHeldMeetings}</p>
+                  <p className={`text-sm transition-colors ${darkTheme ? 'text-indigo-300' : 'text-gray-600'}`}>Total Meetings Held</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-yellow-600">{totalPendingMeetings}</p>
-                  <p className="text-sm text-gray-600">Total Pending</p>
+                  <p className={`text-2xl font-bold ${darkTheme ? 'text-yellow-400' : 'text-yellow-600'}`}>{totalPendingMeetings}</p>
+                  <p className={`text-sm transition-colors ${darkTheme ? 'text-indigo-300' : 'text-gray-600'}`}>Total Pending</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-red-600">{totalNoShowMeetings}</p>
-                  <p className="text-sm text-gray-600">Total No-Shows</p>
+                  <p className={`text-2xl font-bold ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>{totalNoShowMeetings}</p>
+                  <p className={`text-sm transition-colors ${darkTheme ? 'text-indigo-300' : 'text-gray-600'}`}>Total No-Shows</p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
@@ -1219,13 +1367,15 @@ export default function ManagerDashboard() {
                   </span>
                 </div>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Data Visualizations */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Monthly Performance Chart */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Performance</h3>
+              {chartVisibility.monthlyPerformance && (
+                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
+                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Monthly Performance</h3>
                 <div className="h-64">
                   <Bar
                     data={{
@@ -1266,11 +1416,13 @@ export default function ManagerDashboard() {
                     }}
                   />
                 </div>
-              </div>
+                </div>
+              )}
 
               {/* Meeting Status Distribution */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Meeting Status Distribution</h3>
+              {chartVisibility.meetingStatusDistribution && (
+                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
+                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Meeting Status Distribution</h3>
                 <div className="h-64">
                   <Doughnut
                     data={{
@@ -1306,13 +1458,14 @@ export default function ManagerDashboard() {
                     }}
                   />
                 </div>
-              </div>
+                </div>
+              )}
             </div>
 
 
 
             {/* SDR Performance Table */}
-            {(() => {
+            {chartVisibility.sdrPerformance && (() => {
               // Filter SDRs to show only those with assignments for the selected month
               const activeSDRsForMonth = sdrs.filter(sdr => {
                 // Check if SDR has assignments for the selected month
@@ -1617,7 +1770,7 @@ export default function ManagerDashboard() {
             })()}
 
             {/* Clients Performance Table */}
-            {(() => {
+            {chartVisibility.clientsPerformance && (() => {
               // Filter clients to show only those active for the selected month
               // This logic matches the ClientManagement component's filtering
               const activeClientsForMonth = clients.filter(client => {
@@ -2008,8 +2161,9 @@ export default function ManagerDashboard() {
             </div>
 
             {/* SDR Performance Chart - Moved to bottom */}
-            <div className="bg-white rounded-lg shadow-md p-6 mt-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">SDR Performance Comparison</h3>
+            {chartVisibility.sdrPerformanceComparison && (
+              <div className={`rounded-lg shadow-md p-6 mt-8 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
+                <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>SDR Performance Comparison</h3>
               <div className="h-80">
                 <Bar
                   data={{
@@ -2072,13 +2226,15 @@ export default function ManagerDashboard() {
                   }}
                 />
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Client Progress Visualization */}
-            <div className="bg-white rounded-lg shadow-md p-4 mb-6 mt-8">
+            {chartVisibility.clientProgressVisualization && (
+              <div className={`rounded-lg shadow-md p-4 mb-6 mt-8 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Target className="w-6 h-6 text-blue-600" />
+                <h2 className={`text-xl font-semibold flex items-center gap-2 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>
+                  <Target className={`w-6 h-6 ${darkTheme ? 'text-indigo-400' : 'text-blue-600'}`} />
                   Client Progress Visualization
                 </h2>
                 <div className="flex items-center gap-4">
@@ -2463,7 +2619,8 @@ export default function ManagerDashboard() {
                   </div>
                 );
               })()}
-            </div>
+              </div>
+            )}
           </>
         )}
 
