@@ -263,7 +263,7 @@ function SDRDashboardContent() {
 
   const pendingMeetings = meetings.filter(
     meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.no_longer_interested && (meeting.icp_status || 'pending') !== 'denied' && new Date(meeting.scheduled_date) >= nowDate
-  ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+  ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   // Past Due Pending: confirmed or pending, not held, not no_show, not no_longer_interested, scheduled_date < now
   const pastDuePendingMeetings = meetings.filter(
@@ -284,7 +284,7 @@ function SDRDashboardContent() {
       !meeting.no_show &&
       !meeting.no_longer_interested &&
       new Date(meeting.scheduled_date) >= nowDate
-  ).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+  ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   const heldMeetings = meetings.filter(
     meeting => 
