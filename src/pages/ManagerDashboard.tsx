@@ -293,14 +293,6 @@ export default function ManagerDashboard() {
     fetchAssignments();
   }, [selectedMonth, agency?.id]);
 
-  // Debug: Log raw meetings and loading state
-  useEffect(() => {
-    console.log('[DEBUG] meetingsLoading:', meetingsLoading);
-    console.log('[DEBUG] meetings count:', meetings.length);
-    meetings.forEach(m => {
-      console.log(`[DEBUG] meeting id=${m.id} scheduled_date=${m.scheduled_date} no_show=${m.no_show}`);
-    });
-  }, [meetings, meetingsLoading]);
 
   // Add SDR names to meetings
   const meetingsWithSDRNames = meetings.map(meeting => {
@@ -334,15 +326,15 @@ export default function ManagerDashboard() {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         filteredMeetings = filteredMeetings.filter(meeting => {
-          const createdDate = new Date(meeting.created_at);
-          return createdDate >= monthStart && createdDate <= monthEnd;
+          const meetingDate = new Date(meeting.scheduled_date);
+          return meetingDate >= monthStart && meetingDate <= monthEnd;
         });
       } else if (exportFilters.dateRange === 'custom' && exportFilters.startDate && exportFilters.endDate) {
         filteredMeetings = filteredMeetings.filter(meeting => {
-          const createdDate = new Date(meeting.created_at);
+          const meetingDate = new Date(meeting.scheduled_date);
           const startDate = new Date(exportFilters.startDate);
           const endDate = new Date(exportFilters.endDate);
-          return createdDate >= startDate && createdDate <= endDate;
+          return meetingDate >= startDate && meetingDate <= endDate;
         });
       }
       
@@ -687,15 +679,15 @@ export default function ManagerDashboard() {
 
     switch (type) {
       case 'set':
-        filteredMeetings = monthlyMeetings;
+        filteredMeetings = monthlyMeetingsSet;
         title = 'All Meetings Set';
         break;
       case 'held':
-        filteredMeetings = monthlyMeetings.filter(m => m.status === 'confirmed' && !m.no_show && m.held_at !== null);
+        filteredMeetings = monthlyMeetingsHeld;
         title = 'Meetings Held';
         break;
       case 'pending':
-        filteredMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show);
+        filteredMeetings = monthlyMeetingsSet.filter(m => m.status === 'pending' && !m.no_show);
         title = 'Pending Meetings';
         break;
       case 'sdrs':
@@ -744,16 +736,25 @@ export default function ManagerDashboard() {
 
   const handleSDRClientClick = (sdrId: string, clientId: string, sdrName: string, clientName: string) => {
     // Filter meetings for this specific SDR and client
-    const sdrClientMeetings = monthlyMeetings.filter(m => 
+    // SET meetings: by created_at
+    const setMeetings = monthlyMeetingsSet.filter(m => 
       m.sdr_id === sdrId && m.client_id === clientId
     );
-    
-    const setMeetings = sdrClientMeetings;
-    const heldMeetings = sdrClientMeetings.filter(m => 
-      m.status === 'confirmed' && !m.no_show && m.held_at !== null
+    // HELD meetings: by scheduled_date
+    const heldMeetings = monthlyMeetingsHeld.filter(m => 
+      m.sdr_id === sdrId && m.client_id === clientId
     );
 
-    setModalMeetings(sdrClientMeetings);
+    // Combine both for the modal display (show all relevant meetings)
+    const allSdrClientMeetings = [...setMeetings];
+    // Add held meetings that aren't already in setMeetings
+    heldMeetings.forEach(hm => {
+      if (!allSdrClientMeetings.find(m => m.id === hm.id)) {
+        allSdrClientMeetings.push(hm);
+      }
+    });
+
+    setModalMeetings(allSdrClientMeetings);
     setModalContent({
       type: 'sdrClientMeetings',
       sdrName,
@@ -787,13 +788,6 @@ export default function ManagerDashboard() {
     );
   }
 
-  console.log('All meetings:', meetings);
-  console.log('Held meeting candidates:', meetings.filter(m => 
-    m.status === 'confirmed' && 
-    m.scheduled_date && 
-    new Date(m.scheduled_date) < new Date() && 
-    !m.no_show
-  ));
 
   // Calculate month progress
   const now = new Date();
@@ -803,20 +797,36 @@ export default function ManagerDashboard() {
 
   // Calculate metrics similar to SDR dashboard
   const currentMonthIndex = now.getMonth();
-  // Filter meetings by selected month
+  // Filter meetings by selected month (use UTC to match database timestamps)
   const [year, month] = selectedMonth.split('-');
-  const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
-  const monthEnd = new Date(parseInt(year), parseInt(month), 0);
+  const monthStart = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, 1));
+  const nextMonthStart = new Date(Date.UTC(parseInt(year), parseInt(month), 1)); // First day of NEXT month
 
-  const monthlyMeetings = meetings.filter(meeting => {
+  // Meetings SET: Filter by created_at (when SDR booked it) AND exclude non-ICP-qualified
+  const monthlyMeetingsSet = meetings.filter(meeting => {
     const createdDate = new Date(meeting.created_at);
-    const isInMonth = createdDate >= monthStart && createdDate <= monthEnd;
+    const isInMonth = createdDate >= monthStart && createdDate < nextMonthStart;
     
     // Exclude non-ICP-qualified meetings
     const icpStatus = (meeting as any).icp_status;
     const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
     
     return isInMonth && !isICPDisqualified;
+  });
+
+  // Meetings HELD: Filter by scheduled_date (month it was scheduled for) AND exclude non-ICP-qualified
+  const monthlyMeetingsHeld = meetings.filter(meeting => {
+    const scheduledDate = new Date(meeting.scheduled_date);
+    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+    
+    // Must be actually held
+    const isHeld = meeting.held_at !== null && !meeting.no_show;
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (meeting as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && isHeld && !isICPDisqualified;
   });
 
   // Calculate total targets from all SDRs (separate set and held targets)
@@ -830,27 +840,41 @@ export default function ManagerDashboard() {
     0
   );
 
-  // Debug logging
-  console.log('SDRs data:', sdrs);
-  console.log('Total Set Target:', totalSetTarget);
-  console.log('Total Held Target:', totalHeldTarget);
+  // Debug logging for SDR Performance
+  console.log('\n=== MANAGER DASHBOARD - SDR PERFORMANCE DEBUG ===');
+  console.log('Selected Month:', selectedMonth);
+  console.log('Month Range:', { monthStart, nextMonthStart });
   sdrs.forEach(sdr => {
-    console.log(`SDR ${sdr.full_name}:`, sdr.clients.map(c => ({
-      name: c.name,
-      set_target: c.monthly_set_target,
-      hold_target: c.monthly_hold_target
+    const sdrMeetingsSet = monthlyMeetingsSet.filter(m => m.sdr_id === sdr.id);
+    const sdrMeetingsHeld = monthlyMeetingsHeld.filter(m => m.sdr_id === sdr.id);
+    
+    console.log(`\nSDR: ${sdr.full_name} (ID: ${sdr.id})`);
+    console.log(`  Meetings SET (${sdrMeetingsSet.length}):`, sdrMeetingsSet.map(m => ({
+      id: m.id,
+      created_at: m.created_at,
+      scheduled_date: m.scheduled_date,
+      client_id: m.client_id,
+      status: m.status,
+      held_at: m.held_at,
+      no_show: m.no_show
+    })));
+    console.log(`  Meetings HELD (${sdrMeetingsHeld.length}):`, sdrMeetingsHeld.map(m => ({
+      id: m.id,
+      created_at: m.created_at,
+      scheduled_date: m.scheduled_date,
+      client_id: m.client_id,
+      status: m.status,
+      held_at: m.held_at,
+      no_show: m.no_show
     })));
   });
+  console.log('=== END MANAGER DASHBOARD DEBUG ===\n');
 
   // Calculate monthly metrics
-  const monthlyMeetingsSet = monthlyMeetings.length; // Include all meetings (including no-shows) in set count
-  const monthlyHeldMeetings = monthlyMeetings.filter(m => 
-    m.status === 'confirmed' && 
-    !m.no_show && 
-    m.held_at !== null
-  ).length;
-  const monthlyPendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length;
-  const monthlyNoShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
+  const monthlyMeetingsSetCount = monthlyMeetingsSet.length; // Meetings set in this month (by created_at)
+  const monthlyHeldMeetingsCount = monthlyMeetingsHeld.length; // Meetings held in this month (by scheduled_date)
+  const monthlyPendingMeetings = monthlyMeetingsSet.filter(m => m.status === 'pending' && !m.no_show).length;
+  const monthlyNoShowMeetings = monthlyMeetingsSet.filter(m => m.no_show).length;
 
   // Calculate cumulative metrics (all time)
   const totalMeetingsSet = meetings.length;
@@ -1282,9 +1306,9 @@ export default function ManagerDashboard() {
                   <h3 className="text-lg font-semibold text-gray-900">Meetings Set</h3>
                   <Calendar className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{monthlyMeetingsSet}</p>
+                <p className="text-3xl font-bold text-gray-900">{monthlyMeetingsSetCount}</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  {totalSetTarget > 0 ? ((monthlyMeetingsSet / totalSetTarget) * 100).toFixed(1) : '0.0'}% of target
+                  {totalSetTarget > 0 ? ((monthlyMeetingsSetCount / totalSetTarget) * 100).toFixed(1) : '0.0'}% of target
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
                   Cumulative: {totalMeetingsSet}
@@ -1301,9 +1325,9 @@ export default function ManagerDashboard() {
                   <h3 className="text-lg font-semibold text-gray-900">Meetings Held</h3>
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{monthlyHeldMeetings}</p>
+                <p className="text-3xl font-bold text-gray-900">{monthlyHeldMeetingsCount}</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  {totalHeldTarget > 0 ? ((monthlyHeldMeetings / totalHeldTarget) * 100).toFixed(1) : '0.0'}% of target
+                  {totalHeldTarget > 0 ? ((monthlyHeldMeetingsCount / totalHeldTarget) * 100).toFixed(1) : '0.0'}% of target
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
                   Cumulative: {totalHeldMeetings}
@@ -1390,7 +1414,7 @@ export default function ManagerDashboard() {
                         },
                         {
                           label: 'Actual',
-                          data: [monthlyMeetingsSet, monthlyHeldMeetings],
+                          data: [monthlyMeetingsSetCount, monthlyHeldMeetingsCount],
                           backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)'],
                           borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
                           borderWidth: 2,
@@ -1429,7 +1453,7 @@ export default function ManagerDashboard() {
                       labels: ['Held', 'Pending', 'No-Show'],
                       datasets: [
                         {
-                          data: [monthlyHeldMeetings, monthlyPendingMeetings, monthlyNoShowMeetings],
+                          data: [monthlyHeldMeetingsCount, monthlyPendingMeetings, monthlyNoShowMeetings],
                           backgroundColor: [
                             'rgba(34, 197, 94, 0.8)',
                             'rgba(251, 191, 36, 0.8)',
@@ -1563,14 +1587,10 @@ export default function ManagerDashboard() {
                       );
 
                       // Calculate monthly meetings for this SDR
-                      const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
-                      // Meetings set: include all meetings (including no-shows) in set count
-                      const sdrMeetingsSet = sdrMonthlyMeetings.length;
-                      const sdrHeldMeetings = sdrMonthlyMeetings.filter(m => 
-                        m.status === 'confirmed' && 
-                        !m.no_show && 
-                        m.held_at !== null
-                      ).length;
+                      // Meetings SET: Filter by created_at (when SDR booked it)
+                      const sdrMeetingsSet = monthlyMeetingsSet.filter(m => m.sdr_id === sdr.id).length;
+                      // Meetings HELD: Filter by scheduled_date (month it was scheduled for)
+                      const sdrHeldMeetings = monthlyMeetingsHeld.filter(m => m.sdr_id === sdr.id).length;
 
                       const setProgress = totalSetTarget > 0 ? (sdrMeetingsSet / totalSetTarget) * 100 : 0;
                       const heldProgress = totalHeldTarget > 0 ? (sdrHeldMeetings / totalHeldTarget) * 100 : 0;
@@ -1690,15 +1710,13 @@ export default function ManagerDashboard() {
                                   </h4>
                                   {sdr.clients.map((client) => {
                                     // Calculate monthly meetings for this client
-                                    const clientMonthlyMeetings = monthlyMeetings.filter(m => 
+                                    // Meetings SET: Filter by created_at
+                                    const clientMeetingsSet = monthlyMeetingsSet.filter(m => 
                                       m.sdr_id === sdr.id && m.client_id === client.id
-                                    );
-                                    // Meetings set: include all meetings (including no-shows) in set count
-                                    const clientMeetingsSet = clientMonthlyMeetings.length;
-                                    const clientHeldMeetings = clientMonthlyMeetings.filter(m => 
-                                      m.status === 'confirmed' && 
-                                      !m.no_show && 
-                                      m.held_at !== null
+                                    ).length;
+                                    // Meetings HELD: Filter by scheduled_date
+                                    const clientHeldMeetings = monthlyMeetingsHeld.filter(m => 
+                                      m.sdr_id === sdr.id && m.client_id === client.id
                                     ).length;
                                     
                                     const clientSetProgress = (client.monthly_set_target || 0) > 0 ? 
@@ -1876,22 +1894,18 @@ export default function ManagerDashboard() {
                       // Calculate meetings set and held from SDR assignments only
                       const clientMeetingsSet = assignedSDRs.reduce((sum, sdr) => {
                         if (!sdr) return sum;
-                        const sdrClientMonthlyMeetings = monthlyMeetings.filter(m => 
+                        const sdrClientSet = monthlyMeetingsSet.filter((m: any) => 
                           m.sdr_id === sdr.id && m.client_id === client.id
                         );
-                        return sum + sdrClientMonthlyMeetings.length;
+                        return sum + sdrClientSet.length;
                       }, 0);
                       
                       const clientHeldMeetings = assignedSDRs.reduce((sum, sdr) => {
                         if (!sdr) return sum;
-                        const sdrClientMonthlyMeetings = monthlyMeetings.filter(m => 
+                        const sdrClientHeld = monthlyMeetingsHeld.filter((m: any) => 
                           m.sdr_id === sdr.id && m.client_id === client.id
                         );
-                        return sum + sdrClientMonthlyMeetings.filter(m => 
-                          m.status === 'confirmed' && 
-                          !m.no_show && 
-                          m.held_at !== null
-                        ).length;
+                        return sum + sdrClientHeld.length;
                       }, 0);
                       const totalSetTargetFromAssignments = assignedSDRs.reduce((sum, sdr) => {
                         return sum + (sdr?.monthly_set_target || 0);
@@ -1999,15 +2013,13 @@ export default function ManagerDashboard() {
                                     if (!sdr) return null;
 
                                     // Calculate monthly meetings for this SDR and client
-                                    const sdrClientMonthlyMeetings = monthlyMeetings.filter(m => 
+                                    // Meetings SET: by created_at
+                                    const sdrClientMeetingsSet = monthlyMeetingsSet.filter((m: any) => 
                                       m.sdr_id === sdr.id && m.client_id === client.id
-                                    );
-                                    // Meetings set: include all meetings (including no-shows) in set count
-                                    const sdrClientMeetingsSet = sdrClientMonthlyMeetings.length;
-                                    const sdrClientHeldMeetings = sdrClientMonthlyMeetings.filter(m => 
-                                      m.status === 'confirmed' && 
-                                      !m.no_show && 
-                                      m.held_at !== null
+                                    ).length;
+                                    // Meetings HELD: by scheduled_date
+                                    const sdrClientHeldMeetings = monthlyMeetingsHeld.filter((m: any) => 
+                                      m.sdr_id === sdr.id && m.client_id === client.id
                                     ).length;
                                     
                                     const sdrClientSetProgress = (sdr.monthly_set_target || 0) > 0 ? 
@@ -2179,8 +2191,8 @@ export default function ManagerDashboard() {
                       {
                         label: 'Set Actual',
                         data: sdrs.map(sdr => {
-                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
-                          return sdrMonthlyMeetings.length;
+                          const sdrMeetingsSet = monthlyMeetingsSet.filter((m: any) => m.sdr_id === sdr.id);
+                          return sdrMeetingsSet.length;
                         }),
                         backgroundColor: 'rgba(59, 130, 246, 0.8)',
                         borderColor: 'rgba(59, 130, 246, 1)',
@@ -2196,10 +2208,8 @@ export default function ManagerDashboard() {
                       {
                         label: 'Held Actual',
                         data: sdrs.map(sdr => {
-                          const sdrMonthlyMeetings = monthlyMeetings.filter(m => m.sdr_id === sdr.id);
-                          return sdrMonthlyMeetings.filter(m => 
-                            m.status === 'confirmed' && !m.no_show && m.held_at !== null
-                          ).length;
+                          const sdrMeetingsHeld = monthlyMeetingsHeld.filter((m: any) => m.sdr_id === sdr.id);
+                          return sdrMeetingsHeld.length;
                         }),
                         backgroundColor: 'rgba(34, 197, 94, 0.8)',
                         borderColor: 'rgba(34, 197, 94, 1)',

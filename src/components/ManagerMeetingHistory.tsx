@@ -159,16 +159,36 @@ export default function ManagerMeetingHistory({
     };
   };
 
-  // Filter meetings for selected month (use created_at instead of scheduled_date)
-  const monthMeetings = meetings.filter(meeting => 
-    meeting.created_at.startsWith(selectedMonth)
-  );
+  // Meetings SET: Filter by created_at (when SDR booked it) AND exclude non-ICP-qualified
+  const monthMeetingsSet = meetings.filter(meeting => {
+    const isInMonth = meeting.created_at.startsWith(selectedMonth);
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (meeting as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && !isICPDisqualified;
+  });
+
+  // Meetings HELD: Filter by scheduled_date (month it was scheduled for) AND exclude non-ICP-qualified
+  const monthMeetingsHeld = meetings.filter(meeting => {
+    const isInMonth = meeting.scheduled_date.startsWith(selectedMonth);
+    
+    // Must be actually held
+    const isHeld = meeting.held_at !== null && !meeting.no_show;
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (meeting as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && isHeld && !isICPDisqualified;
+  });
 
   // Calculate monthly statistics
-  const calculateMonthlyStats = (monthMeetings: Meeting[]): MeetingStats => {
-    const totalBooked = monthMeetings.length;
-    const totalHeld = monthMeetings.filter(m => m.held_at !== null && !m.no_show).length;
-    const totalNoShow = monthMeetings.filter(m => m.no_show).length;
+  const calculateMonthlyStats = (): MeetingStats => {
+    const totalBooked = monthMeetingsSet.length;
+    const totalHeld = monthMeetingsHeld.length;
+    const totalNoShow = monthMeetingsSet.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
     const monthlyTarget = 50; // Example monthly target
     const percentToGoal = (totalBooked / monthlyTarget) * 100;
@@ -200,18 +220,27 @@ export default function ManagerMeetingHistory({
     ...monthOptions
   ];
 
+  // For display purposes, combine all meetings from the month (both set and held)
+  const allMonthMeetings = [...monthMeetingsSet];
+  // Add held meetings that aren't already in set meetings
+  monthMeetingsHeld.forEach(hm => {
+    if (!allMonthMeetings.find(m => m.id === hm.id)) {
+      allMonthMeetings.push(hm);
+    }
+  });
+
   // Filter meetings based on search term
-  const filteredMeetings = monthMeetings.filter(meeting => {
+  const filteredMeetings = allMonthMeetings.filter(meeting => {
     const searchString = `${(meeting as any).sdr_name || ''} ${(meeting as any).clients?.name || ''} ${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });
 
   const allTimeStats = calculateAllTimeStats();
-  const monthlyStats = calculateMonthlyStats(monthMeetings);
+  const monthlyStats = calculateMonthlyStats();
   const selectedMonthLabel = monthOptions.find(m => m.value === selectedMonth)?.label;
 
   // Group meetings by SDR for the modal
-  const meetingsBySDR = monthMeetings.reduce((acc, meeting) => {
+  const meetingsBySDR = allMonthMeetings.reduce((acc, meeting) => {
     const sdrName = (meeting as any).sdr_name || 'Unknown SDR';
     if (!acc[sdrName]) {
       acc[sdrName] = [];
@@ -518,11 +547,11 @@ export default function ManagerMeetingHistory({
                   {(() => {
                     let filteredMeetings: Meeting[] = [];
                     if (modalType === 'booked') {
-                      filteredMeetings = monthMeetings;
+                      filteredMeetings = monthMeetingsSet;
                     } else if (modalType === 'held') {
-                      filteredMeetings = monthMeetings.filter(m => m.held_at !== null && !m.no_show);
+                      filteredMeetings = monthMeetingsHeld;
                     } else if (modalType === 'noShows') {
-                      filteredMeetings = monthMeetings.filter(m => m.no_show);
+                      filteredMeetings = monthMeetingsSet.filter(m => m.no_show);
                     }
                     
                     return filteredMeetings.length > 0 ? (

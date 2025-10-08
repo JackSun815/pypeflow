@@ -54,10 +54,10 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
         }
       }
 
-      // Get current month's start and end dates
+      // Get current month's start and end dates (use UTC to match database timestamps)
       const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+      const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
 
       // Fetch assigned clients with their targets for the current month
       let assignmentsQuery = client
@@ -143,13 +143,14 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
       const safeMeetings = Array.isArray(meetings) ? meetings : [];
       const safeAssignments = Array.isArray(assignments) ? assignments : [];
 
-      // After fetching meetings, filter clientMeetings by created_at in the current month
+      // Meetings SET: Filter by created_at (when SDR booked it) AND exclude non-ICP-qualified
       const clientsWithMetrics = safeAssignments.map((assignment: any) => {
-        // Only include meetings created this month AND exclude non-ICP-qualified meetings
-        const clientMeetings = safeMeetings.filter(
+        // Meetings SET: by created_at in current month
+        const clientMeetingsSet = safeMeetings.filter(
           (meeting) => {
             const isForThisClient = meeting.client_id === assignment.clients.id;
-            const isInMonth = new Date(meeting.created_at) >= monthStart && new Date(meeting.created_at) <= monthEnd;
+            const createdDate = new Date(meeting.created_at);
+            const isInMonth = createdDate >= monthStart && createdDate < nextMonthStart;
             const icpStatus = (meeting as any).icp_status;
             const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
             
@@ -157,30 +158,36 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
           }
         );
 
-        // Confirmed meetings (status = confirmed, not no-show)
-        const confirmedMeetings = clientMeetings.filter(
+        // Meetings HELD: by scheduled_date in current month
+        const clientMeetingsHeld = safeMeetings.filter(
+          (meeting) => {
+            const isForThisClient = meeting.client_id === assignment.clients.id;
+            const scheduledDate = new Date(meeting.scheduled_date);
+            const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+            const isHeld = meeting.held_at !== null && !meeting.no_show;
+            const icpStatus = (meeting as any).icp_status;
+            const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+            
+            return isForThisClient && isInMonth && isHeld && !isICPDisqualified;
+          }
+        );
+
+        // Confirmed meetings (status = confirmed, not no-show) - from SET meetings
+        const confirmedMeetings = clientMeetingsSet.filter(
           meeting => meeting.status === 'confirmed' && !meeting.no_show
         ).length;
 
-        // Pending meetings (status = pending, not no-show, not held)
-        const pendingMeetings = clientMeetings.filter(
+        // Pending meetings (status = pending, not no-show, not held) - from SET meetings
+        const pendingMeetings = clientMeetingsSet.filter(
           meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.held_at
         ).length;
 
-        // Held meetings (must have held_at date and be confirmed, exclude no-shows)
-        const heldMeetings = clientMeetings.filter(
-          (meeting) =>
-            meeting.status === 'confirmed' &&
-            !meeting.no_show &&
-            meeting.held_at !== null
-        ).length;
+        // Held meetings count
+        const heldMeetings = clientMeetingsHeld.length;
 
-        // Total meetings set (include all ICP-qualified meetings, including no-shows)
-        const totalMeetingsSet = clientMeetings.length;
+        // Total meetings set (include all ICP-qualified meetings in SET, including no-shows)
+        const totalMeetingsSet = clientMeetingsSet.length;
         
-        console.log(`Client ${assignment.clients.name} held meetings:`, heldMeetings);
-        console.log(`Client ${assignment.clients.name} meetings with held_at:`, clientMeetings.filter(m => m.held_at !== null).length);
-        console.log(`Client ${assignment.clients.name} confirmed meetings:`, clientMeetings.filter(m => m.status === 'confirmed').length);
 
         return {
           ...assignment.clients, // Spread all client properties (including created_at, updated_at)
@@ -189,7 +196,7 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
           confirmedMeetings,
           pendingMeetings,
           heldMeetings,
-          todaysMeetings: clientMeetings.filter(
+          todaysMeetings: clientMeetingsSet.filter(
             meeting => new Date(meeting.scheduled_date).toDateString() === new Date().toDateString()
           ),
           totalMeetingsSet

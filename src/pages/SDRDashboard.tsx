@@ -244,37 +244,6 @@ function SDRDashboardContent() {
   const totalMeetingGoal = clientsHook?.totalMeetingGoal || 0;
   const fetchClients = clientsHook?.fetchClients;
 
-  // Debug: Log SDR ID and meeting counts in development
-  useEffect(() => {
-    if (import.meta.env.MODE === 'development' && sdrId) {
-      console.log('🔍 SDR Dashboard Debug:');
-      console.log('SDR ID:', sdrId);
-      console.log('Total meetings:', meetings.length);
-      console.log('Meetings by SDR ID:', meetings.filter(m => m.sdr_id === sdrId).length);
-      console.log('All SDR IDs in meetings:', [...new Set(meetings.map(m => m.sdr_id))]);
-      
-      // Check if any meetings belong to other SDRs
-      const otherSDRMeetings = meetings.filter(m => m.sdr_id !== sdrId);
-      if (otherSDRMeetings.length > 0) {
-        console.warn('⚠️ Found meetings from other SDRs:', otherSDRMeetings.length);
-        console.warn('Other SDR IDs:', [...new Set(otherSDRMeetings.map(m => m.sdr_id))]);
-      }
-    }
-  }, [sdrId, meetings]);
-
-  // Debug: Log clients data
-  useEffect(() => {
-    console.log('📊 SDR Dashboard Clients Debug:');
-    console.log('SDR ID:', sdrId);
-    console.log('Clients count:', clients.length);
-    console.log('Clients loading:', clientsLoading);
-    console.log('Clients error:', clientsError);
-    console.log('Total meeting goal:', totalMeetingGoal);
-    console.log('Clients data:', clients);
-    if (clients.length === 0 && !clientsLoading) {
-      console.warn('⚠️ No clients found for this SDR. Check if assignments exist for current month.');
-    }
-  }, [sdrId, clients, clientsLoading, clientsError, totalMeetingGoal]);
 
   const handleSaveMeeting = async (updatedMeeting: Meeting) => {
   console.log('Saving meeting:', updatedMeeting);
@@ -976,15 +945,14 @@ function SDRDashboardContent() {
                 const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
                 const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                 
-                // Filter meetings for current month only (by created_at) AND exclude non-ICP-qualified
                 const now = new Date();
-                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                const pad = (n: number) => n.toString().padStart(2, '0');
-                const monthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
-                const monthlyMeetings = meetings.filter(meeting => {
+                const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+                const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+                
+                // Meetings SET: Filter by created_at (when SDR booked it) AND exclude non-ICP-qualified
+                const monthlyMeetingsSet = meetings.filter(meeting => {
                   const createdDate = new Date(meeting.created_at);
-                  const isInMonth = createdDate >= monthStart && createdDate <= monthEnd;
+                  const isInMonth = createdDate >= monthStart && createdDate < nextMonthStart;
                   
                   // Exclude non-ICP-qualified meetings
                   const icpStatus = (meeting as any).icp_status;
@@ -993,19 +961,26 @@ function SDRDashboardContent() {
                   return isInMonth && !isICPDisqualified;
                 });
 
-                // Debug: Print out meetings used for dashboard stats
-                console.log('--- DASHBOARD DEBUG ---');
-                console.log('monthlyMeetings:', monthlyMeetings);
-                console.log('held:', monthlyMeetings.filter(m => m.held_at !== null && !m.no_show));
-                console.log('set:', monthlyMeetings);
-                console.log('noShow:', monthlyMeetings.filter(m => m.no_show));
-                // End debug
+                // Meetings HELD: Filter by scheduled_date (month it was scheduled for) AND exclude non-ICP-qualified
+                const monthlyMeetingsHeld = meetings.filter(meeting => {
+                  const scheduledDate = new Date(meeting.scheduled_date);
+                  const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+                  
+                  // Must be actually held
+                  const isHeld = meeting.held_at !== null && !meeting.no_show;
+                  
+                  // Exclude non-ICP-qualified meetings
+                  const icpStatus = (meeting as any).icp_status;
+                  const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                  
+                  return isInMonth && isHeld && !isICPDisqualified;
+                });
 
-                // Use the same logic as MeetingsHistory
-                const totalMeetingsSet = monthlyMeetings.length;
-                const totalMeetingsHeld = monthlyMeetings.filter(m => m.held_at !== null && !m.no_show).length;
-                const totalNoShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
-                const totalPendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length;
+
+                const totalMeetingsSet = monthlyMeetingsSet.length;
+                const totalMeetingsHeld = monthlyMeetingsHeld.length;
+                const totalNoShowMeetings = monthlyMeetingsSet.filter(m => m.no_show).length;
+                const totalPendingMeetings = monthlyMeetingsSet.filter(m => m.status === 'pending' && !m.no_show).length;
 
                 return {
                   totalSetTarget,
@@ -1114,17 +1089,40 @@ function SDRDashboardContent() {
                   const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                   
                   const now = new Date();
-                  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                  const monthlyMeetings = meetings.filter(meeting => {
+                  const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+                  const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+                  
+                  // Meetings SET: Filter by created_at (when SDR booked it)
+                  const monthlyMeetingsSet = meetings.filter(meeting => {
                     const createdDate = new Date(meeting.created_at);
-                    return createdDate >= monthStart && createdDate <= monthEnd;
+                    const isInMonth = createdDate >= monthStart && createdDate < nextMonthStart;
+                    
+                    // Exclude non-ICP-qualified meetings
+                    const icpStatus = (meeting as any).icp_status;
+                    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                    
+                    return isInMonth && !isICPDisqualified;
                   });
 
-                  const totalMeetingsSet = monthlyMeetings.length;
-                  const totalMeetingsHeld = monthlyMeetings.filter(m => m.held_at !== null && !m.no_show).length;
-                  const totalNoShowMeetings = monthlyMeetings.filter(m => m.no_show).length;
-                  const totalPendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show).length;
+                  // Meetings HELD: Filter by scheduled_date (month it was scheduled for)
+                  const monthlyMeetingsHeld = meetings.filter(meeting => {
+                    const scheduledDate = new Date(meeting.scheduled_date);
+                    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+                    
+                    // Must be actually held
+                    const isHeld = meeting.held_at !== null && !meeting.no_show;
+                    
+                    // Exclude non-ICP-qualified meetings
+                    const icpStatus = (meeting as any).icp_status;
+                    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                    
+                    return isInMonth && isHeld && !isICPDisqualified;
+                  });
+
+                  const totalMeetingsSet = monthlyMeetingsSet.length;
+                  const totalMeetingsHeld = monthlyMeetingsHeld.length;
+                  const totalNoShowMeetings = monthlyMeetingsSet.filter(m => m.no_show).length;
+                  const totalPendingMeetings = monthlyMeetingsSet.filter(m => m.status === 'pending' && !m.no_show).length;
 
                   return {
                     totalSetTarget,
@@ -1263,11 +1261,18 @@ function SDRDashboardContent() {
                                   label: 'Set Actual',
                                   data: clients.map(client => {
                                     const now = new Date();
-                                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                                    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                                    const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+                                    const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+                                    // Count by created_at for "set"
                                     return meetings.filter(meeting => {
                                       const createdDate = new Date(meeting.created_at);
-                                      return createdDate >= monthStart && createdDate <= monthEnd && meeting.client_id === client.id;
+                                      const isInMonth = createdDate >= monthStart && createdDate < nextMonthStart;
+                                      
+                                      // Exclude non-ICP-qualified meetings
+                                      const icpStatus = (meeting as any).icp_status;
+                                      const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                                      
+                                      return isInMonth && !isICPDisqualified && meeting.client_id === client.id;
                                     }).length;
                                   }),
                                   backgroundColor: 'rgba(59, 130, 246, 0.8)',
@@ -1285,11 +1290,18 @@ function SDRDashboardContent() {
                                   label: 'Held Actual',
                                   data: clients.map(client => {
                                     const now = new Date();
-                                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                                    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                                    const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+                                    const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+                                    // Count by scheduled_date for "held"
                                     return meetings.filter(meeting => {
-                                      const createdDate = new Date(meeting.created_at);
-                                      return createdDate >= monthStart && createdDate <= monthEnd && 
+                                      const scheduledDate = new Date(meeting.scheduled_date);
+                                      const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+                                      
+                                      // Exclude non-ICP-qualified meetings
+                                      const icpStatus = (meeting as any).icp_status;
+                                      const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                                      
+                                      return isInMonth && !isICPDisqualified && 
                                              meeting.client_id === client.id && 
                                              meeting.held_at !== null && 
                                              !meeting.no_show;
