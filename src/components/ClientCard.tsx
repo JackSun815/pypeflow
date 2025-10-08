@@ -51,10 +51,20 @@ export default function ClientCard({
   const dayOfMonth = now.getDate();
   const monthProgress = (dayOfMonth / daysInMonth) * 100;
 
-  // Determine status color based on held progress
-  const getStatusColor = () => {
-    if (heldProgress >= monthProgress) return 'text-green-600';
-    if (heldProgress >= monthProgress - 10) return 'text-yellow-600';
+  // Consistent color scheme based on percentage
+  const getProgressBarColor = () => {
+    if (heldProgress >= 100) return 'bg-green-600';
+    if (heldProgress >= 75) return 'bg-green-400';
+    if (heldProgress >= 50) return 'bg-yellow-500';
+    if (heldProgress >= 25) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+  
+  const getProgressTextColor = () => {
+    if (heldProgress >= 100) return 'text-green-600';
+    if (heldProgress >= 75) return 'text-green-600';
+    if (heldProgress >= 50) return 'text-yellow-600';
+    if (heldProgress >= 25) return 'text-orange-600';
     return 'text-red-600';
   };
 
@@ -100,14 +110,14 @@ export default function ClientCard({
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="font-medium">Held Progress</span>
-            <span className={`font-semibold ${getStatusColor()}`}>
+            <span className={`font-semibold ${getProgressTextColor()}`}>
               {heldProgress.toFixed(1)}%
             </span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-indigo-600 rounded-full transition-all duration-300"
-              style={{ width: `${heldProgress}%` }}
+              className={`h-full rounded-full transition-all duration-300 ${getProgressBarColor()}`}
+              style={{ width: `${Math.min(heldProgress, 100)}%` }}
             />
           </div>
           <div className="flex justify-between text-sm text-gray-500">

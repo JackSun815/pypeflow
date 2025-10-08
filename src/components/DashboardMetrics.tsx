@@ -491,19 +491,28 @@ export default function DashboardMetrics({
                       <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
-                            modalContent.data.percentage >= 100 ? 'bg-green-600' : 'bg-yellow-600'
+                            modalContent.data.percentage >= 100 ? 'bg-green-600' :
+                            modalContent.data.percentage >= 75 ? 'bg-green-400' :
+                            modalContent.data.percentage >= 50 ? 'bg-yellow-500' :
+                            modalContent.data.percentage >= 25 ? 'bg-orange-500' : 'bg-red-500'
                           }`}
                           style={{ width: `${Math.min(modalContent.data.percentage, 100)}%` }}
                         />
                       </div>
                       <span className={`text-sm font-medium ${
-                        modalContent.data.percentage >= 100 ? 'text-green-600' : 'text-yellow-600'
+                        modalContent.data.percentage >= 100 ? 'text-green-600' :
+                        modalContent.data.percentage >= 75 ? 'text-green-600' :
+                        modalContent.data.percentage >= 50 ? 'text-yellow-600' :
+                        modalContent.data.percentage >= 25 ? 'text-orange-600' : 'text-red-600'
                       }`}>
                         {modalContent.data.percentage.toFixed(1)}%
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {modalContent.data.percentage >= 100 ? 'Target achieved!' : 'Working towards target'}
+                      {modalContent.data.percentage >= 100 ? 'Target achieved!' : 
+                       modalContent.data.percentage >= 75 ? 'Excellent progress!' :
+                       modalContent.data.percentage >= 50 ? 'Good progress' :
+                       modalContent.data.percentage >= 25 ? 'Keep going!' : 'Needs attention'}
                     </p>
                   </div>
                   <div className="space-y-3">

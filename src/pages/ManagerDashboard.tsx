@@ -1594,8 +1594,24 @@ export default function ManagerDashboard() {
 
                       const setProgress = totalSetTarget > 0 ? (sdrMeetingsSet / totalSetTarget) * 100 : 0;
                       const heldProgress = totalHeldTarget > 0 ? (sdrHeldMeetings / totalHeldTarget) * 100 : 0;
-                      const isSetOnTrack = setProgress >= monthProgress;
-                      const isHeldOnTrack = heldProgress >= monthProgress;
+                      
+                      // Consistent color scheme based on percentage
+                      const getProgressColor = (progress: number) => {
+                        if (progress >= 100) return 'bg-green-600';
+                        if (progress >= 75) return 'bg-green-400';
+                        if (progress >= 50) return 'bg-yellow-500';
+                        if (progress >= 25) return 'bg-orange-500';
+                        return 'bg-red-500';
+                      };
+                      
+                      const getProgressTextColor = (progress: number) => {
+                        if (progress >= 100) return 'text-green-600';
+                        if (progress >= 75) return 'text-green-600';
+                        if (progress >= 50) return 'text-yellow-600';
+                        if (progress >= 25) return 'text-orange-600';
+                        return 'text-red-600';
+                      };
+                      
                       const isExpanded = expandedSDRs[sdr.id];
 
                       return (
@@ -1643,17 +1659,11 @@ export default function ManagerDashboard() {
                                 <div className="flex items-center w-full">
                                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
                                     <div
-                                      className={`h-full rounded-full transition-all duration-300 ${
-                                        isSetOnTrack ? 'bg-green-600' : 'bg-yellow-600'
-                                      }`}
-                                      style={{ width: `${setProgress}%` }}
+                                      className={`h-full rounded-full transition-all duration-300 ${getProgressColor(setProgress)}`}
+                                      style={{ width: `${Math.min(setProgress, 100)}%` }}
                                     />
                                   </div>
-                                  <span
-                                    className={`text-sm font-medium ${
-                                      isSetOnTrack ? 'text-green-600' : 'text-yellow-600'
-                                    }`}
-                                  >
+                                  <span className={`text-sm font-medium ${getProgressTextColor(setProgress)}`}>
                                     {isNaN(setProgress) ? '0.0' : setProgress.toFixed(1)}%
                                   </span>
                                   <div className="ml-2 text-sm text-gray-500">Set</div>
@@ -1662,17 +1672,11 @@ export default function ManagerDashboard() {
                                 <div className="flex items-center w-full mt-1">
                                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
                                     <div
-                                      className={`h-full rounded-full transition-all duration-300 ${
-                                        isHeldOnTrack ? 'bg-green-400' : 'bg-yellow-400'
-                                      }`}
-                                      style={{ width: `${heldProgress}%` }}
+                                      className={`h-full rounded-full transition-all duration-300 ${getProgressColor(heldProgress)}`}
+                                      style={{ width: `${Math.min(heldProgress, 100)}%` }}
                                     />
                                   </div>
-                                  <span
-                                    className={`text-sm font-medium ${
-                                      isHeldOnTrack ? 'text-green-600' : 'text-yellow-600'
-                                    }`}
-                                  >
+                                  <span className={`text-sm font-medium ${getProgressTextColor(heldProgress)}`}>
                                     {isNaN(heldProgress) ? '0.0' : heldProgress.toFixed(1)}%
                                   </span>
                                   <div className="ml-2 text-sm text-gray-500">Held</div>
@@ -1721,7 +1725,23 @@ export default function ManagerDashboard() {
                                     
                                     const clientSetProgress = (client.monthly_set_target || 0) > 0 ? 
                                       (clientMeetingsSet / (client.monthly_set_target || 0)) * 100 : 0;
-                                    const isClientSetOnTrack = clientSetProgress >= monthProgress;
+                                    
+                                    // Consistent color scheme
+                                    const getProgressColor = (progress: number) => {
+                                      if (progress >= 100) return 'bg-green-600';
+                                      if (progress >= 75) return 'bg-green-400';
+                                      if (progress >= 50) return 'bg-yellow-500';
+                                      if (progress >= 25) return 'bg-orange-500';
+                                      return 'bg-red-500';
+                                    };
+                                    
+                                    const getProgressTextColor = (progress: number) => {
+                                      if (progress >= 100) return 'text-green-600';
+                                      if (progress >= 75) return 'text-green-600';
+                                      if (progress >= 50) return 'text-yellow-600';
+                                      if (progress >= 25) return 'text-orange-600';
+                                      return 'text-red-600';
+                                    };
 
                                     return (
                                       <div
@@ -1751,17 +1771,11 @@ export default function ManagerDashboard() {
                                         <div className="flex items-center gap-2">
                                           <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                                             <div
-                                              className={`h-full rounded-full transition-all duration-300 ${
-                                                isClientSetOnTrack ? 'bg-green-600' : 'bg-yellow-600'
-                                              }`}
-                                              style={{ width: `${clientSetProgress}%` }}
+                                              className={`h-full rounded-full transition-all duration-300 ${getProgressColor(clientSetProgress)}`}
+                                              style={{ width: `${Math.min(clientSetProgress, 100)}%` }}
                                             />
                                           </div>
-                                          <span
-                                            className={`text-sm font-medium ${
-                                              isClientSetOnTrack ? 'text-green-600' : 'text-yellow-600'
-                                            }`}
-                                          >
+                                          <span className={`text-sm font-medium ${getProgressTextColor(clientSetProgress)}`}>
                                             {isNaN(clientSetProgress) ? '0.0' : clientSetProgress.toFixed(1)}%
                                           </span>
                                         </div>
@@ -1918,8 +1932,24 @@ export default function ManagerDashboard() {
                         (clientMeetingsSet / totalSetTargetFromAssignments) * 100 : 0;
                       const heldProgress = totalHeldTargetFromAssignments > 0 ? 
                         (clientHeldMeetings / totalHeldTargetFromAssignments) * 100 : 0;
-                      const isSetOnTrack = setProgress >= monthProgress;
-                      const isHeldOnTrack = heldProgress >= monthProgress;
+                      
+                      // Consistent color scheme based on percentage
+                      const getProgressColor = (progress: number) => {
+                        if (progress >= 100) return 'bg-green-600';
+                        if (progress >= 75) return 'bg-green-400';
+                        if (progress >= 50) return 'bg-yellow-500';
+                        if (progress >= 25) return 'bg-orange-500';
+                        return 'bg-red-500';
+                      };
+                      
+                      const getProgressTextColor = (progress: number) => {
+                        if (progress >= 100) return 'text-green-600';
+                        if (progress >= 75) return 'text-green-600';
+                        if (progress >= 50) return 'text-yellow-600';
+                        if (progress >= 25) return 'text-orange-600';
+                        return 'text-red-600';
+                      };
+                      
                       const isExpanded = expandedClients[client.id];
 
                       return (
@@ -1965,17 +1995,11 @@ export default function ManagerDashboard() {
                                 <div className="flex items-center w-full">
                                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
                                     <div
-                                      className={`h-full rounded-full transition-all duration-300 ${
-                                        isSetOnTrack ? 'bg-green-600' : 'bg-yellow-600'
-                                      }`}
-                                      style={{ width: `${setProgress}%` }}
+                                      className={`h-full rounded-full transition-all duration-300 ${getProgressColor(setProgress)}`}
+                                      style={{ width: `${Math.min(setProgress, 100)}%` }}
                                     />
                                   </div>
-                                  <span
-                                    className={`text-sm font-medium ${
-                                      isSetOnTrack ? 'text-green-600' : 'text-yellow-600'
-                                    }`}
-                                  >
+                                  <span className={`text-sm font-medium ${getProgressTextColor(setProgress)}`}>
                                     {isNaN(setProgress) ? '0.0' : setProgress.toFixed(1)}%
                                   </span>
                                   <div className="ml-2 text-sm text-gray-500">Set</div>
@@ -1984,17 +2008,11 @@ export default function ManagerDashboard() {
                                 <div className="flex items-center w-full mt-1">
                                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
                                     <div
-                                      className={`h-full rounded-full transition-all duration-300 ${
-                                        isHeldOnTrack ? 'bg-green-400' : 'bg-yellow-400'
-                                      }`}
-                                      style={{ width: `${heldProgress}%` }}
+                                      className={`h-full rounded-full transition-all duration-300 ${getProgressColor(heldProgress)}`}
+                                      style={{ width: `${Math.min(heldProgress, 100)}%` }}
                                     />
                                   </div>
-                                  <span
-                                    className={`text-sm font-medium ${
-                                      isHeldOnTrack ? 'text-green-600' : 'text-yellow-600'
-                                    }`}
-                                  >
+                                  <span className={`text-sm font-medium ${getProgressTextColor(heldProgress)}`}>
                                     {isNaN(heldProgress) ? '0.0' : heldProgress.toFixed(1)}%
                                   </span>
                                   <div className="ml-2 text-sm text-gray-500">Held</div>
@@ -2024,7 +2042,23 @@ export default function ManagerDashboard() {
                                     
                                     const sdrClientSetProgress = (sdr.monthly_set_target || 0) > 0 ? 
                                       (sdrClientMeetingsSet / (sdr.monthly_set_target || 0)) * 100 : 0;
-                                    const isSdrClientSetOnTrack = sdrClientSetProgress >= monthProgress;
+                                    
+                                    // Reuse parent's color functions
+                                    const getProgressColor = (progress: number) => {
+                                      if (progress >= 100) return 'bg-green-600';
+                                      if (progress >= 75) return 'bg-green-400';
+                                      if (progress >= 50) return 'bg-yellow-500';
+                                      if (progress >= 25) return 'bg-orange-500';
+                                      return 'bg-red-500';
+                                    };
+                                    
+                                    const getProgressTextColor = (progress: number) => {
+                                      if (progress >= 100) return 'text-green-600';
+                                      if (progress >= 75) return 'text-green-600';
+                                      if (progress >= 50) return 'text-yellow-600';
+                                      if (progress >= 25) return 'text-orange-600';
+                                      return 'text-red-600';
+                                    };
 
                                     return (
                                       <div
@@ -2054,17 +2088,11 @@ export default function ManagerDashboard() {
                                         <div className="flex items-center gap-2">
                                           <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                                             <div
-                                              className={`h-full rounded-full transition-all duration-300 ${
-                                                isSdrClientSetOnTrack ? 'bg-green-600' : 'bg-yellow-600'
-                                              }`}
-                                              style={{ width: `${sdrClientSetProgress}%` }}
+                                              className={`h-full rounded-full transition-all duration-300 ${getProgressColor(sdrClientSetProgress)}`}
+                                              style={{ width: `${Math.min(sdrClientSetProgress, 100)}%` }}
                                             />
                                           </div>
-                                          <span
-                                            className={`text-sm font-medium ${
-                                              isSdrClientSetOnTrack ? 'text-green-600' : 'text-yellow-600'
-                                            }`}
-                                          >
+                                          <span className={`text-sm font-medium ${getProgressTextColor(sdrClientSetProgress)}`}>
                                             {isNaN(sdrClientSetProgress) ? '0.0' : sdrClientSetProgress.toFixed(1)}%
                                           </span>
                                         </div>
@@ -2474,10 +2502,11 @@ export default function ManagerDashboard() {
                                       }
 
                                       const getBarColor = (progress: number) => {
-                                        if (progress >= 100) return 'bg-green-300';
-                                        if (progress >= 75) return 'bg-yellow-300';
-                                        if (progress >= 50) return 'bg-orange-300';
-                                        return 'bg-red-300';
+                                        if (progress >= 100) return 'bg-green-500';
+                                        if (progress >= 75) return 'bg-green-400';
+                                        if (progress >= 50) return 'bg-yellow-500';
+                                        if (progress >= 25) return 'bg-orange-500';
+                                        return 'bg-red-500';
                                       };
 
                                       const barHeight = Math.min(progress, 100) * 2.56; // 256px / 100% = 2.56px per %
