@@ -276,7 +276,13 @@ export default function ManagerDashboard() {
         setAssignmentsLoading(true);
         const { data: assignmentsData, error: assignmentsError } = await supabase
           .from('assignments')
-          .select('*')
+          .select(`
+            *,
+            clients (
+              id,
+              name
+            )
+          `)
           .eq('agency_id', agency.id)
           .eq('month', selectedMonth as any);
 
@@ -1710,9 +1716,19 @@ export default function ManagerDashboard() {
                               <td colSpan={8} className="px-6 py-4 bg-gray-50">
                                 <div className="space-y-3">
                                   <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                    Client Assignments
+                                    Client Assignments ({monthOptions.find(m => m.value === selectedMonth)?.label})
                                   </h4>
-                                  {sdr.clients.map((client) => {
+                                  {(() => {
+                                    console.log(`SDR ${sdr.full_name} - Assignments for ${selectedMonth}:`, sdrAssignments);
+                                    return sdrAssignments.map((assignment) => {
+                                      const client = assignment.clients;
+                                      if (!client) {
+                                        console.warn('Assignment without client data:', assignment);
+                                        return null;
+                                      }
+                                      
+                                      return (() => {
+                                    
                                     // Calculate monthly meetings for this client
                                     // Meetings SET: Filter by created_at
                                     const clientMeetingsSet = monthlyMeetingsSet.filter(m => 
@@ -1723,8 +1739,8 @@ export default function ManagerDashboard() {
                                       m.sdr_id === sdr.id && m.client_id === client.id
                                     ).length;
                                     
-                                    const clientSetProgress = (client.monthly_set_target || 0) > 0 ? 
-                                      (clientMeetingsSet / (client.monthly_set_target || 0)) * 100 : 0;
+                                    const clientSetProgress = (assignment.monthly_set_target || 0) > 0 ? 
+                                      (clientMeetingsSet / (assignment.monthly_set_target || 0)) * 100 : 0;
                                     
                                     // Consistent color scheme
                                     const getProgressColor = (progress: number) => {
@@ -1743,48 +1759,50 @@ export default function ManagerDashboard() {
                                       return 'text-red-600';
                                     };
 
-                                    return (
-                                      <div
-                                        key={client.id}
-                                        className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
-                                        onClick={() => handleSDRClientClickFromSDR(sdr.id!, client.id!, sdr.full_name || '', client.name || '')}
-                                      >
-                                        <div>
-                                          <p className="text-sm font-medium text-gray-900">
-                                            {client.name}
-                                          </p>
-                                          <div className="flex items-center gap-4 mt-1">
-                                            <span className="text-sm text-gray-500">
-                                              Set Target: {client.monthly_set_target || 0}
-                                            </span>
-                                            <span className="text-sm text-gray-500">
-                                              Held Target: {client.monthly_hold_target || 0}
-                                            </span>
-                                            <span className="text-sm text-gray-500">
-                                              Set: {clientMeetingsSet}
-                                            </span>
-                                            <span className="text-sm text-gray-500">
-                                              Held: {clientHeldMeetings}
-                                            </span>
+                                        return (
+                                          <div
+                                            key={client.id}
+                                            className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                                            onClick={() => handleSDRClientClickFromSDR(sdr.id!, client.id!, sdr.full_name || '', client.name || '')}
+                                          >
+                                            <div>
+                                              <p className="text-sm font-medium text-gray-900">
+                                                {client.name}
+                                              </p>
+                                              <div className="flex items-center gap-4 mt-1">
+                                                <span className="text-sm text-gray-500">
+                                                  Set Target: {assignment.monthly_set_target || 0}
+                                                </span>
+                                                <span className="text-sm text-gray-500">
+                                                  Held Target: {assignment.monthly_hold_target || 0}
+                                                </span>
+                                                <span className="text-sm text-gray-500">
+                                                  Set: {clientMeetingsSet}
+                                                </span>
+                                                <span className="text-sm text-gray-500">
+                                                  Held: {clientHeldMeetings}
+                                                </span>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                <div
+                                                  className={`h-full rounded-full transition-all duration-300 ${getProgressColor(clientSetProgress)}`}
+                                                  style={{ width: `${Math.min(clientSetProgress, 100)}%` }}
+                                                />
+                                              </div>
+                                              <span className={`text-sm font-medium ${getProgressTextColor(clientSetProgress)}`}>
+                                                {isNaN(clientSetProgress) ? '0.0' : clientSetProgress.toFixed(1)}%
+                                              </span>
+                                            </div>
                                           </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                            <div
-                                              className={`h-full rounded-full transition-all duration-300 ${getProgressColor(clientSetProgress)}`}
-                                              style={{ width: `${Math.min(clientSetProgress, 100)}%` }}
-                                            />
-                                          </div>
-                                          <span className={`text-sm font-medium ${getProgressTextColor(clientSetProgress)}`}>
-                                            {isNaN(clientSetProgress) ? '0.0' : clientSetProgress.toFixed(1)}%
-                                          </span>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                  {sdr.clients.length === 0 && (
+                                        );
+                                      })();
+                                    });
+                                  })()}
+                                  {sdrAssignments.length === 0 && (
                                     <p className="text-sm text-gray-500">
-                                      No clients assigned
+                                      No clients assigned for {monthOptions.find(m => m.value === selectedMonth)?.label}
                                     </p>
                                   )}
                                 </div>
