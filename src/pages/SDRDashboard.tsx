@@ -118,6 +118,13 @@ function SDRDashboardContent() {
       meetingsBreakdown: true
     };
   });
+  
+  // Show inactive assignments toggle (SDR-specific)
+  const [showInactiveAssignments, setShowInactiveAssignments] = useState(() => {
+    if (!sdrId) return false;
+    const saved = localStorage.getItem(`sdrShowInactive_${sdrId}`);
+    return saved === 'true';
+  });
 
   // Save theme preference (SDR-specific)
   useEffect(() => {
@@ -132,6 +139,13 @@ function SDRDashboardContent() {
       localStorage.setItem(`sdrChartVisibility_${sdrId}`, JSON.stringify(chartVisibility));
     }
   }, [chartVisibility, sdrId]);
+
+  // Save show inactive preference (SDR-specific)
+  useEffect(() => {
+    if (sdrId) {
+      localStorage.setItem(`sdrShowInactive_${sdrId}`, showInactiveAssignments.toString());
+    }
+  }, [showInactiveAssignments, sdrId]);
 
   useEffect(() => {
     function isValidBase64(str: string) {
@@ -820,7 +834,7 @@ function SDRDashboardContent() {
                     </div>
                     
                     {/* Chart Visibility Toggles */}
-                    <div className="px-4 py-3">
+                    <div className="px-4 py-3 border-b border-gray-200">
                       <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Chart Visibility</div>
                       
                       <button
@@ -853,6 +867,24 @@ function SDRDashboardContent() {
                       >
                         <span>Meetings Breakdown</span>
                         {chartVisibility.meetingsBreakdown ? (
+                          <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Inactive Assignments Toggle */}
+                    <div className="px-4 py-3">
+                      <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Display Options</div>
+                      
+                      <button
+                        onClick={() => setShowInactiveAssignments(!showInactiveAssignments)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        title="Show or hide clients that were removed from this month. Their meetings are still preserved."
+                      >
+                        <span>Show Inactive Clients</span>
+                        {showInactiveAssignments ? (
                           <Eye className="w-4 h-4 text-green-600" />
                         ) : (
                           <EyeOff className="w-4 h-4 text-gray-400" />
@@ -1015,34 +1047,76 @@ function SDRDashboardContent() {
               })()}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {clients.map((client) => (
-                  <ClientCard
-                    key={client.id}
-                    name={client.name}
-                    monthly_set_target={client.monthly_set_target}
-                    monthly_hold_target={client.monthly_hold_target}
-                    confirmedMeetings={client.confirmedMeetings}
-                    pendingMeetings={client.pendingMeetings}
-                    heldMeetings={client.heldMeetings}
-                    todaysMeetings={client.todaysMeetings}
-                    onAddMeeting={() => {
-                      setSelectedClientId(client.id); 
-                      setShowAddMeeting(true); // Show the modal
-                    }}
-                    onConfirmMeeting={(meetingId) => {
-                      handleMeetingConfirmedDateUpdate(meetingId, todayDateString);
-                    }}
-                    onEditMeeting={(meeting) => {
-                      setSelectedClientId(meeting.client_id);
-                      handleEditMeeting(meeting);
-                    }}
-                  />
-                ))}
-                {clients.length === 0 && (
-                  <div className={`col-span-full p-6 rounded-lg shadow-md text-center transition-colors ${darkTheme ? 'bg-slate-800/80 text-blue-200 border border-blue-800/30' : 'bg-white text-gray-500'}`}>
-                    <p>No clients assigned for this month</p>
-                  </div>
-                )}
+                {(() => {
+                  // Filter clients based on inactive toggle
+                  const activeClients = clients.filter((c: any) => c.is_active !== false);
+                  const inactiveClients = clients.filter((c: any) => c.is_active === false);
+                  const displayClients = showInactiveAssignments ? clients : activeClients;
+                  
+                  
+                  return (
+                    <>
+                      {/* Active Clients */}
+                      {activeClients.map((client: any) => (
+                        <ClientCard
+                          key={client.id}
+                          name={client.name}
+                          monthly_set_target={client.monthly_set_target}
+                          monthly_hold_target={client.monthly_hold_target}
+                          confirmedMeetings={client.confirmedMeetings}
+                          pendingMeetings={client.pendingMeetings}
+                          heldMeetings={client.heldMeetings}
+                          todaysMeetings={client.todaysMeetings}
+                          isInactive={false}
+                          onAddMeeting={() => {
+                            setSelectedClientId(client.id); 
+                            setShowAddMeeting(true);
+                          }}
+                          onConfirmMeeting={(meetingId) => {
+                            handleMeetingConfirmedDateUpdate(meetingId, todayDateString);
+                          }}
+                          onEditMeeting={(meeting) => {
+                            setSelectedClientId(meeting.client_id);
+                            handleEditMeeting(meeting);
+                          }}
+                        />
+                      ))}
+                      
+                      {/* Inactive Clients - Only shown if toggle is on */}
+                      {showInactiveAssignments && inactiveClients.map((client: any) => (
+                        <ClientCard
+                          key={client.id}
+                          name={client.name}
+                          monthly_set_target={client.monthly_set_target}
+                          monthly_hold_target={client.monthly_hold_target}
+                          confirmedMeetings={client.confirmedMeetings}
+                          pendingMeetings={client.pendingMeetings}
+                          heldMeetings={client.heldMeetings}
+                          todaysMeetings={client.todaysMeetings}
+                          isInactive={true}
+                          deactivatedAt={client.deactivated_at}
+                          onAddMeeting={() => {
+                            setSelectedClientId(client.id); 
+                            setShowAddMeeting(true);
+                          }}
+                          onConfirmMeeting={(meetingId) => {
+                            handleMeetingConfirmedDateUpdate(meetingId, todayDateString);
+                          }}
+                          onEditMeeting={(meeting) => {
+                            setSelectedClientId(meeting.client_id);
+                            handleEditMeeting(meeting);
+                          }}
+                        />
+                      ))}
+                      
+                      {displayClients.length === 0 && (
+                        <div className={`col-span-full p-6 rounded-lg shadow-md text-center transition-colors ${darkTheme ? 'bg-slate-800/80 text-blue-200 border border-blue-800/30' : 'bg-white text-gray-500'}`}>
+                          <p>No clients assigned for this month</p>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Remove the Today's Meetings section below */}

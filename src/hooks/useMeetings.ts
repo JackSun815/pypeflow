@@ -45,14 +45,17 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         let query = client
           .from('meetings')
           .select('*, clients(name)')
-          .order('scheduled_date', { ascending: true });
+          .order('scheduled_date', { ascending: true })
+          .limit(10000); // Increase limit to handle large datasets
         
         if (agencyIdToUse) {
-          query = query.eq('agency_id', agencyIdToUse);
+          // Include legacy meetings that may not have an agency_id set
+          query = query.or(`agency_id.eq.${agencyIdToUse},agency_id.is.null`);
         }
         
         const { data, error } = await query as any;
         if (error) throw error;
+        
         setMeetings((data || []) as unknown as Meeting[]);
         setError(null);
       } catch (err) {
@@ -75,6 +78,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         .from('meetings')
         .select('*, clients(name)')
         .order('scheduled_date', { ascending: true })
+        .limit(10000) // Increase limit to handle large datasets
         .eq('sdr_id', sdrId as any);
       
       if (agencyIdToUse) {

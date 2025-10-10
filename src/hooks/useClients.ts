@@ -63,8 +63,7 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
       let assignmentsQuery = client
         .from('assignments')
         .select(`
-          monthly_set_target,
-          monthly_hold_target,
+          *,
           clients!inner (
             id,
             name,
@@ -77,8 +76,8 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
         `)
         .is('clients.archived_at', null) // Only fetch assignments for non-archived clients
         .eq('sdr_id', sdrId as any)
-        .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any)
-        .eq('is_active', true); // Only fetch active assignments
+        .eq('month', `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, '0')}` as any);
+        // Fetch both active and inactive assignments - filtering will happen in the component
       
       if (agencyIdToUse) {
         assignmentsQuery = assignmentsQuery.eq('agency_id', agencyIdToUse);
@@ -90,38 +89,16 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
       if (assignmentsError) throw assignmentsError;
       const assignments = assignmentsData || [];
 
-      // Debug: Log assignments data
-      console.log('🔍 useClients Debug:');
-      console.log('SDR ID filter:', sdrId);
-      console.log('Agency ID from context:', agency?.id);
-      console.log('Agency ID used for query:', agencyIdToUse);
-      console.log('Month filter:', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`);
-      console.log('Assignments count:', assignments.length);
-      console.log('Assignments data:', assignments);
+      // Calculate total meeting goal from ACTIVE assignments only (using set target)
+      const activeAssignments = Array.isArray(assignments) ? assignments.filter((a: any) => a.is_active !== false) : [];
       
-      if (sdrId) {
-        console.log('All SDR IDs in assignments:', [...new Set(assignments.map((a: any) => a.sdr_id))]);
-        
-        // Check if assignments filtering is working
-        const filteredAssignments = assignments.filter((a: any) => a.sdr_id === sdrId);
-        console.log('Filtered assignments count:', filteredAssignments.length);
-        
-        if (assignments.length !== filteredAssignments.length) {
-          console.warn('⚠️ Assignments filtering issue detected!');
-          console.warn('Expected only SDR ID:', sdrId);
-          console.warn('Found SDR IDs:', [...new Set(assignments.map((a: any) => a.sdr_id))]);
-        }
-      }
+      const monthStr = `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, '0')}`;
+      const totalSetGoal = activeAssignments.reduce((sum: any, assignment: any) => 
+        sum + (assignment.monthly_set_target || 0), 0);
+      const totalHeldGoal = activeAssignments.reduce((sum: any, assignment: any) => 
+        sum + (assignment.monthly_hold_target || 0), 0);
       
-      if (assignments.length === 0) {
-        console.warn('⚠️ No assignments found for this SDR in the current month');
-        console.warn('Check: 1) SDR has assignments 2) Month is correct (September) 3) agency_id matches');
-      }
-
-      // Calculate total meeting goal from assignments (using set target)
-      const totalGoal = Array.isArray(assignments) ? assignments.reduce((sum: any, assignment: any) => 
-        sum + (assignment.monthly_set_target || 0), 0) : 0;
-      setTotalMeetingGoal(totalGoal);
+      setTotalMeetingGoal(totalSetGoal);
 
       // Fetch all meetings for this SDR (filter by created_at in JS)
       let meetingsQuery = client
@@ -199,7 +176,10 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
           todaysMeetings: clientMeetingsSet.filter(
             meeting => new Date(meeting.scheduled_date).toDateString() === new Date().toDateString()
           ),
-          totalMeetingsSet
+          totalMeetingsSet,
+          is_active: assignment.is_active !== false, // Include active status
+          deactivated_at: assignment.deactivated_at,
+          deactivation_reason: assignment.deactivation_reason
         };
       });
       // Then update your total counts to match:
@@ -225,10 +205,7 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
         meeting => meeting.no_show
       ).length;
 
-      setTotalBookedMeetings(totalConfirmed);
-      setTotalPendingMeetings(totalPending);
-      setClients(clientsWithMetrics);
-
+      
       setTotalBookedMeetings(totalConfirmed);
       setTotalPendingMeetings(totalPending);
       setClients(clientsWithMetrics);

@@ -22,6 +22,8 @@ interface ClientCardProps {
   onAddMeeting: () => void;
   onConfirmMeeting: (meetingId: string) => void;
   onEditMeeting?: (meeting: any) => void;
+  isInactive?: boolean;
+  deactivatedAt?: string;
   goalTiers?: Array<{
     percentage: number;
     bonus: number;
@@ -39,6 +41,8 @@ export default function ClientCard({
   onAddMeeting,
   onConfirmMeeting,
   onEditMeeting,
+  isInactive = false,
+  deactivatedAt,
   goalTiers = []
 }: ClientCardProps) {
   // Calculate progress percentages
@@ -77,32 +81,67 @@ export default function ClientCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div 
+      className={`rounded-lg shadow-md p-6 relative group ${
+        isInactive 
+          ? 'bg-gray-50 border-2 border-dashed border-gray-300 opacity-75 hover:opacity-90' 
+          : 'bg-white'
+      }`}
+      title={isInactive ? `This client was removed from this month${deactivatedAt ? ' on ' + new Date(deactivatedAt).toLocaleDateString() : ''}. All meetings are preserved. Toggle "Show Inactive Clients" in the menu to hide.` : ''}
+    >
+      {isInactive && (
+        <div className="absolute top-3 right-3 bg-orange-100 text-orange-700 text-xs font-medium px-2 py-1 rounded-full border border-orange-200">
+          Inactive
+        </div>
+      )}
+      
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
+        <h3 className={`text-lg font-semibold ${isInactive ? 'text-gray-600' : 'text-gray-900'}`}>{name}</h3>
         <button
           onClick={() => {
-            console.log("Add Meeting button clicked");
-            onAddMeeting();
+            if (!isInactive) {
+              console.log("Add Meeting button clicked");
+              onAddMeeting();
+            }
           }}
-          className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none transition-all ${
+            isInactive
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
+          }`}
+          disabled={isInactive}
+          title={isInactive ? 'Cannot add meetings to inactive assignments. Ask your manager to reactivate this client.' : 'Add a new meeting'}
         >
           <Plus className="w-4 h-4" />
           Add Meeting
         </button>
       </div>
+      
+      {isInactive && (
+        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <p className="text-xs text-orange-800 font-medium mb-1">⚠️ Assignment Removed</p>
+          <p className="text-xs text-orange-700">
+            This client was removed from your assignments for this month. All meetings you booked are still preserved and counted toward your performance.
+            {deactivatedAt && (
+              <span className="block mt-1 text-orange-600">
+                Removed: {new Date(deactivatedAt).toLocaleDateString()}
+              </span>
+            )}
+          </p>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Target className="w-5 h-5 text-gray-400" />
-          <span className="text-sm text-gray-600">
+          <Target className={`w-5 h-5 ${isInactive ? 'text-gray-300' : 'text-gray-400'}`} />
+          <span className={`text-sm ${isInactive ? 'text-gray-500' : 'text-gray-600'}`}>
             Set: {confirmedMeetings + pendingMeetings}/{monthly_set_target} | Held: {heldMeetings}/{monthly_hold_target}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-gray-400" />
-          <span className="text-sm text-gray-600">
+          <Calendar className={`w-5 h-5 ${isInactive ? 'text-gray-300' : 'text-gray-400'}`} />
+          <span className={`text-sm ${isInactive ? 'text-gray-500' : 'text-gray-600'}`}>
             Pending: {pendingMeetings} meetings
           </span>
         </div>
