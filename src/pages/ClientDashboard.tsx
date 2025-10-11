@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -78,6 +78,7 @@ export default function ClientDashboard() {
   const [employeeCounts, setEmployeeCounts] = useState<string[]>([]);
   const [revenue, setRevenue] = useState<string[]>([]);
   const [industries, setIndustries] = useState<string[]>([]);
+  const [icpNotes, setIcpNotes] = useState<string>('');
 
   // Input states for adding new items
   const [newJobTitle, setNewJobTitle] = useState('');
@@ -194,6 +195,7 @@ export default function ClientDashboard() {
       setEmployeeCounts(loadClientData('icp_employeeCounts', []));
       setRevenue(loadClientData('icp_revenue', ['1M - 100M']));
       setIndustries(loadClientData('icp_industries', ['utilities', 'construction', 'commercial construction']));
+      setIcpNotes(loadClientData('icp_notes', ''));
       setSdrs(loadClientData('icp_sdrs', []));
       setTalkTracks(loadClientData('icp_talkTracks', [
         { id: '1', name: 'Agentic AI Battle Card', content: 'This is a battle card for Agentic AI discussions...' },
@@ -238,6 +240,12 @@ export default function ClientDashboard() {
       saveClientData('icp_industries', industries);
     }
   }, [industries, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('icp_notes', icpNotes);
+    }
+  }, [icpNotes, clientInfo]);
 
   useEffect(() => {
     if (clientInfo) {
@@ -1107,6 +1115,32 @@ export default function ClientDashboard() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* ICP Notes Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-2xl font-bold text-gray-900">ICP Notes</h2>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Add notes about your ideal customer profile, targeting strategy, or any specific requirements for your SDR team.
+              </p>
+              <textarea
+                value={icpNotes}
+                onChange={(e) => setIcpNotes(e.target.value)}
+                placeholder="Enter your ICP notes here... (e.g., key decision maker personas, pain points to focus on, industries to avoid, etc.)"
+                rows={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-gray-500">
+                  {icpNotes.length} characters
+                </p>
+                <p className="text-xs text-gray-500">
+                  Changes are saved automatically
+                </p>
               </div>
             </div>
 
