@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -58,13 +58,38 @@ interface Meeting {
   created_at: string;
 }
 
+interface LeadSample {
+  id: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  title: string;
+  company: string;
+  email: string;
+  website: string;
+  phone: string;
+  linkedinProfile: string;
+  seniority: string;
+  departments: string;
+  lists: string;
+  numEmployees: string;
+  industry: string;
+  leadState: string;
+  country: string;
+  companyAddress: string;
+  technologies: string;
+  revenue: string;
+  accountExecutive: string;
+  generalVertical: string;
+}
+
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'cold-calling'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'lead-sample' | 'cold-calling'>('overview');
   
   // Modal state for clickable metrics
   const [modalOpen, setModalOpen] = useState(false);
@@ -122,6 +147,34 @@ export default function ClientDashboard() {
   // Talk tracks form state
   const [showTalkTrackForm, setShowTalkTrackForm] = useState(false);
   const [expandedTrack, setExpandedTrack] = useState<string | null>(null);
+
+  // Lead Sample state
+  const [leadSamples, setLeadSamples] = useState<LeadSample[]>([]);
+  const [showLeadForm, setShowLeadForm] = useState(false);
+  const [editingLead, setEditingLead] = useState<LeadSample | null>(null);
+  const [newLead, setNewLead] = useState<Partial<LeadSample>>({
+    name: '',
+    firstName: '',
+    lastName: '',
+    title: '',
+    company: '',
+    email: '',
+    website: '',
+    phone: '',
+    linkedinProfile: '',
+    seniority: '',
+    departments: '',
+    lists: '',
+    numEmployees: '',
+    industry: '',
+    leadState: '',
+    country: '',
+    companyAddress: '',
+    technologies: '',
+    revenue: '',
+    accountExecutive: '',
+    generalVertical: ''
+  });
 
   // Confetti function
   // const triggerConfetti = () => {
@@ -201,6 +254,7 @@ export default function ClientDashboard() {
         { id: '1', name: 'Agentic AI Battle Card', content: 'This is a battle card for Agentic AI discussions...' },
         { id: '2', name: 'Call Script', content: 'Hello, this is [Name] from [Company]...' }
       ]));
+      setLeadSamples(loadClientData('lead_samples', []));
     }
   }, [clientInfo]);
 
@@ -259,6 +313,12 @@ export default function ClientDashboard() {
     }
   }, [sdrs, clientInfo]);
 
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('lead_samples', leadSamples);
+    }
+  }, [leadSamples, clientInfo]);
+
   // Cold Calling helper functions
   const addSDR = () => {
     if (newSDRName.trim() && newSDRTitle.trim()) {
@@ -305,6 +365,234 @@ export default function ClientDashboard() {
 
   const removeTalkTrack = (id: string) => {
     setTalkTracks(prev => prev.filter(track => track.id !== id));
+  };
+
+  // Lead Sample helper functions
+  const addOrUpdateLead = () => {
+    if (!newLead.firstName || !newLead.lastName || !newLead.email) {
+      alert('Please fill in at least First Name, Last Name, and Email');
+      return;
+    }
+
+    const fullName = `${newLead.firstName} ${newLead.lastName}`;
+    
+    if (editingLead) {
+      // Update existing lead
+      setLeadSamples(prev => prev.map(lead => 
+        lead.id === editingLead.id 
+          ? { ...newLead, id: editingLead.id, name: fullName } as LeadSample
+          : lead
+      ));
+    } else {
+      // Add new lead
+      const lead: LeadSample = {
+        id: Date.now().toString(),
+        name: fullName,
+        firstName: newLead.firstName || '',
+        lastName: newLead.lastName || '',
+        title: newLead.title || '',
+        company: newLead.company || '',
+        email: newLead.email || '',
+        website: newLead.website || '',
+        phone: newLead.phone || '',
+        linkedinProfile: newLead.linkedinProfile || '',
+        seniority: newLead.seniority || '',
+        departments: newLead.departments || '',
+        lists: newLead.lists || '',
+        numEmployees: newLead.numEmployees || '',
+        industry: newLead.industry || '',
+        leadState: newLead.leadState || '',
+        country: newLead.country || '',
+        companyAddress: newLead.companyAddress || '',
+        technologies: newLead.technologies || '',
+        revenue: newLead.revenue || '',
+        accountExecutive: newLead.accountExecutive || '',
+        generalVertical: newLead.generalVertical || ''
+      };
+      setLeadSamples(prev => [...prev, lead]);
+    }
+
+    // Reset form
+    setNewLead({
+      name: '',
+      firstName: '',
+      lastName: '',
+      title: '',
+      company: '',
+      email: '',
+      website: '',
+      phone: '',
+      linkedinProfile: '',
+      seniority: '',
+      departments: '',
+      lists: '',
+      numEmployees: '',
+      industry: '',
+      leadState: '',
+      country: '',
+      companyAddress: '',
+      technologies: '',
+      revenue: '',
+      accountExecutive: '',
+      generalVertical: ''
+    });
+    setShowLeadForm(false);
+    setEditingLead(null);
+  };
+
+  const editLead = (lead: LeadSample) => {
+    setEditingLead(lead);
+    setNewLead(lead);
+    setShowLeadForm(true);
+  };
+
+  const deleteLead = (id: string) => {
+    if (confirm('Are you sure you want to delete this lead sample?')) {
+      setLeadSamples(prev => prev.filter(lead => lead.id !== id));
+    }
+  };
+
+  const exportLeads = () => {
+    if (leadSamples.length === 0) {
+      alert('No lead samples to export');
+      return;
+    }
+
+    // Create CSV content
+    const headers = [
+      'NAME', 'FIRST NAME', 'LAST NAME', 'TITLE', 'COMPANY', 'EMAIL', 
+      'WEBSITE', 'PHONE', 'LINKEDIN PROFILE', 'SENIORITY', 'DEPARTMENTS', 
+      'LISTS', '# EMPLOYEES', 'INDUSTRY', 'LEAD STATE', 'COUNTRY', 
+      'COMPANY ADDRESS', 'TECHNOLOGIES', 'REVENUE', 'ACCOUNT EXECUTIVE', 
+      'GENERAL VERTICAL'
+    ];
+    
+    const csvRows = [headers.join(',')];
+    
+    leadSamples.forEach(lead => {
+      const row = [
+        lead.name,
+        lead.firstName,
+        lead.lastName,
+        lead.title,
+        lead.company,
+        lead.email,
+        lead.website,
+        lead.phone,
+        lead.linkedinProfile,
+        lead.seniority,
+        lead.departments,
+        lead.lists,
+        lead.numEmployees,
+        lead.industry,
+        lead.leadState,
+        lead.country,
+        lead.companyAddress,
+        lead.technologies,
+        lead.revenue,
+        lead.accountExecutive,
+        lead.generalVertical
+      ].map(field => `"${(field || '').replace(/"/g, '""')}"`);
+      
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lead-samples-${clientInfo?.name || 'export'}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const importLeads = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n');
+        
+        if (lines.length < 2) {
+          alert('CSV file is empty or invalid');
+          return;
+        }
+
+        // Skip header row
+        const newLeads: LeadSample[] = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          // Parse CSV line handling quoted fields
+          const values: string[] = [];
+          let currentValue = '';
+          let insideQuotes = false;
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              insideQuotes = !insideQuotes;
+            } else if (char === ',' && !insideQuotes) {
+              values.push(currentValue.trim());
+              currentValue = '';
+            } else {
+              currentValue += char;
+            }
+          }
+          values.push(currentValue.trim());
+
+          if (values.length < 3) continue; // Skip invalid rows
+
+          const lead: LeadSample = {
+            id: Date.now().toString() + '-' + i,
+            name: values[0] || `${values[1] || ''} ${values[2] || ''}`.trim(),
+            firstName: values[1] || '',
+            lastName: values[2] || '',
+            title: values[3] || '',
+            company: values[4] || '',
+            email: values[5] || '',
+            website: values[6] || '',
+            phone: values[7] || '',
+            linkedinProfile: values[8] || '',
+            seniority: values[9] || '',
+            departments: values[10] || '',
+            lists: values[11] || '',
+            numEmployees: values[12] || '',
+            industry: values[13] || '',
+            leadState: values[14] || '',
+            country: values[15] || '',
+            companyAddress: values[16] || '',
+            technologies: values[17] || '',
+            revenue: values[18] || '',
+            accountExecutive: values[19] || '',
+            generalVertical: values[20] || ''
+          };
+
+          newLeads.push(lead);
+        }
+
+        if (newLeads.length > 0) {
+          setLeadSamples(prev => [...prev, ...newLeads]);
+          alert(`Successfully imported ${newLeads.length} lead samples`);
+        } else {
+          alert('No valid leads found in the file');
+        }
+      } catch (error) {
+        console.error('Error parsing CSV:', error);
+        alert('Error importing CSV file. Please ensure it is properly formatted.');
+      }
+    };
+
+    reader.readAsText(file);
+    event.target.value = ''; // Reset input
   };
 
   useEffect(() => {
@@ -613,6 +901,20 @@ export default function ClientDashboard() {
               <span className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 ICP Targeting
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('lead-sample')}
+              title="View and manage lead samples - add, import, and export example leads that match your ICP"
+              className={`${
+                activeTab === 'lead-sample'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                Lead Sample
               </span>
             </button>
             <button
@@ -1313,6 +1615,433 @@ export default function ClientDashboard() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'lead-sample' && (
+          <div className="space-y-6">
+            {/* Header with Actions */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Lead Samples</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Manage example leads that match your ICP targeting criteria
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    id="csv-upload"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={importLeads}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => document.getElementById('csv-upload')?.click()}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Import CSV
+                  </button>
+                  <button
+                    onClick={exportLeads}
+                    disabled={leadSamples.length === 0}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLeadForm(!showLeadForm);
+                      setEditingLead(null);
+                      setNewLead({
+                        name: '',
+                        firstName: '',
+                        lastName: '',
+                        title: '',
+                        company: '',
+                        email: '',
+                        website: '',
+                        phone: '',
+                        linkedinProfile: '',
+                        seniority: '',
+                        departments: '',
+                        lists: '',
+                        numEmployees: '',
+                        industry: '',
+                        leadState: '',
+                        country: '',
+                        companyAddress: '',
+                        technologies: '',
+                        revenue: '',
+                        accountExecutive: '',
+                        generalVertical: ''
+                      });
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Lead
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <span className="flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  {leadSamples.length} lead samples
+                </span>
+              </div>
+            </div>
+
+            {/* Add/Edit Lead Form */}
+            {showLeadForm && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  {editingLead ? 'Edit Lead Sample' : 'Add New Lead Sample'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newLead.firstName || ''}
+                      onChange={(e) => setNewLead({ ...newLead, firstName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="John"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newLead.lastName || ''}
+                      onChange={(e) => setNewLead({ ...newLead, lastName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Doe"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={newLead.email || ''}
+                      onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="john.doe@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={newLead.title || ''}
+                      onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="CEO"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                    <input
+                      type="text"
+                      value={newLead.company || ''}
+                      onChange={(e) => setNewLead({ ...newLead, company: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Acme Corp"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={newLead.phone || ''}
+                      onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                    <input
+                      type="url"
+                      value={newLead.website || ''}
+                      onChange={(e) => setNewLead({ ...newLead, website: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn Profile</label>
+                    <input
+                      type="url"
+                      value={newLead.linkedinProfile || ''}
+                      onChange={(e) => setNewLead({ ...newLead, linkedinProfile: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="https://linkedin.com/in/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Seniority</label>
+                    <input
+                      type="text"
+                      value={newLead.seniority || ''}
+                      onChange={(e) => setNewLead({ ...newLead, seniority: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="C-Level, VP, Director..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Departments</label>
+                    <input
+                      type="text"
+                      value={newLead.departments || ''}
+                      onChange={(e) => setNewLead({ ...newLead, departments: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Sales, Marketing..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Lists</label>
+                    <input
+                      type="text"
+                      value={newLead.lists || ''}
+                      onChange={(e) => setNewLead({ ...newLead, lists: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Target List 1, Campaign A..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1"># Employees</label>
+                    <input
+                      type="text"
+                      value={newLead.numEmployees || ''}
+                      onChange={(e) => setNewLead({ ...newLead, numEmployees: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="50-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                    <input
+                      type="text"
+                      value={newLead.industry || ''}
+                      onChange={(e) => setNewLead({ ...newLead, industry: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Technology, Healthcare..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                    <input
+                      type="text"
+                      value={newLead.leadState || ''}
+                      onChange={(e) => setNewLead({ ...newLead, leadState: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="CA, NY..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <input
+                      type="text"
+                      value={newLead.country || ''}
+                      onChange={(e) => setNewLead({ ...newLead, country: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="United States"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Address</label>
+                    <input
+                      type="text"
+                      value={newLead.companyAddress || ''}
+                      onChange={(e) => setNewLead({ ...newLead, companyAddress: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="123 Main St, Suite 100, City, State 12345"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Technologies</label>
+                    <input
+                      type="text"
+                      value={newLead.technologies || ''}
+                      onChange={(e) => setNewLead({ ...newLead, technologies: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Salesforce, HubSpot..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Revenue</label>
+                    <input
+                      type="text"
+                      value={newLead.revenue || ''}
+                      onChange={(e) => setNewLead({ ...newLead, revenue: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="$1M - $10M"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Executive</label>
+                    <input
+                      type="text"
+                      value={newLead.accountExecutive || ''}
+                      onChange={(e) => setNewLead({ ...newLead, accountExecutive: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Jane Smith"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">General Vertical</label>
+                    <input
+                      type="text"
+                      value={newLead.generalVertical || ''}
+                      onChange={(e) => setNewLead({ ...newLead, generalVertical: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="SaaS, Manufacturing..."
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowLeadForm(false);
+                      setEditingLead(null);
+                      setNewLead({
+                        name: '',
+                        firstName: '',
+                        lastName: '',
+                        title: '',
+                        company: '',
+                        email: '',
+                        website: '',
+                        phone: '',
+                        linkedinProfile: '',
+                        seniority: '',
+                        departments: '',
+                        lists: '',
+                        numEmployees: '',
+                        industry: '',
+                        leadState: '',
+                        country: '',
+                        companyAddress: '',
+                        technologies: '',
+                        revenue: '',
+                        accountExecutive: '',
+                        generalVertical: ''
+                      });
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={addOrUpdateLead}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
+                  >
+                    {editingLead ? 'Update Lead' : 'Add Lead'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Leads Table */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {leadSamples.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileSpreadsheet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Lead Samples Yet</h3>
+                  <p className="text-gray-600 mb-4">Add lead samples manually or import from a CSV file</p>
+                  <button
+                    onClick={() => setShowLeadForm(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Your First Lead
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"># Employees</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seniority</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LinkedIn</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {leadSamples.map((lead) => (
+                        <tr key={lead.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{lead.name}</div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{lead.title || '-'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{lead.company || '-'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{lead.email}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || '-'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{lead.industry || '-'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {[lead.leadState, lead.country].filter(Boolean).join(', ') || '-'}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{lead.numEmployees || '-'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{lead.revenue || '-'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{lead.seniority || '-'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {lead.linkedinProfile ? (
+                              <a 
+                                href={lead.linkedinProfile} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View
+                              </a>
+                            ) : '-'}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => editLead(lead)}
+                                className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                                title="Edit lead"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteLead(lead.id)}
+                                className="text-red-600 hover:text-red-900 transition-colors"
+                                title="Delete lead"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
