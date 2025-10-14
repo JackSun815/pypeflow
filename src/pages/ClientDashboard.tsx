@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -83,13 +83,40 @@ interface LeadSample {
   generalVertical: string;
 }
 
+interface EmailAccount {
+  id: string;
+  email: string;
+  domain: string;
+  status: 'active' | 'inactive';
+}
+
+interface SubjectVariant {
+  id: string;
+  label: string;
+  text: string;
+}
+
+interface EmailStep {
+  id: string;
+  stepNumber: number;
+  subjectVariants: SubjectVariant[];
+  emailBody: string;
+}
+
+interface EmailCampaign {
+  id: string;
+  name: string;
+  status: 'active' | 'inactive';
+  steps: EmailStep[];
+}
+
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'lead-sample' | 'cold-calling'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'lead-sample' | 'email' | 'cold-calling'>('overview');
   
   // Modal state for clickable metrics
   const [modalOpen, setModalOpen] = useState(false);
@@ -176,6 +203,13 @@ export default function ClientDashboard() {
     generalVertical: ''
   });
 
+  // Email state
+  const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
+  const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [newEmailAccount, setNewEmailAccount] = useState({ email: '', domain: '' });
+  const [editingCampaign, setEditingCampaign] = useState<EmailCampaign | null>(null);
+
   // Confetti function
   // const triggerConfetti = () => {
   //   confetti({
@@ -255,6 +289,8 @@ export default function ClientDashboard() {
         { id: '2', name: 'Call Script', content: 'Hello, this is [Name] from [Company]...' }
       ]));
       setLeadSamples(loadClientData('lead_samples', []));
+      setEmailAccounts(loadClientData('email_accounts', []));
+      setEmailCampaigns(loadClientData('email_campaigns', []));
     }
   }, [clientInfo]);
 
@@ -318,6 +354,18 @@ export default function ClientDashboard() {
       saveClientData('lead_samples', leadSamples);
     }
   }, [leadSamples, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('email_accounts', emailAccounts);
+    }
+  }, [emailAccounts, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('email_campaigns', emailCampaigns);
+    }
+  }, [emailCampaigns, clientInfo]);
 
   // Cold Calling helper functions
   const addSDR = () => {
@@ -593,6 +641,215 @@ export default function ClientDashboard() {
 
     reader.readAsText(file);
     event.target.value = ''; // Reset input
+  };
+
+  // Email helper functions
+  const addEmailAccount = () => {
+    if (!newEmailAccount.email || !newEmailAccount.domain) {
+      alert('Please enter both email and domain');
+      return;
+    }
+
+    const account: EmailAccount = {
+      id: Date.now().toString(),
+      email: newEmailAccount.email,
+      domain: newEmailAccount.domain,
+      status: 'active'
+    };
+
+    setEmailAccounts(prev => [...prev, account]);
+    setNewEmailAccount({ email: '', domain: '' });
+    setShowEmailForm(false);
+  };
+
+  const toggleEmailStatus = (id: string) => {
+    setEmailAccounts(prev => prev.map(acc =>
+      acc.id === id ? { ...acc, status: acc.status === 'active' ? 'inactive' : 'active' } : acc
+    ));
+  };
+
+  const deleteEmailAccount = (id: string) => {
+    if (confirm('Are you sure you want to delete this email account?')) {
+      setEmailAccounts(prev => prev.filter(acc => acc.id !== id));
+    }
+  };
+
+  const copyAllEmails = () => {
+    const emails = emailAccounts.map(acc => acc.email).join('\n');
+    navigator.clipboard.writeText(emails);
+    alert('All email addresses copied to clipboard!');
+  };
+
+  const createNewCampaign = () => {
+    const campaign: EmailCampaign = {
+      id: Date.now().toString(),
+      name: 'New Campaign',
+      status: 'inactive',
+      steps: [{
+        id: Date.now().toString() + '-step-1',
+        stepNumber: 1,
+        subjectVariants: [
+          { id: 'A', label: 'A', text: '' },
+          { id: 'B', label: 'B', text: '' },
+          { id: 'C', label: 'C', text: '' },
+          { id: 'D', label: 'D', text: '' },
+          { id: 'E', label: 'E', text: '' }
+        ],
+        emailBody: ''
+      }]
+    };
+    setEmailCampaigns(prev => [...prev, campaign]);
+    setEditingCampaign(campaign);
+  };
+
+  const updateCampaign = (campaignId: string, updates: Partial<EmailCampaign>) => {
+    setEmailCampaigns(prev => prev.map(c =>
+      c.id === campaignId ? { ...c, ...updates } : c
+    ));
+    if (editingCampaign?.id === campaignId) {
+      setEditingCampaign(prev => prev ? { ...prev, ...updates } : null);
+    }
+  };
+
+  const deleteCampaign = (id: string) => {
+    if (confirm('Are you sure you want to delete this campaign?')) {
+      setEmailCampaigns(prev => prev.filter(c => c.id !== id));
+      if (editingCampaign?.id === id) {
+        setEditingCampaign(null);
+      }
+    }
+  };
+
+  const addCampaignStep = (campaignId: string) => {
+    const campaign = emailCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const newStep: EmailStep = {
+      id: Date.now().toString() + '-step-' + (campaign.steps.length + 1),
+      stepNumber: campaign.steps.length + 1,
+      subjectVariants: [
+        { id: 'A', label: 'A', text: '' },
+        { id: 'B', label: 'B', text: '' },
+        { id: 'C', label: 'C', text: '' },
+        { id: 'D', label: 'D', text: '' },
+        { id: 'E', label: 'E', text: '' }
+      ],
+      emailBody: ''
+    };
+
+    updateCampaign(campaignId, {
+      steps: [...campaign.steps, newStep]
+    });
+  };
+
+  const updateCampaignStep = (campaignId: string, stepId: string, updates: Partial<EmailStep>) => {
+    const campaign = emailCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const updatedSteps = campaign.steps.map(step =>
+      step.id === stepId ? { ...step, ...updates } : step
+    );
+
+    updateCampaign(campaignId, { steps: updatedSteps });
+  };
+
+  const updateSubjectVariant = (campaignId: string, stepId: string, variantId: string, text: string) => {
+    const campaign = emailCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const updatedSteps = campaign.steps.map(step => {
+      if (step.id === stepId) {
+        return {
+          ...step,
+          subjectVariants: step.subjectVariants.map(v =>
+            v.id === variantId ? { ...v, text } : v
+          )
+        };
+      }
+      return step;
+    });
+
+    updateCampaign(campaignId, { steps: updatedSteps });
+  };
+
+  const deleteCampaignStep = (campaignId: string, stepId: string) => {
+    const campaign = emailCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+    
+    if (campaign.steps.length <= 1) {
+      alert('Campaign must have at least one step');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this step?')) {
+      const updatedSteps = campaign.steps
+        .filter(step => step.id !== stepId)
+        .map((step, index) => ({ ...step, stepNumber: index + 1 }));
+      
+      updateCampaign(campaignId, { steps: updatedSteps });
+    }
+  };
+
+  const addSubjectVariant = (campaignId: string, stepId: string) => {
+    const campaign = emailCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const step = campaign.steps.find(s => s.id === stepId);
+    if (!step) return;
+
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const usedLabels = step.subjectVariants.map(v => v.label);
+    const nextLabel = letters.split('').find(letter => !usedLabels.includes(letter));
+
+    if (!nextLabel) {
+      alert('Maximum number of variants reached');
+      return;
+    }
+
+    const newVariant: SubjectVariant = {
+      id: nextLabel,
+      label: nextLabel,
+      text: ''
+    };
+
+    const updatedSteps = campaign.steps.map(s => {
+      if (s.id === stepId) {
+        return {
+          ...s,
+          subjectVariants: [...s.subjectVariants, newVariant]
+        };
+      }
+      return s;
+    });
+
+    updateCampaign(campaignId, { steps: updatedSteps });
+  };
+
+  const deleteSubjectVariant = (campaignId: string, stepId: string, variantId: string) => {
+    const campaign = emailCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const step = campaign.steps.find(s => s.id === stepId);
+    if (!step) return;
+
+    if (step.subjectVariants.length <= 1) {
+      alert('Step must have at least one subject variant');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this variant?')) {
+      const updatedSteps = campaign.steps.map(s => {
+        if (s.id === stepId) {
+          return {
+            ...s,
+            subjectVariants: s.subjectVariants.filter(v => v.id !== variantId)
+          };
+        }
+        return s;
+      });
+
+      updateCampaign(campaignId, { steps: updatedSteps });
+    }
   };
 
   useEffect(() => {
@@ -915,6 +1172,20 @@ export default function ClientDashboard() {
               <span className="flex items-center gap-2">
                 <FileSpreadsheet className="w-4 h-4" />
                 Lead Sample
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('email')}
+              title="Manage email accounts, domains, and campaign sequences"
+              className={`${
+                activeTab === 'email'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                Email
               </span>
             </button>
             <button
@@ -2040,6 +2311,309 @@ export default function ClientDashboard() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'email' && (
+          <div className="space-y-6">
+            {/* Email Accounts & Domains Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Email Accounts & Domains</h2>
+                  <p className="text-sm text-gray-600 mt-1">Manage your email accounts and domains for campaigns</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={copyAllEmails}
+                    disabled={emailAccounts.length === 0}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy All Emails
+                  </button>
+                  <button
+                    onClick={() => setShowEmailForm(!showEmailForm)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Account
+                  </button>
+                </div>
+              </div>
+
+              {/* Add Email Form */}
+              {showEmailForm && (
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Email Account</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <input
+                        type="email"
+                        value={newEmailAccount.email}
+                        onChange={(e) => setNewEmailAccount({ ...newEmailAccount, email: e.target.value })}
+                        placeholder="pamela@chiefofficerai.com"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
+                      <input
+                        type="text"
+                        value={newEmailAccount.domain}
+                        onChange={(e) => setNewEmailAccount({ ...newEmailAccount, domain: e.target.value })}
+                        placeholder="chiefofficerai.com"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={addEmailAccount}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Add Account
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowEmailForm(false);
+                        setNewEmailAccount({ email: '', domain: '' });
+                      }}
+                      className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-yellow-900 mb-1">Important: Add these email addresses to your contacts</h4>
+                    <p className="text-sm text-yellow-800">
+                      To ensure you receive all forwarded emails and prevent them from being marked as spam, please add these email addresses to your contacts in Gmail or Outlook. This is especially important due to the lookalike domains being used.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Accounts Table */}
+              {emailAccounts.length === 0 ? (
+                <div className="text-center py-12">
+                  <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Email Accounts Yet</h3>
+                  <p className="text-gray-600 mb-4">Add your first email account to get started</p>
+                  <button
+                    onClick={() => setShowEmailForm(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Your First Account
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Account</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {emailAccounts.map((account) => (
+                        <tr key={account.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{account.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{account.domain}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => toggleEmailStatus(account.id)}
+                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                                account.status === 'active'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              <div className={`w-2 h-2 rounded-full ${
+                                account.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                              }`}></div>
+                              {account.status}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              onClick={() => deleteEmailAccount(account.id)}
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Email Campaigns Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Email Campaigns</h2>
+                  <p className="text-sm text-gray-600 mt-1">Create and manage email campaign sequences</p>
+                </div>
+                <button
+                  onClick={createNewCampaign}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all duration-200"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Campaign
+                </button>
+              </div>
+
+              {/* Campaign List */}
+              {emailCampaigns.length === 0 ? (
+                <div className="text-center py-12">
+                  <Send className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Campaigns Yet</h3>
+                  <p className="text-gray-600 mb-4">Create your first email campaign to get started</p>
+                  <button
+                    onClick={createNewCampaign}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Your First Campaign
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {emailCampaigns.map((campaign) => (
+                    <div key={campaign.id} className="border border-gray-200 rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="text"
+                            value={campaign.name}
+                            onChange={(e) => updateCampaign(campaign.id, { name: e.target.value })}
+                            className="text-xl font-bold text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none px-2 py-1"
+                          />
+                          <button
+                            onClick={() => updateCampaign(campaign.id, { 
+                              status: campaign.status === 'active' ? 'inactive' : 'active' 
+                            })}
+                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                              campaign.status === 'active'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            <div className={`w-2 h-2 rounded-full ${
+                              campaign.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                            }`}></div>
+                            {campaign.status}
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => deleteCampaign(campaign.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Campaign Steps */}
+                      {campaign.steps.map((step) => (
+                        <div key={step.id} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Step {step.stepNumber}</h3>
+                            {campaign.steps.length > 1 && (
+                              <button
+                                onClick={() => deleteCampaignStep(campaign.id, step.id)}
+                                className="text-red-600 hover:text-red-900 transition-colors"
+                                title="Delete step"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                          
+                          {/* Subject Lines A/B Testing */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="block text-sm font-medium text-gray-700">
+                                Subject Lines (A/B Testing)
+                              </label>
+                              <button
+                                onClick={() => addSubjectVariant(campaign.id, step.id)}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors"
+                              >
+                                <Plus className="w-3 h-3" />
+                                Add Variant
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              {step.subjectVariants.map((variant) => (
+                                <div key={variant.id} className="flex items-center gap-2">
+                                  <span className="w-8 h-8 flex items-center justify-center bg-indigo-600 text-white rounded font-semibold text-sm flex-shrink-0">
+                                    {variant.label}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={variant.text}
+                                    onChange={(e) => updateSubjectVariant(campaign.id, step.id, variant.id, e.target.value)}
+                                    placeholder={`Subject line variant ${variant.label}`}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  />
+                                  {step.subjectVariants.length > 1 && (
+                                    <button
+                                      onClick={() => deleteSubjectVariant(campaign.id, step.id, variant.id)}
+                                      className="text-red-600 hover:text-red-900 transition-colors flex-shrink-0"
+                                      title="Delete variant"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Email Body */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Email Body
+                            </label>
+                            <textarea
+                              value={step.emailBody}
+                              onChange={(e) => updateCampaignStep(campaign.id, step.id, { emailBody: e.target.value })}
+                              placeholder="Enter your email body content here..."
+                              rows={8}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Add Step Button */}
+                      <button
+                        onClick={() => addCampaignStep(campaign.id)}
+                        className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Step
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
