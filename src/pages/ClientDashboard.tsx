@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -56,6 +56,9 @@ interface Meeting {
   notes: string | null;
   sdr_name: string;
   created_at: string;
+  held_at?: string | null;
+  no_show?: boolean;
+  no_longer_interested?: boolean;
 }
 
 interface LeadSample {
@@ -215,6 +218,11 @@ export default function ClientDashboard() {
     const saved = localStorage.getItem('clientDashboard_theme');
     return saved === 'dark';
   });
+
+  // Collapsible sections state
+  const [isPastDueCollapsed, setIsPastDueCollapsed] = useState(false);
+  const [isUpcomingCollapsed, setIsUpcomingCollapsed] = useState(false);
+  const [isHeldCollapsed, setIsHeldCollapsed] = useState(false);
 
   // Confetti function
   // const triggerConfetti = () => {
@@ -380,6 +388,53 @@ export default function ClientDashboard() {
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  // Scroll to section function
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Update meeting status using the correct database fields
+  const updateMeetingStatus = async (meetingId: string, action: 'held' | 'cancelled' | 'no-show') => {
+    try {
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (action === 'held') {
+        // Mark as held: set held_at timestamp, clear no_show flag
+        updateData.held_at = new Date().toISOString();
+        updateData.no_show = false;
+        updateData.no_longer_interested = false;
+      } else if (action === 'no-show') {
+        // Mark as no-show: set no_show flag
+        updateData.no_show = true;
+      } else if (action === 'cancelled') {
+        // Mark as cancelled: set no_longer_interested flag
+        updateData.no_longer_interested = true;
+      }
+
+      const { error } = await supabase
+        .from('meetings')
+        .update(updateData)
+        .eq('id', meetingId as any);
+
+      if (error) throw error;
+
+      // Refresh meetings to get updated data
+      if (clientInfo) {
+        await fetchMeetings(clientInfo.id);
+      }
+
+      alert(`Meeting marked as ${action === 'held' ? 'held' : action === 'no-show' ? 'no-show' : 'cancelled'}`);
+    } catch (err) {
+      console.error('Error updating meeting status:', err);
+      alert('Failed to update meeting status. Please try again.');
+    }
   };
 
   // Cold Calling helper functions
@@ -942,6 +997,17 @@ export default function ClientDashboard() {
         sdr_name: meeting.profiles?.full_name || 'Unknown SDR'
       })) || [];
 
+      // Log meeting statuses for debugging
+      console.log('Fetched meetings with statuses:', meetingsWithSdrName.map((m: any) => ({
+        id: m.id,
+        contact: m.contact_full_name,
+        date: m.scheduled_date,
+        status: m.status,
+        held_at: m.held_at,
+        no_show: m.no_show,
+        no_longer_interested: m.no_longer_interested
+      })));
+
       setMeetings(meetingsWithSdrName);
     } catch (err) {
       console.error('Error fetching meetings:', err);
@@ -975,16 +1041,37 @@ export default function ClientDashboard() {
     );
   }
 
-  const upcomingMeetings = meetings.filter(meeting => 
-    new Date(meeting.scheduled_date) >= new Date() && meeting.status === 'pending'
-  );
+  // Categorize meetings more intelligently using database fields
+  const now = new Date();
+  
+  // Helper function to determine if a meeting is finalized
+  const isMeetingFinalized = (meeting: Meeting) => {
+    return !!(meeting.held_at || meeting.no_show || meeting.no_longer_interested);
+  };
+  
+  // Past due meetings that need action (past date but not finalized) - sorted with most overdue first
+  const pastDueMeetings = meetings
+    .filter(meeting => {
+      const meetingDate = new Date(meeting.scheduled_date);
+      return meetingDate < now && !isMeetingFinalized(meeting);
+    })
+    .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+
+  // Upcoming future meetings (future date and not finalized) - sorted with closest first
+  const upcomingMeetings = meetings
+    .filter(meeting => {
+      const meetingDate = new Date(meeting.scheduled_date);
+      return meetingDate >= now && !isMeetingFinalized(meeting);
+    })
+    .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+
+  // Completed meetings - includes meetings with held_at, no_show, or no_longer_interested - sorted with most recent first
+  const completedMeetings = meetings
+    .filter(meeting => isMeetingFinalized(meeting))
+    .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const confirmedMeetings = meetings.filter(meeting => 
     meeting.status === 'confirmed'
-  );
-
-  const pastMeetings = meetings.filter(meeting => 
-    new Date(meeting.scheduled_date) < new Date()
   );
 
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
@@ -1395,38 +1482,218 @@ export default function ClientDashboard() {
 
         {activeTab === 'meetings' && (
           <div className="space-y-6">
-            {/* Upcoming Meetings Section */}
-            <div className="bg-white rounded-lg shadow-md">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <CalendarDays className="w-5 h-5 text-blue-600" />
-                  </div>
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div 
+                onClick={() => pastDueMeetings.length > 0 && scrollToSection('past-due-section')}
+                className={`${cardBg} rounded-lg shadow-md p-4 border-l-4 border-orange-500 ${pastDueMeetings.length > 0 ? 'cursor-pointer hover:shadow-lg transform hover:scale-105' : ''} transition-all duration-200`}
+              >
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Upcoming Meetings</h3>
-                    <p className="text-sm text-gray-600 mt-1">{upcomingMeetings.length} meetings scheduled</p>
+                    <p className={`text-sm ${textSecondary}`}>Past Due</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>{pastDueMeetings.length}</p>
                   </div>
+                  <AlertCircle className="w-8 h-8 text-orange-500" />
                 </div>
               </div>
+              <div 
+                onClick={() => upcomingMeetings.length > 0 && scrollToSection('upcoming-section')}
+                className={`${cardBg} rounded-lg shadow-md p-4 border-l-4 border-blue-500 ${upcomingMeetings.length > 0 ? 'cursor-pointer hover:shadow-lg transform hover:scale-105' : ''} transition-all duration-200`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm ${textSecondary}`}>Upcoming</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>{upcomingMeetings.length}</p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-blue-500" />
+                </div>
+              </div>
+              <div 
+                onClick={() => completedMeetings.length > 0 && scrollToSection('held-section')}
+                className={`${cardBg} rounded-lg shadow-md p-4 border-l-4 border-green-500 ${completedMeetings.length > 0 ? 'cursor-pointer hover:shadow-lg transform hover:scale-105' : ''} transition-all duration-200`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm ${textSecondary}`}>Held</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>{completedMeetings.length}</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+              <div className={`${cardBg} rounded-lg shadow-md p-4 border-l-4 border-purple-500`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm ${textSecondary}`}>Total</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>{meetings.length}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-purple-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Past Due / Action Required Section */}
+            {pastDueMeetings.length > 0 && (
+              <div id="past-due-section" className={`${cardBg} rounded-lg shadow-md border-2 border-orange-300 scroll-mt-6`}>
+                <div 
+                  onClick={() => setIsPastDueCollapsed(!isPastDueCollapsed)}
+                  className={`p-6 border-b ${cardBorder} bg-gradient-to-r from-orange-50 to-red-50 ${isDarkMode ? 'from-orange-900/20 to-red-900/20' : ''} cursor-pointer hover:opacity-80 transition-opacity`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <AlertCircle className="w-5 h-5 text-orange-600 animate-pulse" />
+                      </div>
+                      <div>
+                        <h3 className={`text-lg font-semibold ${textPrimary} flex items-center gap-2`}>
+                          Action Required - Past Due Meetings
+                          <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full">{pastDueMeetings.length}</span>
+                        </h3>
+                        <p className={`text-sm ${textSecondary} mt-1`}>Please update the status of these past meetings</p>
+                      </div>
+                    </div>
+                    <button className={`p-2 hover:bg-orange-100 rounded-lg transition-colors ${textPrimary}`}>
+                      {isPastDueCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                {!isPastDueCollapsed && (
+                <div className="p-6">
+                  {pastDueMeetings.map((meeting) => (
+                    <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-gray-700/50' : 'bg-gradient-to-r from-orange-50/50 to-white'}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`p-2 rounded-full ${isDarkMode ? 'bg-orange-900/50' : 'bg-orange-100'}`}>
+                              <User className="w-4 h-4 text-orange-600" />
+                            </div>
+                            <div>
+                              <h4 className={`text-lg font-semibold ${textPrimary}`}>
+                                {meeting.contact_full_name || 'Meeting'}
+                              </h4>
+                              <div className="flex items-center gap-4 mt-1">
+                                <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
+                                  <Calendar className="w-3 h-3" />
+                                  {new Date(meeting.scheduled_date).toLocaleDateString()}
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </span>
+                                <span className="text-xs text-orange-600 font-semibold">
+                                  ({Math.floor((now.getTime() - new Date(meeting.scheduled_date).getTime()) / (1000 * 60 * 60 * 24))} days ago)
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {meeting.contact_email && (
+                              <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                                <Mail className="w-4 h-4 text-gray-400" />
+                                <span className="font-medium">Email:</span>
+                                <span>{meeting.contact_email}</span>
+                              </div>
+                            )}
+                            {meeting.company && (
+                              <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                                <Building className="w-4 h-4 text-gray-400" />
+                                <span className="font-medium">Company:</span>
+                                <span>{meeting.company}</span>
+                              </div>
+                            )}
+                            <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                              <Users className="w-4 h-4 text-gray-400" />
+                              <span className="font-medium">SDR:</span>
+                              <span>{meeting.sdr_name}</span>
+                            </div>
+                          </div>
+                          
+                          {meeting.notes && (
+                            <div className={`mt-3 p-3 rounded-lg border-l-4 border-orange-400 ${isDarkMode ? 'bg-gray-600/50' : 'bg-gray-50'}`}>
+                              <p className={`text-sm ${textSecondary} leading-relaxed`}>
+                                <span className={`font-medium ${textPrimary}`}>Notes:</span> {meeting.notes}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div className="mt-4 flex items-center gap-3">
+                            <p className={`text-sm font-medium ${textPrimary}`}>Update Status:</p>
+                            <button
+                              onClick={() => updateMeetingStatus(meeting.id, 'held')}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Meeting Held
+                            </button>
+                            <button
+                              onClick={() => updateMeetingStatus(meeting.id, 'no-show')}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors"
+                            >
+                              <AlertTriangle className="w-4 h-4" />
+                              No-Show
+                            </button>
+                            <button
+                              onClick={() => updateMeetingStatus(meeting.id, 'cancelled')}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                              Cancelled
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                )}
+              </div>
+            )}
+
+            {/* Upcoming Meetings Section */}
+            <div id="upcoming-section" className={`${cardBg} rounded-lg shadow-md scroll-mt-6`}>
+              <div 
+                onClick={() => setIsUpcomingCollapsed(!isUpcomingCollapsed)}
+                className={`p-6 border-b ${cardBorder} cursor-pointer hover:opacity-80 transition-opacity`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-50'}`}>
+                      <CalendarDays className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-semibold ${textPrimary}`}>Upcoming Meetings</h3>
+                      <p className={`text-sm ${textSecondary} mt-1`}>{upcomingMeetings.length} meetings scheduled</p>
+                    </div>
+                  </div>
+                  <button className={`p-2 hover:bg-blue-100 rounded-lg transition-colors ${textPrimary}`}>
+                    {isUpcomingCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              {!isUpcomingCollapsed && (
               <div className="p-6">
                 {upcomingMeetings.map((meeting) => (
-                  <div key={meeting.id} className="border border-gray-200 rounded-xl p-5 mb-4 hover:shadow-lg hover:border-blue-300 transition-all duration-200 bg-gradient-to-r from-blue-50/30 to-white">
+                  <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-gray-700/50 hover:border-blue-400' : 'bg-gradient-to-r from-blue-50/30 to-white hover:border-blue-300'}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="p-2 bg-blue-100 rounded-full">
+                          <div className={`p-2 rounded-full ${isDarkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
                             <User className="w-4 h-4 text-blue-600" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-semibold text-gray-900">
+                            <h4 className={`text-lg font-semibold ${textPrimary}`}>
                               {meeting.contact_full_name || 'Meeting'}
                             </h4>
                             <div className="flex items-center gap-4 mt-1">
-                              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                              <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
                                 <Calendar className="w-3 h-3" />
                                 {new Date(meeting.scheduled_date).toLocaleDateString()}
                               </span>
-                              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                              <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
                                 <Clock className="w-3 h-3" />
                                 {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
                                   hour: '2-digit', 
@@ -1439,20 +1706,20 @@ export default function ClientDashboard() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           {meeting.contact_email && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                               <Mail className="w-4 h-4 text-gray-400" />
                               <span className="font-medium">Email:</span>
                               <span>{meeting.contact_email}</span>
                             </div>
                           )}
                           {meeting.company && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                               <Building className="w-4 h-4 text-gray-400" />
                               <span className="font-medium">Company:</span>
                               <span>{meeting.company}</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                             <Users className="w-4 h-4 text-gray-400" />
                             <span className="font-medium">SDR:</span>
                             <span>{meeting.sdr_name}</span>
@@ -1460,9 +1727,9 @@ export default function ClientDashboard() {
                         </div>
                         
                         {meeting.notes && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-200">
-                            <p className="text-sm text-gray-700 leading-relaxed">
-                              <span className="font-medium text-gray-900">Notes:</span> {meeting.notes}
+                          <div className={`mt-3 p-3 rounded-lg border-l-4 border-blue-400 ${isDarkMode ? 'bg-gray-600/50' : 'bg-gray-50'}`}>
+                            <p className={`text-sm ${textSecondary} leading-relaxed`}>
+                              <span className={`font-medium ${textPrimary}`}>Notes:</span> {meeting.notes}
                             </p>
                           </div>
                         )}
@@ -1486,48 +1753,58 @@ export default function ClientDashboard() {
                 ))}
                 {upcomingMeetings.length === 0 && (
                   <div className="text-center py-12">
-                    <div className="p-4 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                      <Calendar className="w-8 h-8 text-gray-400" />
+                    <div className={`p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <Calendar className={`w-8 h-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                     </div>
-                    <p className="text-gray-500 font-medium">No upcoming meetings scheduled</p>
-                    <p className="text-sm text-gray-400 mt-1">New meetings will appear here once scheduled</p>
+                    <p className={`font-medium ${textSecondary}`}>No upcoming meetings scheduled</p>
+                    <p className={`text-sm mt-1 ${textTertiary}`}>New meetings will appear here once scheduled</p>
                   </div>
                 )}
               </div>
+              )}
             </div>
 
-            {/* Meeting History Section */}
-            <div className="bg-white rounded-lg shadow-md">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-50 rounded-lg">
-                    <History className="w-5 h-5 text-gray-600" />
+            {/* Held Meetings History Section */}
+            <div id="held-section" className={`${cardBg} rounded-lg shadow-md scroll-mt-6`}>
+              <div 
+                onClick={() => setIsHeldCollapsed(!isHeldCollapsed)}
+                className={`p-6 border-b ${cardBorder} cursor-pointer hover:opacity-80 transition-opacity`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-900/50' : 'bg-green-50'}`}>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-semibold ${textPrimary}`}>Held Meetings</h3>
+                      <p className={`text-sm ${textSecondary} mt-1`}>{completedMeetings.length} meetings held, cancelled, or no-show</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Meeting History</h3>
-                    <p className="text-sm text-gray-600 mt-1">{pastMeetings.length} past meetings</p>
-                  </div>
+                  <button className={`p-2 hover:bg-green-100 rounded-lg transition-colors ${textPrimary}`}>
+                    {isHeldCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
+              {!isHeldCollapsed && (
               <div className="p-6">
-                {pastMeetings.map((meeting) => (
-                  <div key={meeting.id} className="border border-gray-200 rounded-xl p-5 mb-4 hover:shadow-lg hover:border-gray-300 transition-all duration-200 bg-gradient-to-r from-gray-50/30 to-white">
+                {completedMeetings.map((meeting) => (
+                  <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-gray-700/50 hover:border-gray-500' : 'bg-gradient-to-r from-gray-50/30 to-white hover:border-gray-300'}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="p-2 bg-gray-100 rounded-full">
-                            <User className="w-4 h-4 text-gray-600" />
+                          <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                            <User className={`w-4 h-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
                           </div>
                           <div>
-                            <h4 className="text-lg font-semibold text-gray-900">
+                            <h4 className={`text-lg font-semibold ${textPrimary}`}>
                               {meeting.contact_full_name || 'Meeting'}
                             </h4>
                             <div className="flex items-center gap-4 mt-1">
-                              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                              <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
                                 <Calendar className="w-3 h-3" />
                                 {new Date(meeting.scheduled_date).toLocaleDateString()}
                               </span>
-                              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                              <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
                                 <Clock className="w-3 h-3" />
                                 {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
                                   hour: '2-digit', 
@@ -1540,20 +1817,20 @@ export default function ClientDashboard() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           {meeting.contact_email && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                               <Mail className="w-4 h-4 text-gray-400" />
                               <span className="font-medium">Email:</span>
                               <span>{meeting.contact_email}</span>
                             </div>
                           )}
                           {meeting.company && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                               <Building className="w-4 h-4 text-gray-400" />
                               <span className="font-medium">Company:</span>
                               <span>{meeting.company}</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                             <Users className="w-4 h-4 text-gray-400" />
                             <span className="font-medium">SDR:</span>
                             <span>{meeting.sdr_name}</span>
@@ -1561,40 +1838,66 @@ export default function ClientDashboard() {
                         </div>
                         
                         {meeting.notes && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-200">
-                            <p className="text-sm text-gray-700 leading-relaxed">
-                              <span className="font-medium text-gray-900">Notes:</span> {meeting.notes}
+                          <div className={`mt-3 p-3 rounded-lg border-l-4 ${isDarkMode ? 'bg-gray-600/50 border-gray-500' : 'bg-gray-50 border-gray-200'}`}>
+                            <p className={`text-sm ${textSecondary} leading-relaxed`}>
+                              <span className={`font-medium ${textPrimary}`}>Notes:</span> {meeting.notes}
                             </p>
                           </div>
                         )}
                       </div>
                       <div className="ml-4 flex flex-col items-end gap-2">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
-                          meeting.status === 'confirmed' 
-                            ? 'bg-green-100 text-green-800 border border-green-200'
-                            : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                        }`}>
-                          {meeting.status === 'confirmed' ? (
-                            <CheckCircle className="w-4 h-4" />
-                          ) : (
-                            <AlertTriangle className="w-4 h-4" />
-                          )}
-                          {meeting.status}
-                        </span>
+                        {(() => {
+                          // Derive display status from database fields
+                          const displayStatus = meeting.held_at 
+                            ? 'held' 
+                            : meeting.no_show 
+                            ? 'no-show' 
+                            : meeting.no_longer_interested 
+                            ? 'cancelled' 
+                            : meeting.status;
+                          
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+                              displayStatus === 'held' 
+                                ? 'bg-green-100 text-green-800 border border-green-200'
+                                : displayStatus === 'cancelled'
+                                ? 'bg-red-100 text-red-800 border border-red-200'
+                                : displayStatus === 'no-show'
+                                ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                : displayStatus === 'confirmed'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                : displayStatus === 'pending'
+                                ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                                : 'bg-gray-100 text-gray-800 border border-gray-200'
+                            }`}>
+                              {displayStatus === 'held' ? (
+                                <CheckCircle className="w-4 h-4" />
+                              ) : displayStatus === 'cancelled' ? (
+                                <X className="w-4 h-4" />
+                              ) : displayStatus === 'confirmed' ? (
+                                <CheckCircle className="w-4 h-4" />
+                              ) : (
+                                <AlertTriangle className="w-4 h-4" />
+                              )}
+                              {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1).replace('-', ' ')}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
                 ))}
-                {pastMeetings.length === 0 && (
+                {completedMeetings.length === 0 && (
                   <div className="text-center py-12">
-                    <div className="p-4 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                      <History className="w-8 h-8 text-gray-400" />
+                    <div className={`p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <CheckCircle className={`w-8 h-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                     </div>
-                    <p className="text-gray-500 font-medium">No past meetings found</p>
-                    <p className="text-sm text-gray-400 mt-1">Held meetings will appear here</p>
+                    <p className={`font-medium ${textSecondary}`}>No held meetings yet</p>
+                    <p className={`text-sm mt-1 ${textTertiary}`}>Held meetings will appear here</p>
                   </div>
                 )}
               </div>
+              )}
             </div>
           </div>
         )}
@@ -1603,7 +1906,7 @@ export default function ClientDashboard() {
           <div className="bg-white rounded-lg shadow-md">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Meeting Calendar</h3>
-              <p className="text-sm text-gray-600 mt-1">View all meetings in calendar format</p>
+              <p className="text-sm text-gray-600 mt-1">View all meetings in the calendar</p>
             </div>
             <div className="p-6">
               <CalendarView 
