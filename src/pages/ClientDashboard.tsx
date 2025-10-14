@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, History, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -210,6 +210,12 @@ export default function ClientDashboard() {
   const [newEmailAccount, setNewEmailAccount] = useState({ email: '', domain: '' });
   const [editingCampaign, setEditingCampaign] = useState<EmailCampaign | null>(null);
 
+  // Theme state
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('clientDashboard_theme');
+    return saved === 'dark';
+  });
+
   // Confetti function
   // const triggerConfetti = () => {
   //   confetti({
@@ -366,6 +372,15 @@ export default function ClientDashboard() {
       saveClientData('email_campaigns', emailCampaigns);
     }
   }, [emailCampaigns, clientInfo]);
+
+  // Save theme preference
+  useEffect(() => {
+    localStorage.setItem('clientDashboard_theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
   // Cold Calling helper functions
   const addSDR = () => {
@@ -974,10 +989,25 @@ export default function ClientDashboard() {
 
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
+  // Dark mode helper classes
+  const cardBg = isDarkMode ? 'bg-gray-800' : 'bg-white';
+  const cardBorder = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+  const textPrimary = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const textSecondary = isDarkMode ? 'text-gray-400' : 'text-gray-600';
+  const textTertiary = isDarkMode ? 'text-gray-500' : 'text-gray-500';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className={`min-h-screen transition-colors duration-200 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-purple-50 via-white to-blue-50'
+    }`}>
       {/* Header */}
-      <header className="bg-gradient-to-r from-white via-purple-50/30 to-white shadow-lg border-b border-purple-100 relative overflow-hidden">
+      <header className={`shadow-lg border-b relative overflow-hidden transition-colors duration-200 ${
+        isDarkMode
+          ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 border-gray-600'
+          : 'bg-gradient-to-r from-white via-purple-50/30 to-white border-purple-100'
+      }`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-100/20 to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-5">
@@ -1064,18 +1094,41 @@ export default function ClientDashboard() {
               
               <div className="flex flex-col">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-px bg-gradient-to-b from-purple-300 to-purple-500"></div>
+                  <div className={`h-8 w-px ${
+                    isDarkMode
+                      ? 'bg-gradient-to-b from-gray-500 to-gray-400'
+                      : 'bg-gradient-to-b from-purple-300 to-purple-500'
+                  }`}></div>
                   <div className="flex flex-col">
-                    <p className="text-lg font-semibold text-gray-800">Client Dashboard</p>
-                    <p className="text-sm text-gray-500 font-medium">{currentMonth}</p>
+                    <p className={`text-lg font-semibold ${
+                      isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                    }`}>Client Dashboard</p>
+                    <p className={`text-sm font-medium ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>{currentMonth}</p>
                   </div>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  isDarkMode
+                    ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600'
+                    : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                }`}
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
               <div 
-                className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 group bg-gradient-to-r from-purple-100 to-blue-100 px-4 py-2 rounded-xl border border-purple-200"
+                className={`flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 group px-4 py-2 rounded-xl border ${
+                  isDarkMode
+                    ? 'bg-gradient-to-r from-gray-700 to-gray-600 border-gray-500'
+                    : 'bg-gradient-to-r from-purple-100 to-blue-100 border-purple-200'
+                }`}
                 onClick={() => {
                   // Easter egg: confetti and rocket animation
                   confetti({
@@ -1095,8 +1148,16 @@ export default function ClientDashboard() {
                 }}
                 title="🎉 Click for a surprise!"
               >
-                <span className="text-sm font-semibold text-purple-700 group-hover:text-purple-800 transition-colors">{clientInfo?.name}</span>
-                <Rocket className="w-4 h-4 text-purple-600 group-hover:text-purple-700 transition-colors rocket-easter-egg-client" />
+                <span className={`text-sm font-semibold transition-colors ${
+                  isDarkMode 
+                    ? 'text-gray-200 group-hover:text-white' 
+                    : 'text-purple-700 group-hover:text-purple-800'
+                }`}>{clientInfo?.name}</span>
+                <Rocket className={`w-4 h-4 transition-colors rocket-easter-egg-client ${
+                  isDarkMode
+                    ? 'text-gray-300 group-hover:text-gray-100'
+                    : 'text-purple-600 group-hover:text-purple-700'
+                }`} />
               </div>
             </div>
           </div>
@@ -1105,14 +1166,16 @@ export default function ClientDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
-        <div className="mb-6 border-b border-gray-200">
+        <div className={`mb-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('overview')}
               className={`${
                 activeTab === 'overview'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
@@ -1125,7 +1188,9 @@ export default function ClientDashboard() {
               className={`${
                 activeTab === 'meetings'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
@@ -1138,7 +1203,9 @@ export default function ClientDashboard() {
               className={`${
                 activeTab === 'calendar'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
@@ -1152,7 +1219,9 @@ export default function ClientDashboard() {
               className={`${
                 activeTab === 'icp'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
@@ -1166,7 +1235,9 @@ export default function ClientDashboard() {
               className={`${
                 activeTab === 'lead-sample'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
@@ -1180,7 +1251,9 @@ export default function ClientDashboard() {
               className={`${
                 activeTab === 'email'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
@@ -1194,7 +1267,9 @@ export default function ClientDashboard() {
               className={`${
                 activeTab === 'cold-calling'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
@@ -1211,63 +1286,63 @@ export default function ClientDashboard() {
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div 
-                className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
+                className={`${cardBg} rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-blue-200 transition-all duration-200 border-2 border-transparent`}
                 onClick={() => handleMetricClick('upcoming')}
                 title="Click to view upcoming meetings"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Upcoming Meetings</h3>
+                  <h3 className={`text-lg font-semibold ${textPrimary} flex items-center gap-2`}>Upcoming Meetings</h3>
                   <Calendar className="w-6 h-6 text-blue-500" />
                 </div>
-                <div className="space-y-1 bg-blue-50 p-3 rounded-md">
+                <div className={`space-y-1 p-3 rounded-md ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
                   <div className="flex items-baseline space-x-2">
                     <span className="text-3xl font-bold text-blue-700">{upcomingMeetings.length}</span>
-                    <span className="text-sm text-gray-600">scheduled</span>
+                    <span className={`text-sm ${textSecondary}`}>scheduled</span>
                   </div>
                 </div>
               </div>
 
               <div 
-                className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+                className={`${cardBg} rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent`}
                 onClick={() => handleMetricClick('confirmed')}
                 title="Click to view confirmed meetings"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Confirmed Meetings</h3>
+                  <h3 className={`text-lg font-semibold ${textPrimary} flex items-center gap-2`}>Confirmed Meetings</h3>
                   <Clock className="w-6 h-6 text-green-500" />
                 </div>
-                <div className="space-y-1 bg-green-50 p-3 rounded-md">
+                <div className={`space-y-1 p-3 rounded-md ${isDarkMode ? 'bg-green-900/30' : 'bg-green-50'}`}>
                   <div className="flex items-baseline space-x-2">
                     <span className="text-3xl font-bold text-green-700">{confirmedMeetings.length}</span>
-                    <span className="text-sm text-gray-600">confirmed</span>
+                    <span className={`text-sm ${textSecondary}`}>confirmed</span>
                   </div>
                 </div>
               </div>
 
               <div 
-                className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-purple-200 transition-all duration-200 border-2 border-transparent"
+                className={`${cardBg} rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-purple-200 transition-all duration-200 border-2 border-transparent`}
                 onClick={() => handleMetricClick('total')}
                 title="Click to view all meetings"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Total Meetings</h3>
+                  <h3 className={`text-lg font-semibold ${textPrimary} flex items-center gap-2`}>Total Meetings</h3>
                   <Users className="w-6 h-6 text-purple-500" />
                 </div>
-                <div className="space-y-1 bg-purple-50 p-3 rounded-md">
+                <div className={`space-y-1 p-3 rounded-md ${isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
                   <div className="flex items-baseline space-x-2">
                     <span className="text-3xl font-bold text-purple-700">{meetings.length}</span>
-                    <span className="text-sm text-gray-600">total</span>
+                    <span className={`text-sm ${textSecondary}`}>total</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Recent Meetings - SDR Style */}
-            <div className="bg-white rounded-lg shadow-md">
-              <div className="p-4 border-b border-gray-200">
+            <div className={`${cardBg} rounded-lg shadow-md`}>
+              <div className={`p-4 border-b ${cardBorder}`}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Meetings</h3>
-                  <span className="text-sm text-gray-500">{meetings.slice(0, 5).length} meetings</span>
+                  <h3 className={`text-lg font-semibold ${textPrimary}`}>Recent Meetings</h3>
+                  <span className={`text-sm ${textTertiary}`}>{meetings.slice(0, 5).length} meetings</span>
                 </div>
               </div>
               <div className="p-4 max-h-[400px] overflow-y-auto">
