@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -113,13 +113,73 @@ interface EmailCampaign {
   steps: EmailStep[];
 }
 
+interface LinkedInAccount {
+  id: string;
+  profileName: string;
+  profileUrl: string;
+  dailyLimit: number;
+  weeklyLimit: number;
+  status: 'active' | 'inactive';
+  activeCampaign?: string;
+}
+
+interface MessageVariant {
+  id: string;
+  label: string;
+  text: string;
+}
+
+interface LinkedInStep {
+  id: string;
+  stepNumber: number;
+  messageVariants: MessageVariant[];
+}
+
+interface LinkedInCampaign {
+  id: string;
+  name: string;
+  status: 'active' | 'inactive';
+  steps: LinkedInStep[];
+}
+
+interface CallSequence {
+  id: string;
+  name: string;
+  dials: number;
+  connects: number;
+  conversations: number;
+  leads: number;
+  meetings: number;
+}
+
+interface EmailSequence {
+  id: string;
+  name: string;
+  totalSent: number;
+  opened: number;
+  replied: number;
+  clicked: number;
+  bounced: number;
+  meetings: number;
+}
+
+interface LinkedInSequence {
+  id: string;
+  name: string;
+  connectionRequests: number;
+  connections: number;
+  replies: number;
+  leads: number;
+  meetings: number;
+}
+
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'lead-sample' | 'email' | 'cold-calling'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'lead-sample' | 'email' | 'linkedin' | 'analytics' | 'cold-calling'>('overview');
   
   // Modal state for clickable metrics
   const [modalOpen, setModalOpen] = useState(false);
@@ -213,6 +273,25 @@ export default function ClientDashboard() {
   const [newEmailAccount, setNewEmailAccount] = useState({ email: '', domain: '' });
   const [editingCampaign, setEditingCampaign] = useState<EmailCampaign | null>(null);
 
+  // LinkedIn state
+  const [linkedInAccounts, setLinkedInAccounts] = useState<LinkedInAccount[]>([]);
+  const [linkedInCampaigns, setLinkedInCampaigns] = useState<LinkedInCampaign[]>([]);
+  const [showLinkedInForm, setShowLinkedInForm] = useState(false);
+  const [newLinkedInAccount, setNewLinkedInAccount] = useState({ 
+    profileName: '', 
+    profileUrl: '', 
+    dailyLimit: 50, 
+    weeklyLimit: 250 
+  });
+  const [editingLinkedInCampaign, setEditingLinkedInCampaign] = useState<LinkedInCampaign | null>(null);
+
+  // Analytics state
+  const [analyticsTab, setAnalyticsTab] = useState<'calls' | 'emails' | 'linkedin'>('calls');
+  const [callSequences, setCallSequences] = useState<CallSequence[]>([]);
+  const [emailSequences, setEmailSequences] = useState<EmailSequence[]>([]);
+  const [linkedInSequences, setLinkedInSequences] = useState<LinkedInSequence[]>([]);
+  const [showSequenceForm, setShowSequenceForm] = useState(false);
+
   // Theme state
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('clientDashboard_theme');
@@ -305,6 +384,11 @@ export default function ClientDashboard() {
       setLeadSamples(loadClientData('lead_samples', []));
       setEmailAccounts(loadClientData('email_accounts', []));
       setEmailCampaigns(loadClientData('email_campaigns', []));
+      setLinkedInAccounts(loadClientData('linkedin_accounts', []));
+      setLinkedInCampaigns(loadClientData('linkedin_campaigns', []));
+      setCallSequences(loadClientData('call_sequences', []));
+      setEmailSequences(loadClientData('email_sequences', []));
+      setLinkedInSequences(loadClientData('linkedin_sequences', []));
     }
   }, [clientInfo]);
 
@@ -380,6 +464,36 @@ export default function ClientDashboard() {
       saveClientData('email_campaigns', emailCampaigns);
     }
   }, [emailCampaigns, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('linkedin_accounts', linkedInAccounts);
+    }
+  }, [linkedInAccounts, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('linkedin_campaigns', linkedInCampaigns);
+    }
+  }, [linkedInCampaigns, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('call_sequences', callSequences);
+    }
+  }, [callSequences, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('email_sequences', emailSequences);
+    }
+  }, [emailSequences, clientInfo]);
+
+  useEffect(() => {
+    if (clientInfo) {
+      saveClientData('linkedin_sequences', linkedInSequences);
+    }
+  }, [linkedInSequences, clientInfo]);
 
   // Save theme preference
   useEffect(() => {
@@ -922,6 +1036,264 @@ export default function ClientDashboard() {
     }
   };
 
+  // LinkedIn helper functions
+  const addLinkedInAccount = () => {
+    if (!newLinkedInAccount.profileName || !newLinkedInAccount.profileUrl) {
+      alert('Please enter both profile name and URL');
+      return;
+    }
+
+    const account: LinkedInAccount = {
+      id: Date.now().toString(),
+      profileName: newLinkedInAccount.profileName,
+      profileUrl: newLinkedInAccount.profileUrl,
+      dailyLimit: newLinkedInAccount.dailyLimit,
+      weeklyLimit: newLinkedInAccount.weeklyLimit,
+      status: 'active'
+    };
+
+    setLinkedInAccounts(prev => [...prev, account]);
+    setNewLinkedInAccount({ profileName: '', profileUrl: '', dailyLimit: 50, weeklyLimit: 250 });
+    setShowLinkedInForm(false);
+  };
+
+  const toggleLinkedInStatus = (id: string) => {
+    setLinkedInAccounts(prev => prev.map(acc =>
+      acc.id === id ? { ...acc, status: acc.status === 'active' ? 'inactive' : 'active' } : acc
+    ));
+  };
+
+  const deleteLinkedInAccount = (id: string) => {
+    if (confirm('Are you sure you want to delete this LinkedIn account?')) {
+      setLinkedInAccounts(prev => prev.filter(acc => acc.id !== id));
+    }
+  };
+
+  const createNewLinkedInCampaign = () => {
+    const campaign: LinkedInCampaign = {
+      id: Date.now().toString(),
+      name: 'New LinkedIn Campaign',
+      status: 'inactive',
+      steps: [{
+        id: Date.now().toString() + '-step-1',
+        stepNumber: 1,
+        messageVariants: [
+          { id: 'A', label: 'A', text: '' }
+        ]
+      }]
+    };
+    setLinkedInCampaigns(prev => [...prev, campaign]);
+    setEditingLinkedInCampaign(campaign);
+  };
+
+  const updateLinkedInCampaign = (campaignId: string, updates: Partial<LinkedInCampaign>) => {
+    setLinkedInCampaigns(prev => prev.map(c =>
+      c.id === campaignId ? { ...c, ...updates } : c
+    ));
+    if (editingLinkedInCampaign?.id === campaignId) {
+      setEditingLinkedInCampaign(prev => prev ? { ...prev, ...updates } : null);
+    }
+  };
+
+  const deleteLinkedInCampaign = (id: string) => {
+    if (confirm('Are you sure you want to delete this campaign?')) {
+      setLinkedInCampaigns(prev => prev.filter(c => c.id !== id));
+      if (editingLinkedInCampaign?.id === id) {
+        setEditingLinkedInCampaign(null);
+      }
+    }
+  };
+
+  const addLinkedInCampaignStep = (campaignId: string) => {
+    const campaign = linkedInCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const newStep: LinkedInStep = {
+      id: Date.now().toString() + '-step-' + (campaign.steps.length + 1),
+      stepNumber: campaign.steps.length + 1,
+      messageVariants: [
+        { id: 'A', label: 'A', text: '' }
+      ]
+    };
+
+    updateLinkedInCampaign(campaignId, {
+      steps: [...campaign.steps, newStep]
+    });
+  };
+
+  const updateLinkedInMessageVariant = (campaignId: string, stepId: string, variantId: string, text: string) => {
+    const campaign = linkedInCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const updatedSteps = campaign.steps.map(step => {
+      if (step.id === stepId) {
+        return {
+          ...step,
+          messageVariants: step.messageVariants.map(v =>
+            v.id === variantId ? { ...v, text } : v
+          )
+        };
+      }
+      return step;
+    });
+
+    updateLinkedInCampaign(campaignId, { steps: updatedSteps });
+  };
+
+  const deleteLinkedInStep = (campaignId: string, stepId: string) => {
+    const campaign = linkedInCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+    
+    if (campaign.steps.length <= 1) {
+      alert('Campaign must have at least one step');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this step?')) {
+      const updatedSteps = campaign.steps
+        .filter(step => step.id !== stepId)
+        .map((step, index) => ({ ...step, stepNumber: index + 1 }));
+      
+      updateLinkedInCampaign(campaignId, { steps: updatedSteps });
+    }
+  };
+
+  const addLinkedInMessageVariant = (campaignId: string, stepId: string) => {
+    const campaign = linkedInCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const step = campaign.steps.find(s => s.id === stepId);
+    if (!step) return;
+
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const usedLabels = step.messageVariants.map(v => v.label);
+    const nextLabel = letters.split('').find(letter => !usedLabels.includes(letter));
+
+    if (!nextLabel) {
+      alert('Maximum number of variants reached');
+      return;
+    }
+
+    const newVariant: MessageVariant = {
+      id: nextLabel,
+      label: nextLabel,
+      text: ''
+    };
+
+    const updatedSteps = campaign.steps.map(s => {
+      if (s.id === stepId) {
+        return {
+          ...s,
+          messageVariants: [...s.messageVariants, newVariant]
+        };
+      }
+      return s;
+    });
+
+    updateLinkedInCampaign(campaignId, { steps: updatedSteps });
+  };
+
+  const deleteLinkedInMessageVariant = (campaignId: string, stepId: string, variantId: string) => {
+    const campaign = linkedInCampaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    const step = campaign.steps.find(s => s.id === stepId);
+    if (!step) return;
+
+    if (step.messageVariants.length <= 1) {
+      alert('Step must have at least one message variant');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this variant?')) {
+      const updatedSteps = campaign.steps.map(s => {
+        if (s.id === stepId) {
+          return {
+            ...s,
+            messageVariants: s.messageVariants.filter(v => v.id !== variantId)
+          };
+        }
+        return s;
+      });
+
+      updateLinkedInCampaign(campaignId, { steps: updatedSteps });
+    }
+  };
+
+  // Analytics helper functions
+  const addCallSequence = (sequence: Partial<CallSequence>) => {
+    const newSequence: CallSequence = {
+      id: Date.now().toString(),
+      name: sequence.name || 'New Sequence',
+      dials: sequence.dials || 0,
+      connects: sequence.connects || 0,
+      conversations: sequence.conversations || 0,
+      leads: sequence.leads || 0,
+      meetings: sequence.meetings || 0
+    };
+    setCallSequences(prev => [...prev, newSequence]);
+    setShowSequenceForm(false);
+  };
+
+  const updateCallSequence = (id: string, updates: Partial<CallSequence>) => {
+    setCallSequences(prev => prev.map(seq => seq.id === id ? { ...seq, ...updates } : seq));
+  };
+
+  const deleteCallSequence = (id: string) => {
+    if (confirm('Are you sure you want to delete this sequence?')) {
+      setCallSequences(prev => prev.filter(seq => seq.id !== id));
+    }
+  };
+
+  const addEmailSequence = (sequence: Partial<EmailSequence>) => {
+    const newSequence: EmailSequence = {
+      id: Date.now().toString(),
+      name: sequence.name || 'New Sequence',
+      totalSent: sequence.totalSent || 0,
+      opened: sequence.opened || 0,
+      replied: sequence.replied || 0,
+      clicked: sequence.clicked || 0,
+      bounced: sequence.bounced || 0,
+      meetings: sequence.meetings || 0
+    };
+    setEmailSequences(prev => [...prev, newSequence]);
+    setShowSequenceForm(false);
+  };
+
+  const updateEmailSequence = (id: string, updates: Partial<EmailSequence>) => {
+    setEmailSequences(prev => prev.map(seq => seq.id === id ? { ...seq, ...updates } : seq));
+  };
+
+  const deleteEmailSequence = (id: string) => {
+    if (confirm('Are you sure you want to delete this sequence?')) {
+      setEmailSequences(prev => prev.filter(seq => seq.id !== id));
+    }
+  };
+
+  const addLinkedInSequenceStats = (sequence: Partial<LinkedInSequence>) => {
+    const newSequence: LinkedInSequence = {
+      id: Date.now().toString(),
+      name: sequence.name || 'New Sequence',
+      connectionRequests: sequence.connectionRequests || 0,
+      connections: sequence.connections || 0,
+      replies: sequence.replies || 0,
+      leads: sequence.leads || 0,
+      meetings: sequence.meetings || 0
+    };
+    setLinkedInSequences(prev => [...prev, newSequence]);
+    setShowSequenceForm(false);
+  };
+
+  const updateLinkedInSequenceStats = (id: string, updates: Partial<LinkedInSequence>) => {
+    setLinkedInSequences(prev => prev.map(seq => seq.id === id ? { ...seq, ...updates } : seq));
+  };
+
+  const deleteLinkedInSequenceStats = (id: string) => {
+    if (confirm('Are you sure you want to delete this sequence?')) {
+      setLinkedInSequences(prev => prev.filter(seq => seq.id !== id));
+    }
+  };
+
   useEffect(() => {
     if (!token) {
       setError('Invalid access token');
@@ -1346,6 +1718,38 @@ export default function ClientDashboard() {
               <span className="flex items-center gap-2">
                 <Send className="w-4 h-4" />
                 Email
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('linkedin')}
+              title="Manage LinkedIn accounts and outreach campaigns"
+              className={`${
+                activeTab === 'linkedin'
+                  ? 'border-blue-500 text-blue-600'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Linkedin className="w-4 h-4" />
+                LinkedIn
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              title="Track and manage outreach analytics across all channels"
+              className={`${
+                activeTab === 'analytics'
+                  ? 'border-blue-500 text-blue-600'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <BarChart2 className="w-4 h-4" />
+                Analytics
               </span>
             </button>
             <button
@@ -2995,6 +3399,1174 @@ export default function ClientDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'linkedin' && (
+          <div className="space-y-6">
+            {/* LinkedIn Accounts Section */}
+            <div className={`${cardBg} rounded-lg shadow-md p-6`}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className={`text-2xl font-bold ${textPrimary}`}>LinkedIn Accounts</h2>
+                  <p className={`text-sm ${textSecondary} mt-1`}>Manage your LinkedIn profiles for outreach</p>
+                </div>
+                <button
+                  onClick={() => setShowLinkedInForm(!showLinkedInForm)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Account
+                </button>
+              </div>
+
+              {showLinkedInForm && (
+                <div className={`mb-6 p-6 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>New LinkedIn Account</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-sm font-medium ${textPrimary} mb-2`}>
+                        Profile Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newLinkedInAccount.profileName}
+                        onChange={(e) => setNewLinkedInAccount(prev => ({ ...prev, profileName: e.target.value }))}
+                        placeholder="John Doe"
+                        className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-white'}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium ${textPrimary} mb-2`}>
+                        Profile URL
+                      </label>
+                      <input
+                        type="url"
+                        value={newLinkedInAccount.profileUrl}
+                        onChange={(e) => setNewLinkedInAccount(prev => ({ ...prev, profileUrl: e.target.value }))}
+                        placeholder="https://linkedin.com/in/johndoe"
+                        className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-white'}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium ${textPrimary} mb-2`}>
+                        Daily Limit
+                      </label>
+                      <input
+                        type="number"
+                        value={newLinkedInAccount.dailyLimit}
+                        onChange={(e) => setNewLinkedInAccount(prev => ({ ...prev, dailyLimit: parseInt(e.target.value) || 0 }))}
+                        className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-white'}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium ${textPrimary} mb-2`}>
+                        Weekly Limit
+                      </label>
+                      <input
+                        type="number"
+                        value={newLinkedInAccount.weeklyLimit}
+                        onChange={(e) => setNewLinkedInAccount(prev => ({ ...prev, weeklyLimit: parseInt(e.target.value) || 0 }))}
+                        className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-white'}`}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <button
+                      onClick={() => {
+                        setShowLinkedInForm(false);
+                        setNewLinkedInAccount({ profileName: '', profileUrl: '', dailyLimit: 50, weeklyLimit: 250 });
+                      }}
+                      className={`px-4 py-2 border ${cardBorder} rounded-lg ${textSecondary} hover:bg-gray-100 transition-colors`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={addLinkedInAccount}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Add Account
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* LinkedIn Accounts Table */}
+              {linkedInAccounts.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <tr>
+                        <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
+                          Profile
+                        </th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
+                          Status
+                        </th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
+                          Active Campaign
+                        </th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
+                          Daily Limit
+                        </th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
+                          Weekly Limit
+                        </th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className={`${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
+                      {linkedInAccounts.map(account => (
+                        <tr key={account.id}>
+                          <td className={`px-4 py-4 whitespace-nowrap`}>
+                            <div className="flex items-center">
+                              <Linkedin className="w-5 h-5 text-blue-600 mr-2" />
+                              <div>
+                                <div className={`text-sm font-medium ${textPrimary}`}>{account.profileName}</div>
+                                <a href={account.profileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                                  View Profile
+                                </a>
+                              </div>
+                            </div>
+                          </td>
+                          <td className={`px-4 py-4 whitespace-nowrap`}>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              account.status === 'active' 
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {account.status}
+                            </span>
+                          </td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm ${textSecondary}`}>
+                            {account.activeCampaign || '-'}
+                          </td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm ${textSecondary}`}>
+                            {account.dailyLimit}
+                          </td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm ${textSecondary}`}>
+                            {account.weeklyLimit}
+                          </td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm ${textSecondary}`}>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => toggleLinkedInStatus(account.id)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                {account.status === 'active' ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button
+                                onClick={() => deleteLinkedInAccount(account.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={`text-center py-8 ${textSecondary}`}>
+                  <Linkedin className={`w-12 h-12 mx-auto mb-2 ${textTertiary}`} />
+                  <p>No LinkedIn accounts added yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* LinkedIn Campaigns Section */}
+            <div className={`${cardBg} rounded-lg shadow-md p-6`}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className={`text-2xl font-bold ${textPrimary}`}>LinkedIn Campaigns</h2>
+                  <p className={`text-sm ${textSecondary} mt-1`}>Create and manage your LinkedIn outreach sequences</p>
+                </div>
+                <button
+                  onClick={createNewLinkedInCampaign}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Campaign
+                </button>
+              </div>
+
+              {linkedInCampaigns.length > 0 ? (
+                <div className="space-y-6">
+                  {linkedInCampaigns.map(campaign => (
+                    <div key={campaign.id} className={`border ${cardBorder} rounded-lg p-6 ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          <input
+                            type="text"
+                            value={campaign.name}
+                            onChange={(e) => updateLinkedInCampaign(campaign.id, { name: e.target.value })}
+                            className={`text-xl font-bold ${textPrimary} bg-transparent border-b-2 border-transparent hover:border-blue-300 focus:border-blue-500 focus:outline-none px-2 py-1`}
+                          />
+                          <button
+                            onClick={() => updateLinkedInCampaign(campaign.id, { status: campaign.status === 'active' ? 'inactive' : 'active' })}
+                            className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              campaign.status === 'active'
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            }`}
+                          >
+                            {campaign.status === 'active' ? 'Active' : 'Inactive'}
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => deleteLinkedInCampaign(campaign.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {campaign.steps.map((step) => (
+                        <div key={step.id} className={`mb-6 p-4 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-50'}`}>
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className={`text-lg font-semibold ${textPrimary}`}>Step {step.stepNumber}</h4>
+                            <button
+                              onClick={() => deleteLinkedInStep(campaign.id, step.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className={`text-sm font-medium ${textPrimary}`}>
+                                Message Variants (A/B Testing)
+                              </label>
+                              <button
+                                onClick={() => addLinkedInMessageVariant(campaign.id, step.id)}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Add Variant
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              {step.messageVariants.map(variant => (
+                                <div key={variant.id} className="flex items-start gap-2">
+                                  <div className={`px-3 py-2 ${isDarkMode ? 'bg-gray-700' : 'bg-white'} border ${cardBorder} rounded-lg font-medium text-sm min-w-[40px] text-center ${textPrimary}`}>
+                                    {variant.label}
+                                  </div>
+                                  <textarea
+                                    value={variant.text}
+                                    onChange={(e) => updateLinkedInMessageVariant(campaign.id, step.id, variant.id, e.target.value)}
+                                    placeholder="Enter your LinkedIn message..."
+                                    rows={3}
+                                    className={`flex-1 px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                  />
+                                  {step.messageVariants.length > 1 && (
+                                    <button
+                                      onClick={() => deleteLinkedInMessageVariant(campaign.id, step.id, variant.id)}
+                                      className="text-red-600 hover:text-red-800 mt-2"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      <button
+                        onClick={() => addLinkedInCampaignStep(campaign.id)}
+                        className="w-full px-4 py-2 border-2 border-dashed border-blue-300 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors font-medium"
+                      >
+                        Add Follow-up Step
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`text-center py-8 ${textSecondary}`}>
+                  <Send className={`w-12 h-12 mx-auto mb-2 ${textTertiary}`} />
+                  <p>No campaigns created yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            {/* Analytics Header */}
+            <div className={`${cardBg} rounded-lg shadow-md p-6`}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className={`text-3xl font-bold ${textPrimary}`}>Analytics</h2>
+                  <p className={`text-sm ${textSecondary} mt-1`}>Track your outreach performance across all channels</p>
+                </div>
+              </div>
+
+              {/* Channel Toggle */}
+              <div className="flex gap-2 border-b border-gray-200">
+                <button
+                  onClick={() => setAnalyticsTab('calls')}
+                  className={`pb-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                    analyticsTab === 'calls'
+                      ? 'border-blue-500 text-blue-600'
+                      : isDarkMode
+                        ? 'border-transparent text-gray-400 hover:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-blue-500'
+                  }`}
+                >
+                  Call Stats
+                </button>
+                <button
+                  onClick={() => setAnalyticsTab('emails')}
+                  className={`pb-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                    analyticsTab === 'emails'
+                      ? 'border-blue-500 text-blue-600'
+                      : isDarkMode
+                        ? 'border-transparent text-gray-400 hover:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-blue-500'
+                  }`}
+                >
+                  Email Stats
+                </button>
+                <button
+                  onClick={() => setAnalyticsTab('linkedin')}
+                  className={`pb-3 px-4 font-medium text-sm border-b-2 transition-colors ${
+                    analyticsTab === 'linkedin'
+                      ? 'border-blue-500 text-blue-600'
+                      : isDarkMode
+                        ? 'border-transparent text-gray-400 hover:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-blue-500'
+                  }`}
+                >
+                  LinkedIn Stats
+                </button>
+              </div>
+            </div>
+
+            {/* Call Stats */}
+            {analyticsTab === 'calls' && (
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Total Dials</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {callSequences.reduce((sum, seq) => sum + seq.dials, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Connects</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {callSequences.reduce((sum, seq) => sum + seq.connects, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {callSequences.reduce((sum, seq) => sum + seq.dials, 0) > 0
+                        ? ((callSequences.reduce((sum, seq) => sum + seq.connects, 0) / callSequences.reduce((sum, seq) => sum + seq.dials, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Conversations</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {callSequences.reduce((sum, seq) => sum + seq.conversations, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {callSequences.reduce((sum, seq) => sum + seq.connects, 0) > 0
+                        ? ((callSequences.reduce((sum, seq) => sum + seq.conversations, 0) / callSequences.reduce((sum, seq) => sum + seq.connects, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Leads</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {callSequences.reduce((sum, seq) => sum + seq.leads, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Meetings</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {callSequences.reduce((sum, seq) => sum + seq.meetings, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {callSequences.reduce((sum, seq) => sum + seq.conversations, 0) > 0
+                        ? ((callSequences.reduce((sum, seq) => sum + seq.meetings, 0) / callSequences.reduce((sum, seq) => sum + seq.conversations, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                </div>
+
+                {/* Add Sequence Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowSequenceForm(!showSequenceForm)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Sequence
+                  </button>
+                </div>
+
+                {/* Add Sequence Form */}
+                {showSequenceForm && (
+                  <div className={`${cardBg} rounded-lg shadow-md p-6`}>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Add Call Sequence</h3>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      addCallSequence({
+                        name: formData.get('name') as string,
+                        dials: parseInt(formData.get('dials') as string) || 0,
+                        connects: parseInt(formData.get('connects') as string) || 0,
+                        conversations: parseInt(formData.get('conversations') as string) || 0,
+                        leads: parseInt(formData.get('leads') as string) || 0,
+                        meetings: parseInt(formData.get('meetings') as string) || 0
+                      });
+                      e.currentTarget.reset();
+                    }}>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Sequence Name *</label>
+                          <input
+                            name="name"
+                            type="text"
+                            placeholder="e.g., October"
+                            required
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Dials</label>
+                          <input
+                            name="dials"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Connects</label>
+                          <input
+                            name="connects"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Conversations</label>
+                          <input
+                            name="conversations"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Leads</label>
+                          <input
+                            name="leads"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Meetings</label>
+                          <input
+                            name="meetings"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowSequenceForm(false)}
+                          className={`px-4 py-2 border ${cardBorder} rounded-lg ${textSecondary} hover:bg-gray-100 transition-colors`}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* Sequences Table */}
+                <div className={`${cardBg} rounded-lg shadow-md overflow-hidden`}>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <tr>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Sequence Name</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Dials</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Connects</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Connect Rate</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Conversations</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Conversation Rate</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Leads</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Meetings</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Meeting Rate</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
+                        {callSequences.map(sequence => (
+                          <tr key={sequence.id}>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="text"
+                                value={sequence.name}
+                                onChange={(e) => updateCallSequence(sequence.id, { name: e.target.value })}
+                                className={`bg-transparent border-none ${textPrimary} font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.dials}
+                                onChange={(e) => updateCallSequence(sequence.id, { dials: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.connects}
+                                onChange={(e) => updateCallSequence(sequence.id, { connects: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4 text-sm ${textSecondary}`}>
+                              {sequence.dials > 0 ? ((sequence.connects / sequence.dials) * 100).toFixed(1) : '0.0'}%
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.conversations}
+                                onChange={(e) => updateCallSequence(sequence.id, { conversations: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4 text-sm ${textSecondary}`}>
+                              {sequence.connects > 0 ? ((sequence.conversations / sequence.connects) * 100).toFixed(1) : '0.0'}%
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.leads}
+                                onChange={(e) => updateCallSequence(sequence.id, { leads: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.meetings}
+                                onChange={(e) => updateCallSequence(sequence.id, { meetings: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4 text-sm ${textSecondary}`}>
+                              {sequence.conversations > 0 ? ((sequence.meetings / sequence.conversations) * 100).toFixed(1) : '0.0'}%
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <button
+                                onClick={() => deleteCallSequence(sequence.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {callSequences.length === 0 && (
+                      <div className={`text-center py-12 ${textSecondary}`}>
+                        <BarChart2 className={`w-12 h-12 mx-auto mb-3 ${textTertiary}`} />
+                        <p>No call sequences added yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Email Stats */}
+            {analyticsTab === 'emails' && (
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Total Sent</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {emailSequences.reduce((sum, seq) => sum + seq.totalSent, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Opened</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {emailSequences.reduce((sum, seq) => sum + seq.opened, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {emailSequences.reduce((sum, seq) => sum + seq.totalSent, 0) > 0
+                        ? ((emailSequences.reduce((sum, seq) => sum + seq.opened, 0) / emailSequences.reduce((sum, seq) => sum + seq.totalSent, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Replied</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {emailSequences.reduce((sum, seq) => sum + seq.replied, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {emailSequences.reduce((sum, seq) => sum + seq.totalSent, 0) > 0
+                        ? ((emailSequences.reduce((sum, seq) => sum + seq.replied, 0) / emailSequences.reduce((sum, seq) => sum + seq.totalSent, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Clicked</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {emailSequences.reduce((sum, seq) => sum + seq.clicked, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {emailSequences.reduce((sum, seq) => sum + seq.totalSent, 0) > 0
+                        ? ((emailSequences.reduce((sum, seq) => sum + seq.clicked, 0) / emailSequences.reduce((sum, seq) => sum + seq.totalSent, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Bounced</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {emailSequences.reduce((sum, seq) => sum + seq.bounced, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Meetings</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {emailSequences.reduce((sum, seq) => sum + seq.meetings, 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Add Sequence Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowSequenceForm(!showSequenceForm)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Sequence
+                  </button>
+                </div>
+
+                {/* Add Sequence Form */}
+                {showSequenceForm && (
+                  <div className={`${cardBg} rounded-lg shadow-md p-6`}>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Add Email Sequence</h3>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      addEmailSequence({
+                        name: formData.get('name') as string,
+                        totalSent: parseInt(formData.get('totalSent') as string) || 0,
+                        opened: parseInt(formData.get('opened') as string) || 0,
+                        replied: parseInt(formData.get('replied') as string) || 0,
+                        clicked: parseInt(formData.get('clicked') as string) || 0,
+                        bounced: parseInt(formData.get('bounced') as string) || 0,
+                        meetings: parseInt(formData.get('meetings') as string) || 0
+                      });
+                      e.currentTarget.reset();
+                    }}>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Sequence Name *</label>
+                          <input
+                            name="name"
+                            type="text"
+                            placeholder="e.g., Chief AI General 7/22"
+                            required
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Total Sent</label>
+                          <input
+                            name="totalSent"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Opened</label>
+                          <input
+                            name="opened"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Replied</label>
+                          <input
+                            name="replied"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Clicked</label>
+                          <input
+                            name="clicked"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Bounced</label>
+                          <input
+                            name="bounced"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Meetings</label>
+                          <input
+                            name="meetings"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowSequenceForm(false)}
+                          className={`px-4 py-2 border ${cardBorder} rounded-lg ${textSecondary} hover:bg-gray-100 transition-colors`}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* Sequences Table */}
+                <div className={`${cardBg} rounded-lg shadow-md overflow-hidden`}>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <tr>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Sequence Name</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Total Sent</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Opened</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Open Rate</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Replied</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Reply Rate</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Clicked</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Bounced</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Meetings</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
+                        {emailSequences.map(sequence => (
+                          <tr key={sequence.id}>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="text"
+                                value={sequence.name}
+                                onChange={(e) => updateEmailSequence(sequence.id, { name: e.target.value })}
+                                className={`bg-transparent border-none ${textPrimary} font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.totalSent}
+                                onChange={(e) => updateEmailSequence(sequence.id, { totalSent: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.opened}
+                                onChange={(e) => updateEmailSequence(sequence.id, { opened: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4 text-sm ${textSecondary}`}>
+                              {sequence.totalSent > 0 ? ((sequence.opened / sequence.totalSent) * 100).toFixed(1) : '0.0'}%
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.replied}
+                                onChange={(e) => updateEmailSequence(sequence.id, { replied: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4 text-sm ${textSecondary}`}>
+                              {sequence.totalSent > 0 ? ((sequence.replied / sequence.totalSent) * 100).toFixed(1) : '0.0'}%
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.clicked}
+                                onChange={(e) => updateEmailSequence(sequence.id, { clicked: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.bounced}
+                                onChange={(e) => updateEmailSequence(sequence.id, { bounced: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.meetings}
+                                onChange={(e) => updateEmailSequence(sequence.id, { meetings: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <button
+                                onClick={() => deleteEmailSequence(sequence.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {emailSequences.length === 0 && (
+                      <div className={`text-center py-12 ${textSecondary}`}>
+                        <Send className={`w-12 h-12 mx-auto mb-3 ${textTertiary}`} />
+                        <p>No email sequences added yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LinkedIn Stats */}
+            {analyticsTab === 'linkedin' && (
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Connection Requests</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.connectionRequests, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Connections</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.connections, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.connectionRequests, 0) > 0
+                        ? ((linkedInSequences.reduce((sum, seq) => sum + seq.connections, 0) / linkedInSequences.reduce((sum, seq) => sum + seq.connectionRequests, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Replies</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.replies, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.connections, 0) > 0
+                        ? ((linkedInSequences.reduce((sum, seq) => sum + seq.replies, 0) / linkedInSequences.reduce((sum, seq) => sum + seq.connections, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Leads</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.leads, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className={`${cardBg} rounded-lg shadow-md p-4`}>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Meetings</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.meetings, 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {linkedInSequences.reduce((sum, seq) => sum + seq.replies, 0) > 0
+                        ? ((linkedInSequences.reduce((sum, seq) => sum + seq.meetings, 0) / linkedInSequences.reduce((sum, seq) => sum + seq.replies, 0)) * 100).toFixed(1)
+                        : '0.0'}% rate
+                    </p>
+                  </div>
+                </div>
+
+                {/* Add Sequence Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowSequenceForm(!showSequenceForm)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Sequence
+                  </button>
+                </div>
+
+                {/* Add Sequence Form */}
+                {showSequenceForm && (
+                  <div className={`${cardBg} rounded-lg shadow-md p-6`}>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Add LinkedIn Sequence</h3>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      addLinkedInSequenceStats({
+                        name: formData.get('name') as string,
+                        connectionRequests: parseInt(formData.get('connectionRequests') as string) || 0,
+                        connections: parseInt(formData.get('connections') as string) || 0,
+                        replies: parseInt(formData.get('replies') as string) || 0,
+                        leads: parseInt(formData.get('leads') as string) || 0,
+                        meetings: parseInt(formData.get('meetings') as string) || 0
+                      });
+                      e.currentTarget.reset();
+                    }}>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Sequence Name *</label>
+                          <input
+                            name="name"
+                            type="text"
+                            placeholder="e.g., Q4 Campaign"
+                            required
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Connection Requests</label>
+                          <input
+                            name="connectionRequests"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Connections</label>
+                          <input
+                            name="connections"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Replies</label>
+                          <input
+                            name="replies"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Leads</label>
+                          <input
+                            name="leads"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium ${textPrimary} mb-2`}>Meetings</label>
+                          <input
+                            name="meetings"
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            defaultValue="0"
+                            className={`w-full px-4 py-2 border ${cardBorder} rounded-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'}`}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowSequenceForm(false)}
+                          className={`px-4 py-2 border ${cardBorder} rounded-lg ${textSecondary} hover:bg-gray-100 transition-colors`}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* Sequences Table */}
+                <div className={`${cardBg} rounded-lg shadow-md overflow-hidden`}>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <tr>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Sequence Name</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Connection Requests</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Connections</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Connection Rate</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Replies</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Reply Rate</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Leads</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Meetings</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium ${textSecondary} uppercase tracking-wider`}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
+                        {linkedInSequences.map(sequence => (
+                          <tr key={sequence.id}>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="text"
+                                value={sequence.name}
+                                onChange={(e) => updateLinkedInSequenceStats(sequence.id, { name: e.target.value })}
+                                className={`bg-transparent border-none ${textPrimary} font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.connectionRequests}
+                                onChange={(e) => updateLinkedInSequenceStats(sequence.id, { connectionRequests: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.connections}
+                                onChange={(e) => updateLinkedInSequenceStats(sequence.id, { connections: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4 text-sm ${textSecondary}`}>
+                              {sequence.connectionRequests > 0 ? ((sequence.connections / sequence.connectionRequests) * 100).toFixed(1) : '0.0'}%
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.replies}
+                                onChange={(e) => updateLinkedInSequenceStats(sequence.id, { replies: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4 text-sm ${textSecondary}`}>
+                              {sequence.connections > 0 ? ((sequence.replies / sequence.connections) * 100).toFixed(1) : '0.0'}%
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.leads}
+                                onChange={(e) => updateLinkedInSequenceStats(sequence.id, { leads: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <input
+                                type="number"
+                                value={sequence.meetings}
+                                onChange={(e) => updateLinkedInSequenceStats(sequence.id, { meetings: parseInt(e.target.value) || 0 })}
+                                className={`w-24 bg-transparent border-none ${textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1`}
+                              />
+                            </td>
+                            <td className={`px-4 py-4`}>
+                              <button
+                                onClick={() => deleteLinkedInSequenceStats(sequence.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {linkedInSequences.length === 0 && (
+                      <div className={`text-center py-12 ${textSecondary}`}>
+                        <Linkedin className={`w-12 h-12 mx-auto mb-3 ${textTertiary}`} />
+                        <p>No LinkedIn sequences added yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
