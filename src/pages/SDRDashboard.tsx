@@ -909,10 +909,10 @@ function SDRDashboardContent() {
                 location.pathname === `/dashboard/sdr/${token}`
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}` ? '' : 'group-hover:text-indigo-500'}`} />
                 Dashboard
               </span>
             </Link>
@@ -922,10 +922,10 @@ function SDRDashboardContent() {
                 location.pathname === `/dashboard/sdr/${token}/history`
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <History className="w-4 h-4" />
+                <History className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/history` ? '' : 'group-hover:text-green-500'}`} />
                 Meeting History
               </span>
             </Link>
@@ -935,10 +935,10 @@ function SDRDashboardContent() {
                 location.pathname === `/dashboard/sdr/${token}/commissions`
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
+                <DollarSign className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/commissions` ? '' : 'group-hover:text-emerald-500'}`} />
                 Commissions
               </span>
             </Link>
@@ -948,10 +948,10 @@ function SDRDashboardContent() {
                 location.pathname === `/dashboard/sdr/${token}/calendar`
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/calendar` ? '' : 'group-hover:text-purple-500'}`} />
                 Calendar
               </span>
             </Link>

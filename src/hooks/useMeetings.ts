@@ -44,7 +44,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       try {
         let query = client
           .from('meetings')
-          .select('*, clients(name)')
+          .select('*, clients(name), profiles:sdr_id(full_name)')
           .order('scheduled_date', { ascending: true })
           .limit(10000); // Increase limit to handle large datasets
         
@@ -56,7 +56,13 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         const { data, error } = await query as any;
         if (error) throw error;
         
-        setMeetings((data || []) as unknown as Meeting[]);
+        // Map the data to include sdr_name for easier access
+        const meetingsWithSdrName = (data || []).map((meeting: any) => ({
+          ...meeting,
+          sdr_name: meeting.profiles?.full_name || 'Unknown SDR'
+        }));
+        
+        setMeetings(meetingsWithSdrName as unknown as Meeting[]);
         setError(null);
       } catch (err) {
         console.error('Meetings fetch error:', err);

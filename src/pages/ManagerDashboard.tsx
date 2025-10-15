@@ -5,7 +5,7 @@ import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { useAgency } from '../contexts/AgencyContext';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
@@ -1209,8 +1209,9 @@ export default function ManagerDashboard() {
                 activeTab === 'overview'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
+              <BarChart2 className={`w-4 h-4 transition-colors ${activeTab === 'overview' ? '' : 'group-hover:text-indigo-500'}`} />
               Overview
             </button>
             <button
@@ -1219,9 +1220,9 @@ export default function ManagerDashboard() {
                 activeTab === 'meetings'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
-              <ListChecks className="w-4 h-4" />
+              <ListChecks className={`w-4 h-4 transition-colors ${activeTab === 'meetings' ? '' : 'group-hover:text-green-500'}`} />
               Team's Meetings
             </button>
             <button
@@ -1230,8 +1231,9 @@ export default function ManagerDashboard() {
                 activeTab === 'clients'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
+              <Building className={`w-4 h-4 transition-colors ${activeTab === 'clients' ? '' : 'group-hover:text-purple-500'}`} />
               Client Management
             </button>
             <button
@@ -1240,9 +1242,9 @@ export default function ManagerDashboard() {
                 activeTab === 'users'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
-              <Users className="w-4 h-4" />
+              <Users className={`w-4 h-4 transition-colors ${activeTab === 'users' ? '' : 'group-hover:text-orange-500'}`} />
               User Management
             </button>
             <button
@@ -1251,9 +1253,9 @@ export default function ManagerDashboard() {
                 activeTab === 'history'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
-              <History className="w-4 h-4" />
+              <History className={`w-4 h-4 transition-colors ${activeTab === 'history' ? '' : 'group-hover:text-teal-500'}`} />
               Meeting History
             </button>
             <button
@@ -1262,9 +1264,9 @@ export default function ManagerDashboard() {
                 activeTab === 'icp'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
-              <Shield className="w-4 h-4" />
+              <Shield className={`w-4 h-4 transition-colors ${activeTab === 'icp' ? '' : 'group-hover:text-rose-500'}`} />
               ICP Check
             </button>
           </nav>

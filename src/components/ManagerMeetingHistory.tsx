@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search, Download, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, CheckCircle, AlertCircle, Target, Clock, Search, Download } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { MeetingCard } from './MeetingCard';
 import type { Meeting } from '../types/database';
 import { DateTime } from 'luxon';
-import { supabase } from '../lib/supabase';
-import type { Assignment, Client } from '../types/database';
 
 interface MeetingStats {
   totalBooked: number;
@@ -42,9 +40,7 @@ export default function ManagerMeetingHistory({
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'set' | 'held' | 'booked' | 'noShows' | 'bySDR' | null>(null);
-  const [modalMeetings, setModalMeetings] = useState<Meeting[]>([]);
-  const [modalTitle, setModalTitle] = useState('');
+  const [modalType, setModalType] = useState<'set' | 'held' | 'booked' | 'noShows' | null>(null);
 
   const columnOptions = [
     { key: 'sdr', label: 'SDR Name' },
@@ -109,7 +105,7 @@ export default function ManagerMeetingHistory({
   }
 
   // Modal open helpers
-  const openMeetingsModal = (type: 'booked' | 'held' | 'noShows' | 'bySDR') => {
+  const openMeetingsModal = (type: 'booked' | 'held' | 'noShows') => {
     setModalType(type);
     setModalOpen(true);
   };
@@ -117,8 +113,6 @@ export default function ManagerMeetingHistory({
   const closeModal = () => {
     setModalOpen(false);
     setModalType(null);
-    setModalMeetings([]);
-    setModalTitle('');
   };
 
   if (loading) {
@@ -238,16 +232,6 @@ export default function ManagerMeetingHistory({
   const allTimeStats = calculateAllTimeStats();
   const monthlyStats = calculateMonthlyStats();
   const selectedMonthLabel = monthOptions.find(m => m.value === selectedMonth)?.label;
-
-  // Group meetings by SDR for the modal
-  const meetingsBySDR = allMonthMeetings.reduce((acc, meeting) => {
-    const sdrName = (meeting as any).sdr_name || 'Unknown SDR';
-    if (!acc[sdrName]) {
-      acc[sdrName] = [];
-    }
-    acc[sdrName].push(meeting);
-    return acc;
-  }, {} as Record<string, Meeting[]>);
 
   return (
     <div className="space-y-6">
@@ -397,18 +381,6 @@ export default function ManagerMeetingHistory({
               {monthlyStats.showRate.toFixed(1)}%
             </p>
           </div>
-
-          <div 
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-blue-50 transition-all duration-200 border-2 border-transparent hover:border-blue-200"
-            onClick={() => openMeetingsModal('bySDR')}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">By SDR</h3>
-              <Users className="w-5 h-5 text-blue-600" />
-            </div>
-            <p className="text-2xl font-bold text-blue-600">{Object.keys(meetingsBySDR).length}</p>
-            <p className="text-xs text-gray-500">SDRs</p>
-          </div>
         </div>
 
         {/* Search Bar */}
@@ -451,8 +423,7 @@ export default function ManagerMeetingHistory({
               <h3 className="text-lg font-semibold">
                 {modalType === 'booked' ? 'All Meetings Booked This Month' :
                  modalType === 'held' ? 'Meetings Held This Month' :
-                 modalType === 'noShows' ? 'No-Show Meetings This Month' :
-                 modalType === 'bySDR' ? 'Meetings by SDR This Month' : 'Modal'}
+                 modalType === 'noShows' ? 'No-Show Meetings This Month' : 'Modal'}
               </h3>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
             </div>
@@ -462,88 +433,39 @@ export default function ManagerMeetingHistory({
               <div className={`p-4 rounded-lg ${
                 modalType === 'booked' ? 'bg-indigo-50' :
                 modalType === 'held' ? 'bg-green-50' :
-                modalType === 'noShows' ? 'bg-red-50' :
-                'bg-blue-50'
+                'bg-red-50'
               }`}>
                 <h4 className={`text-lg font-semibold mb-2 ${
                   modalType === 'booked' ? 'text-indigo-900' :
                   modalType === 'held' ? 'text-green-900' :
-                  modalType === 'noShows' ? 'text-red-900' :
-                  'text-blue-900'
+                  'text-red-900'
                 }`}>
                   {modalType === 'booked' ? 'All Meetings Booked This Month' :
                    modalType === 'held' ? 'Meetings Held This Month' :
-                   modalType === 'noShows' ? 'No-Show Meetings This Month' :
-                   'Meetings by SDR This Month'}
+                   'No-Show Meetings This Month'}
                 </h4>
                 <p className={`text-2xl font-bold ${
                   modalType === 'booked' ? 'text-indigo-700' :
                   modalType === 'held' ? 'text-green-700' :
-                  modalType === 'noShows' ? 'text-red-700' :
-                  'text-blue-700'
+                  'text-red-700'
                 }`}>
                   {modalType === 'booked' ? monthlyStats.totalBooked :
                    modalType === 'held' ? monthlyStats.totalHeld :
-                   modalType === 'noShows' ? monthlyStats.totalNoShow :
-                   Object.keys(meetingsBySDR).length}
+                   monthlyStats.totalNoShow}
                 </p>
                 <p className={`text-sm ${
                   modalType === 'booked' ? 'text-indigo-600' :
                   modalType === 'held' ? 'text-green-600' :
-                  modalType === 'noShows' ? 'text-red-600' :
-                  'text-blue-600'
+                  'text-red-600'
                 }`}>
                   {modalType === 'booked' ? 'Total meetings scheduled' :
                    modalType === 'held' ? 'Successfully held meetings' :
-                   modalType === 'noShows' ? 'Meetings marked as no-shows' :
-                   'Number of SDRs with meetings'}
+                   'Meetings marked as no-shows'}
                 </p>
               </div>
 
               {/* Content based on modal type */}
-              {modalType === 'bySDR' ? (
-                <div className="space-y-4">
-                  {Object.entries(meetingsBySDR).map(([sdrName, sdrMeetings]) => {
-                    const sdrStats = calculateMonthlyStats(sdrMeetings);
-                    return (
-                      <div key={sdrName} className="border border-gray-200 rounded-lg p-4">
-                        <h5 className="text-lg font-semibold text-gray-900 mb-3">{sdrName}</h5>
-                        <div className="grid grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm text-gray-500">Booked</p>
-                            <p className="text-lg font-bold text-gray-900">{sdrStats.totalBooked}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-500">Held</p>
-                            <p className="text-lg font-bold text-green-600">{sdrStats.totalHeld}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-500">No Shows</p>
-                            <p className="text-lg font-bold text-red-600">{sdrStats.totalNoShow}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-500">Show Rate</p>
-                            <p className="text-lg font-bold text-indigo-600">{sdrStats.showRate.toFixed(1)}%</p>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          {sdrMeetings.map((meeting) => (
-                            <MeetingCard
-                              key={meeting.id}
-                              meeting={meeting}
-                              onUpdateHeldDate={onUpdateHeldDate}
-                              onUpdateConfirmedDate={onUpdateConfirmedDate}
-                              showDateControls={true}
-                              showSDR={false}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="space-y-3">
+              <div className="space-y-3">
                   {(() => {
                     let filteredMeetings: Meeting[] = [];
                     if (modalType === 'booked') {
@@ -576,8 +498,7 @@ export default function ManagerMeetingHistory({
                       </div>
                     );
                   })()}
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
