@@ -1635,10 +1635,10 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className={`w-4 h-4 transition-colors ${activeTab === 'overview' ? '' : 'group-hover:text-indigo-500'}`} />
                 Overview
               </span>
             </button>
@@ -1650,10 +1650,10 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className={`w-4 h-4 transition-colors ${activeTab === 'meetings' ? '' : 'group-hover:text-green-500'}`} />
                 Meetings
               </span>
             </button>
@@ -1665,10 +1665,10 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className={`w-4 h-4 transition-colors ${activeTab === 'calendar' ? '' : 'group-hover:text-purple-500'}`} />
                 Calendar
               </span>
             </button>
@@ -1681,10 +1681,10 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
+                <Users className={`w-4 h-4 transition-colors ${activeTab === 'icp' ? '' : 'group-hover:text-orange-500'}`} />
                 ICP Targeting
               </span>
             </button>
@@ -1697,10 +1697,10 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4" />
+                <FileSpreadsheet className={`w-4 h-4 transition-colors ${activeTab === 'lead-sample' ? '' : 'group-hover:text-teal-500'}`} />
                 Lead Sample
               </span>
             </button>
@@ -1713,10 +1713,10 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Send className="w-4 h-4" />
+                <Send className={`w-4 h-4 transition-colors ${activeTab === 'email' ? '' : 'group-hover:text-rose-500'}`} />
                 Email
               </span>
             </button>
@@ -1729,27 +1729,11 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Linkedin className="w-4 h-4" />
+                <Linkedin className={`w-4 h-4 transition-colors ${activeTab === 'linkedin' ? '' : 'group-hover:text-blue-600'}`} />
                 LinkedIn
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              title="Track and manage outreach analytics across all channels"
-              className={`${
-                activeTab === 'analytics'
-                  ? 'border-blue-500 text-blue-600'
-                  : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-            >
-              <span className="flex items-center gap-2">
-                <BarChart2 className="w-4 h-4" />
-                Analytics
               </span>
             </button>
             <button
@@ -1761,11 +1745,27 @@ export default function ClientDashboard() {
                   : isDarkMode
                     ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Phone className="w-4 h-4" />
+                <Phone className={`w-4 h-4 transition-colors ${activeTab === 'cold-calling' ? '' : 'group-hover:text-emerald-500'}`} />
                 Cold Calling
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              title="Track and manage outreach analytics across all channels"
+              className={`${
+                activeTab === 'analytics'
+                  ? 'border-blue-500 text-blue-600'
+                  : isDarkMode
+                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <BarChart2 className={`w-4 h-4 transition-colors ${activeTab === 'analytics' ? '' : 'group-hover:text-violet-500'}`} />
+                Analytics
               </span>
             </button>
           </nav>
@@ -3703,7 +3703,6 @@ export default function ClientDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className={`text-3xl font-bold ${textPrimary}`}>Analytics</h2>
-                  <p className={`text-sm ${textSecondary} mt-1`}>Track your outreach performance across all channels</p>
                 </div>
               </div>
 
