@@ -90,6 +90,7 @@ function SDRDashboardContent() {
   const [editingMeeting, setEditingMeeting] = useState<string | null>(null);
   // Add Meeting Modal State
   const [showAddMeeting, setShowAddMeeting] = useState(false);
+  const [bookedDate, setBookedDate] = useState(''); // Date the meeting was booked/created
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('09:00');
   const [contactFullName, setContactFullName] = useState('');
@@ -400,7 +401,7 @@ function SDRDashboardContent() {
   };
   async function handleAddMeeting(e: React.FormEvent) {
   e.preventDefault();
-  if (!selectedClientId || !meetingDate || !sdrId || !contactFullName || !contactEmail) {
+  if (!selectedClientId || !meetingDate || !sdrId || !contactFullName || !contactEmail || !bookedDate) {
     setAddMeetingError('Please fill all required fields');
     return;
   }
@@ -408,6 +409,10 @@ function SDRDashboardContent() {
   try {
     const { createZonedDateTime } = await import('../utils/timeUtils');
     const scheduledDateTime = createZonedDateTime(meetingDate, meetingTime, 'America/New_York'); // Always EST
+    
+    // Convert bookedDate to ISO timestamp
+    const bookedAtTimestamp = new Date(`${bookedDate}T00:00:00Z`).toISOString();
+    
     const meetingData = {
       contact_full_name: contactFullName,
       contact_email: contactEmail,
@@ -418,10 +423,12 @@ function SDRDashboardContent() {
       notes: notes || null,
       status: 'pending',
       timezone: prospectTimezone, // Save prospect's timezone for reference
+      booked_at: bookedAtTimestamp, // Include the booking date
     };
     await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
     await fetchClients(); // Refresh client stats after adding a meeting
     setShowAddMeeting(false);
+    setBookedDate('');
     setMeetingDate('');
     setMeetingTime('09:00');
     setProspectTimezone('America/New_York');
@@ -562,6 +569,18 @@ function SDRDashboardContent() {
         <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Add New Meeting</h2>
           <form onSubmit={handleAddMeeting} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Meeting Booked Date 
+              </label>
+              <input
+                type="date"
+                value={bookedDate}
+                onChange={(e) => setBookedDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Date</label>
               <input
@@ -1069,7 +1088,10 @@ function SDRDashboardContent() {
                           todaysMeetings={client.todaysMeetings}
                           isInactive={false}
                           onAddMeeting={() => {
-                            setSelectedClientId(client.id); 
+                            setSelectedClientId(client.id);
+                            // Set booked date to today by default
+                            const today = new Date().toISOString().split('T')[0];
+                            setBookedDate(today);
                             setShowAddMeeting(true);
                           }}
                           onConfirmMeeting={(meetingId) => {
@@ -1096,7 +1118,10 @@ function SDRDashboardContent() {
                           isInactive={true}
                           deactivatedAt={client.deactivated_at}
                           onAddMeeting={() => {
-                            setSelectedClientId(client.id); 
+                            setSelectedClientId(client.id);
+                            // Set booked date to today by default
+                            const today = new Date().toISOString().split('T')[0];
+                            setBookedDate(today);
                             setShowAddMeeting(true);
                           }}
                           onConfirmMeeting={(meetingId) => {
