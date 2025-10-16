@@ -2376,41 +2376,52 @@ export default function ManagerDashboard() {
                   const totalAssignedHeld = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
 
                   // Calculate actual meetings for this client in the selected month
-                  // Use the same logic as the client performance table
+                  // Use UTC dates to avoid timezone issues
                   const [year, month] = selectedMonth.split('-');
-                  const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
-                  const monthEnd = new Date(parseInt(year), parseInt(month), 0);
+                  const monthStart = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, 1));
+                  const monthEnd = new Date(Date.UTC(parseInt(year), parseInt(month), 1));
                   
-                  // Filter meetings by created_at date AND exclude non-ICP-qualified
-                  const clientMeetings = meetings.filter(meeting => {
-                    const createdDate = new Date(meeting.created_at);
-                    const isInMonth = createdDate >= monthStart && createdDate <= monthEnd;
-                    
-                    // Exclude non-ICP-qualified meetings
-                    const icpStatus = (meeting as any).icp_status;
-                    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
-                    
-                    return isInMonth && !isICPDisqualified;
-                  });
-
-                  // Only count meetings from assigned SDRs for this client (same as client performance table)
+                  // Only count meetings from assigned SDRs for this client
                   const assignedSDRs = clientAssignments.map(assignment => {
                     const sdr = sdrs.find(s => s.id === assignment.sdr_id);
                     return sdr ? sdr.id : null;
                   }).filter(Boolean);
 
-                  const actualMeetingsSet = clientMeetings.filter(m => 
-                    m.client_id === client.id && 
-                    assignedSDRs.includes(m.sdr_id)
-                  ).length;
+                  // Meetings SET: Filter by created_at (when SDR booked it) AND exclude non-ICP-qualified
+                  const clientMeetingsSet = meetings.filter(meeting => {
+                    const createdDate = new Date(meeting.created_at);
+                    const isInMonth = createdDate >= monthStart && createdDate < monthEnd;
+                    
+                    // Exclude non-ICP-qualified meetings
+                    const icpStatus = (meeting as any).icp_status;
+                    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                    
+                    return isInMonth && !isICPDisqualified && 
+                           meeting.client_id === client.id && 
+                           assignedSDRs.includes(meeting.sdr_id);
+                  });
 
-                  const actualMeetingsHeld = clientMeetings.filter(m => 
-                    m.client_id === client.id && 
-                    assignedSDRs.includes(m.sdr_id) &&
-                    m.status === 'confirmed' && 
-                    !m.no_show && 
-                    m.held_at !== null
-                  ).length;
+                  const actualMeetingsSet = clientMeetingsSet.length;
+
+                  // Meetings HELD: Filter by scheduled_date (month it was scheduled for) AND exclude non-ICP-qualified
+                  const clientMeetingsHeld = meetings.filter(meeting => {
+                    if (!meeting.scheduled_date) return false;
+                    
+                    const scheduledDate = new Date(meeting.scheduled_date);
+                    const isInMonth = scheduledDate >= monthStart && scheduledDate < monthEnd;
+                    
+                    // Exclude non-ICP-qualified meetings
+                    const icpStatus = (meeting as any).icp_status;
+                    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+                    
+                    const isHeld = !meeting.no_show && meeting.held_at !== null;
+                    
+                    return isInMonth && !isICPDisqualified && isHeld &&
+                           meeting.client_id === client.id && 
+                           assignedSDRs.includes(meeting.sdr_id);
+                  });
+
+                  const actualMeetingsHeld = clientMeetingsHeld.length;
 
                   const setProgress = client.monthly_set_target > 0 ? (totalAssignedSet / client.monthly_set_target) * 100 : 0;
                   const heldProgress = client.monthly_hold_target > 0 ? (totalAssignedHeld / client.monthly_hold_target) * 100 : 0;
