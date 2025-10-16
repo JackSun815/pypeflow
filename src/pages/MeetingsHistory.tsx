@@ -37,6 +37,7 @@ export default function MeetingsHistory({
     now.toISOString().slice(0, 7)
   );
   const [searchTerm, setSearchTerm] = useState('');
+  const [goalType, setGoalType] = useState<'set' | 'held'>('set'); // Toggle for % to Goal
   // Export modal state
   const [showExport, setShowExport] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([
@@ -251,16 +252,13 @@ export default function MeetingsHistory({
     const totalHeld = icpQualifiedMeetings.filter(m => m.held_at !== null && !m.no_show).length;
     const totalNoShow = icpQualifiedMeetings.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
-    const monthlyTarget = 50; // Example monthly target
-    const averageMonthlyBookings = totalBooked / 12; // Simplified calculation
-    const percentToGoal = (averageMonthlyBookings / monthlyTarget) * 100;
 
     return {
       totalBooked,
       totalHeld,
       totalNoShow,
       showRate,
-      percentToGoal
+      percentToGoal: 0 // Not used anymore but kept for interface compatibility
     };
   };
 
@@ -295,8 +293,11 @@ export default function MeetingsHistory({
     const totalHeld = monthMeetingsHeld.length;
     const totalNoShow = monthMeetingsSet.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
-    const monthlyTarget = 50; // Example monthly target
-    const percentToGoal = (totalBooked / monthlyTarget) * 100;
+    
+    // Use the appropriate target based on goalType toggle
+    const monthlyTarget = goalType === 'set' ? totalSetTarget : totalHeldTarget;
+    const actualValue = goalType === 'set' ? totalBooked : totalHeld;
+    const percentToGoal = monthlyTarget > 0 ? (actualValue / monthlyTarget) * 100 : 0;
 
     return {
       totalBooked,
@@ -373,7 +374,7 @@ export default function MeetingsHistory({
       {/* All-time Stats */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">All-time Performance</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <p className="text-sm text-gray-500">Total Meetings Booked</p>
             <p className="text-2xl font-bold text-gray-900">{allTimeStats.totalBooked}</p>
@@ -391,11 +392,8 @@ export default function MeetingsHistory({
             <p className="text-2xl font-bold text-indigo-600">
               {allTimeStats.showRate.toFixed(1)}%
             </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Avg. % to Goal</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {allTimeStats.percentToGoal.toFixed(1)}%
+            <p className="text-xs text-gray-500 mt-1">
+              {allTimeStats.totalHeld} / {allTimeStats.totalBooked}
             </p>
           </div>
         </div>
@@ -540,15 +538,45 @@ export default function MeetingsHistory({
             <p className="text-2xl font-bold text-indigo-600">
               {monthlyStats.showRate.toFixed(1)}%
             </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {monthlyStats.totalHeld} / {monthlyStats.totalBooked}
+            </p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">% to Goal</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-medium text-gray-500">% to Goal</h3>
+                <div className="flex rounded-md border border-gray-300 bg-white">
+                  <button
+                    onClick={() => setGoalType('set')}
+                    className={`px-2 py-0.5 text-xs font-medium transition-colors rounded-l-md ${
+                      goalType === 'set'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Set
+                  </button>
+                  <button
+                    onClick={() => setGoalType('held')}
+                    className={`px-2 py-0.5 text-xs font-medium transition-colors rounded-r-md ${
+                      goalType === 'held'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Held
+                  </button>
+                </div>
+              </div>
               <TrendingUp className="w-5 h-5 text-gray-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">
               {monthlyStats.percentToGoal.toFixed(1)}%
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {goalType === 'set' ? `${monthlyStats.totalBooked} / ${totalSetTarget}` : `${monthlyStats.totalHeld} / ${totalHeldTarget}`}
             </p>
           </div>
         </div>
