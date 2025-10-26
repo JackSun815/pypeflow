@@ -82,10 +82,12 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
     let start: Date;
     let end: Date;
     if (m.scheduled_date) {
-      // Parse the meeting time as EST and convert to local Date objects for the calendar
+      // Parse the meeting time as EST
       const dt = DateTime.fromISO(m.scheduled_date, { zone: 'America/New_York' });
-      start = dt.toJSDate();
-      end = dt.plus({ minutes: 30 }).toJSDate();
+      // Create Date object using the EST time components (not converted to local timezone)
+      // This ensures calendar displays the actual EST time regardless of user's local timezone
+      start = new Date(dt.year, dt.month - 1, dt.day, dt.hour, dt.minute, dt.second);
+      end = new Date(dt.year, dt.month - 1, dt.day, dt.hour, dt.minute + 30, dt.second);
     } else {
       start = new Date();
       end = new Date(start.getTime() + 30 * 60 * 1000);
@@ -173,9 +175,14 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
         backgroundColor = '#F3F4F6'; // Light gray background
     }
 
-    // Always format time in EST for calendar display
+    // Format time showing EST times (dates are already in EST from event mapping)
     const formatTime = (date: Date) => {
-      return DateTime.fromJSDate(date, { zone: 'America/New_York' }).toFormat('h:mm a') + ' EST';
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      return `${displayHours}:${displayMinutes} ${ampm} EST`;
     };
 
     return (
@@ -380,8 +387,9 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
         }}
         step={30}
         timeslots={2}
-        min={new Date(0, 0, 0, 6, 0, 0)} // Start at 6 AM
-        max={new Date(0, 0, 0, 22, 0, 0)} // End at 10 PM
+        min={new Date(0, 0, 0, 0, 0, 0)} // Start at midnight (12:00 AM)
+        max={new Date(0, 0, 0, 23, 59, 59)} // End at 11:59 PM (full 24 hours)
+        scrollToTime={new Date(0, 0, 0, 6, 0, 0)} // Default scroll position at 6 AM
       />
       {selectedMeeting && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -406,7 +414,17 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
             <div className="text-sm text-gray-700 space-y-2">
               <div>
                 <span className="font-medium text-gray-700">Meeting Time: </span>
-                <span className="text-gray-900">{DateTime.fromJSDate(selectedMeeting.start, { zone: 'America/New_York' }).toLocaleString(DateTime.DATETIME_MED)} EST</span>
+                <span className="text-gray-900">
+                  {selectedMeeting.start.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                  })} at {selectedMeeting.start.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })} EST
+                </span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Created Time: </span>
@@ -415,7 +433,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
                     timeZone: 'America/New_York',
                     year: 'numeric', month: 'numeric', day: 'numeric',
                     hour: 'numeric', minute: '2-digit', hour12: true,
-                  })}
+                  })} EST
                 </span>
               </div>
               {selectedMeeting.contact_full_name && (
