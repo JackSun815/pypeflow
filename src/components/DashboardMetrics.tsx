@@ -423,10 +423,18 @@ export default function DashboardMetrics({
                   </div>
                   <div className="space-y-3">
                     {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting) => (
+                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
                         <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
+                              {meeting.clients?.name && (
+                                <div className="mb-2">
+                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                    <User className="w-3 h-3 mr-1" />
+                                    {meeting.clients.name}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex items-center gap-2 mb-2">
                                 <User className="w-4 h-4 text-gray-400" />
                                 <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
@@ -517,10 +525,18 @@ export default function DashboardMetrics({
                   </div>
                   <div className="space-y-3">
                     {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting) => (
+                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
                         <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
+                              {meeting.clients?.name && (
+                                <div className="mb-2">
+                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                    <User className="w-3 h-3 mr-1" />
+                                    {meeting.clients.name}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex items-center gap-2 mb-2">
                                 <User className="w-4 h-4 text-gray-400" />
                                 <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
@@ -588,10 +604,18 @@ export default function DashboardMetrics({
                   </div>
                   <div className="space-y-3">
                     {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting) => (
+                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
                         <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
+                              {meeting.clients?.name && (
+                                <div className="mb-2">
+                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                    <User className="w-3 h-3 mr-1" />
+                                    {meeting.clients.name}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex items-center gap-2 mb-2">
                                 <User className="w-4 h-4 text-gray-400" />
                                 <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
@@ -653,10 +677,18 @@ export default function DashboardMetrics({
                   </div>
                   <div className="space-y-3">
                     {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting) => (
+                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
                         <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
+                              {meeting.clients?.name && (
+                                <div className="mb-2">
+                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                    <User className="w-3 h-3 mr-1" />
+                                    {meeting.clients.name}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex items-center gap-2 mb-2">
                                 <User className="w-4 h-4 text-gray-400" />
                                 <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
