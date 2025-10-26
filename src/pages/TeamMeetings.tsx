@@ -1,35 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle, Clock, XCircle, Edit2, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { XCircle } from 'lucide-react';
 import { useSDRs } from '../hooks/useSDRs';
 import { useAllClients } from '../hooks/useAllClients';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAgency } from '../contexts/AgencyContext';
 import { supabase } from '../lib/supabase';
-import ScrollableMeetingList from '../components/ScrollableMeetingList';
+import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import type { Meeting } from '../types/database';
 import CalendarView from '../components/CalendarView';
 
 export default function TeamMeetings({
-  meetings,
   fetchSDRs,
 }: {
   meetings: Meeting[];
   fetchSDRs: () => void;
 }) {
   const { agency } = useAgency();
-  const [highlightPending, setHighlightPending] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setHighlightPending(false), 10000);
-    return () => clearTimeout(timer);
-  }, []);
   const { sdrs, loading: sdrsLoading } = useSDRs();
   const { clients, loading: clientsLoading } = useAllClients();
   const [selectedSDR, setSelectedSDR] = useState<string | 'all'>('all');
   const [selectedClient, setSelectedClient] = useState<string | 'all'>('all');
   const [allMeetings, setAllMeetings] = useState<(Meeting & { sdr_name?: string })[]>([]);
   const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null);
-  const [draftMeeting, setDraftMeeting] = useState<Partial<Meeting>>({});
   
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -60,21 +52,21 @@ export default function TeamMeetings({
             const { data } = await supabase
               .from('meetings')
               .select('*, clients(name)')
-              .eq('agency_id', agency.id)
-              .eq('sdr_id', sdr.id);
+              .eq('agency_id', agency.id as any)
+              .eq('sdr_id', sdr.id as any);
             
-            return (data || []).map(meeting => ({
+            return (data || []).map((meeting: any) => ({
               ...meeting,
-              sdr_name: sdr.full_name
+              sdr_name: sdr.full_name || ''
             }));
           })
         );
 
-        setAllMeetings(allSDRMeetings.flat());
+        setAllMeetings(allSDRMeetings.flat() as any);
       } else {
         setAllMeetings(selectedSDRMeetings.map(meeting => ({
           ...meeting,
-          sdr_name: sdrs.find(sdr => sdr.id === selectedSDR)?.full_name
+          sdr_name: sdrs.find(sdr => sdr.id === selectedSDR)?.full_name || ''
         })));
       }
     }
@@ -97,7 +89,7 @@ export default function TeamMeetings({
     const { error } = await supabase
       .from('meetings')
       .delete()
-      .eq('id', meetingId);
+      .eq('id', meetingId as any);
 
     if (error) {
       console.error('Error deleting meeting:', error);
@@ -120,8 +112,8 @@ export default function TeamMeetings({
         contact_full_name: updatedMeeting.contact_full_name, // (optional, for completeness)
         contact_email: updatedMeeting.contact_email,         // (optional)
         contact_phone: updatedMeeting.contact_phone,         // (optional)
-      })
-      .eq('id', updatedMeeting.id);
+      } as any)
+      .eq('id', updatedMeeting.id as any);
 
     if (error) {
       console.error('Error updating meeting:', error);
@@ -131,18 +123,56 @@ export default function TeamMeetings({
       ));
       fetchSDRs();
       setEditingMeetingId(null);
-      setDraftMeeting({});
     }
   };
 
   const handleEditMeeting = (meeting: Meeting) => {
     setEditingMeetingId(meeting.id);
-    setDraftMeeting({
-      ...meeting,
-      scheduled_date: meeting.scheduled_date,
-      status: meeting.status,
-      no_show: meeting.no_show,
-    });
+  };
+
+  // Drag and drop status change handler
+  const handleMeetingStatusChange = async (meetingId: string, newStatus: 'pending' | 'confirmed' | 'held' | 'no-show') => {
+    try {
+      const updates: any = {};
+      
+      if (newStatus === 'held') {
+        // Mark as held
+        updates.held_at = new Date().toISOString();
+        updates.no_show = false;
+      } else if (newStatus === 'no-show') {
+        // Mark as no-show
+        updates.no_show = true;
+        updates.held_at = null;
+      } else if (newStatus === 'confirmed') {
+        // Mark as confirmed
+        updates.status = 'confirmed';
+        updates.confirmed_at = new Date().toISOString();
+        updates.held_at = null;
+        updates.no_show = false;
+      } else if (newStatus === 'pending') {
+        // Mark as pending
+        updates.status = 'pending';
+        updates.confirmed_at = null;
+        updates.held_at = null;
+        updates.no_show = false;
+      }
+      
+      const { error } = await supabase
+        .from('meetings')
+        .update(updates as any)
+        .eq('id', meetingId as any);
+      
+      if (error) throw error;
+      
+      // Refetch all meetings to update the UI immediately
+      const updatedMeetings = allMeetings.map(meeting => 
+        meeting.id === meetingId ? { ...meeting, ...updates } : meeting
+      );
+      setAllMeetings(updatedMeetings);
+      fetchSDRs();
+    } catch (error) {
+      console.error('Failed to update meeting status:', error);
+    }
   };
 
   // Export function for Team's Meetings (organized by SDR)
@@ -297,26 +327,36 @@ export default function TeamMeetings({
   };
 
   
-  // Get today's date string for comparison
-  const todayString = new Date().toISOString().split('T')[0];
-
-  // Filter and sort meetings into categories
-  const todaysMeetings = filteredMeetings.filter(
-    meeting => meeting.scheduled_date.split('T')[0] === todayString
-  ).sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
-
   const nowDate = new Date();
+  
+  // Helper function to check if a meeting is finalized (held, no-show, or cancelled)
+  const isMeetingFinalized = (meeting: Meeting) => {
+    return meeting.held_at || meeting.no_show || meeting.no_longer_interested;
+  };
+
   const pendingMeetings = filteredMeetings
-    .filter(meeting => meeting.status === 'pending' && !meeting.no_show && new Date(meeting.scheduled_date) >= nowDate)
+    .filter(meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.held_at && new Date(meeting.scheduled_date) >= nowDate)
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const confirmedMeetings = filteredMeetings
-    .filter(meeting => meeting.status === 'confirmed')
+    .filter(meeting => meeting.status === 'confirmed' && !meeting.held_at && !meeting.no_show)
     .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+
+  const heldMeetings = filteredMeetings
+    .filter(meeting => meeting.held_at)
+    .sort((a, b) => new Date(b.held_at!).getTime() - new Date(a.held_at!).getTime());
 
   const noShowMeetings = filteredMeetings
     .filter(meeting => meeting.no_show)
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+
+  const pastDuePendingMeetings = filteredMeetings
+    .filter(meeting => {
+      const isPastDue = new Date(meeting.scheduled_date) < nowDate;
+      const isNotFinalized = !isMeetingFinalized(meeting);
+      return isPastDue && isNotFinalized && meeting.status === 'pending';
+    })
+    .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   if (sdrsLoading || clientsLoading) {
     return (
@@ -392,67 +432,21 @@ export default function TeamMeetings({
         {/* Visual Separator */}
         <div className="border-t-2 border-gray-200 my-8"></div>
 
-        {/* Meeting Lists */}
-        <div className="bg-gray-50 rounded-lg p-6 mt-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ScrollableMeetingList
-          title="Today's Meetings"
-          icon={<Calendar className="w-5 h-5 text-indigo-600" />}
-          meetings={todaysMeetings}
-          showDateControls={true}
+        {/* Unified Meeting Lists with Drag & Drop */}
+        <UnifiedMeetingLists
+          pendingMeetings={pendingMeetings}
+          confirmedMeetings={confirmedMeetings}
+          heldMeetings={heldMeetings}
+          noShowMeetings={noShowMeetings}
+          pastDuePendingMeetings={pastDuePendingMeetings}
           editable={true}
-          onSave={handleSaveMeeting}
-          onDelete={handleDeleteMeeting}
-          onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
-          onEdit={handleEditMeeting}
           editingMeetingId={editingMeetingId}
-        />
-        <div className={`${highlightPending ? 'animate-glow-orange ring-2 ring-orange-400' : ''}`}>
-          <ScrollableMeetingList
-            title="Pending Meetings"
-            icon={<Clock className="w-5 h-5 text-yellow-600" />}
-            meetings={pendingMeetings}
-            showDateControls={true}
-            editable={true}
-            onSave={handleSaveMeeting}
-            onDelete={handleDeleteMeeting}
-            onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
-            onEdit={handleEditMeeting}
-            editingMeetingId={editingMeetingId}
-          />
-          </div>
-        </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-lg p-6 mt-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ScrollableMeetingList
-          title="Confirmed Meetings"
-          icon={<CheckCircle className="w-5 h-5 text-green-600" />}
-          meetings={confirmedMeetings}
-          showDateControls={true}
-          editable={true}
-          onSave={handleSaveMeeting}
-          onDelete={handleDeleteMeeting}
-          onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
           onEdit={handleEditMeeting}
-          editingMeetingId={editingMeetingId}
-        />
-
-        <ScrollableMeetingList
-          title="No Shows"
-          icon={<XCircle className="w-5 h-5 text-red-600" />}
-          meetings={noShowMeetings}
-          showDateControls={true}
-          editable={true}
-          onSave={handleSaveMeeting}
           onDelete={handleDeleteMeeting}
-          onCancel={() => { setEditingMeetingId(null); fetchSDRs(); }}
-          onEdit={handleEditMeeting}
-          editingMeetingId={editingMeetingId}
+          onSave={handleSaveMeeting}
+          onCancel={() => { setEditingMeetingId(null); }}
+          onMeetingStatusChange={handleMeetingStatusChange}
         />
-          </div>
-        </div>
 
       {/* Export Modal */}
       {exportModalOpen && (

@@ -252,6 +252,7 @@ function SDRDashboardContent() {
   const updateMeetingHeldDate = meetingsHook?.updateMeetingHeldDate;
   const updateMeetingConfirmedDate = meetingsHook?.updateMeetingConfirmedDate;
   const deleteMeeting = meetingsHook?.deleteMeeting;
+  const fetchMeetings = meetingsHook?.fetchMeetings;
 
   const clients = clientsHook?.clients || [];
   const clientsLoading = clientsHook?.loading || false;
@@ -523,6 +524,58 @@ function SDRDashboardContent() {
       }
     } catch (error) {
       console.error('Failed to update meeting confirmed date:', error);
+    }
+  };
+
+  // Drag and drop status change handler
+  const handleMeetingStatusChange = async (meetingId: string, newStatus: 'pending' | 'confirmed' | 'held' | 'no-show') => {
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const updates: any = {};
+      
+      if (newStatus === 'held') {
+        // Mark as held
+        updates.held_at = new Date().toISOString();
+        updates.no_show = false;
+      } else if (newStatus === 'no-show') {
+        // Mark as no-show
+        updates.no_show = true;
+        updates.held_at = null;
+      } else if (newStatus === 'confirmed') {
+        // Mark as confirmed
+        updates.status = 'confirmed';
+        updates.confirmed_at = new Date().toISOString();
+        updates.held_at = null;
+        updates.no_show = false;
+      } else if (newStatus === 'pending') {
+        // Mark as pending
+        updates.status = 'pending';
+        updates.confirmed_at = null;
+        updates.held_at = null;
+        updates.no_show = false;
+      }
+      
+      const { error } = await supabase
+        .from('meetings')
+        .update(updates)
+        .eq('id', meetingId as any);
+      
+      if (error) throw error;
+      
+      // Refetch meetings and clients to update the UI immediately
+      if (fetchMeetings) {
+        await fetchMeetings();
+      }
+      if (fetchClients) {
+        await fetchClients();
+      }
+      
+      // Trigger confetti for positive actions
+      if (newStatus === 'held' || newStatus === 'confirmed') {
+        triggerConfetti();
+      }
+    } catch (error) {
+      console.error('Failed to update meeting status:', error);
     }
   };
 
@@ -1179,6 +1232,7 @@ function SDRDashboardContent() {
                 onCancel={handleCancelEdit}
                 onUpdateHeldDate={handleMeetingHeldDateUpdate}
                 onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
+                onMeetingStatusChange={handleMeetingStatusChange}
               />
 
               {/* Data Visualizations - Moved to bottom */}

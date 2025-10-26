@@ -18,6 +18,7 @@ interface UnifiedMeetingListsProps {
   onDelete?: (meetingId: string) => void;
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
+  onMeetingStatusChange?: (meetingId: string, newStatus: 'pending' | 'confirmed' | 'held' | 'no-show') => void;
 }
 
 export default function UnifiedMeetingLists({
@@ -31,6 +32,7 @@ export default function UnifiedMeetingLists({
   onDelete,
   onUpdateHeldDate,
   onUpdateConfirmedDate,
+  onMeetingStatusChange,
   editable = false,
   editingMeetingId = null,
   onEdit,
@@ -38,6 +40,8 @@ export default function UnifiedMeetingLists({
   onCancel,
 }: UnifiedMeetingListsProps & { pastDuePendingMeetings?: Meeting[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [draggedMeeting, setDraggedMeeting] = useState<Meeting | null>(null);
+  const [dragOverSection, setDragOverSection] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     pending: true,
     confirmed: true,
@@ -49,6 +53,34 @@ export default function UnifiedMeetingLists({
   });
   const toggleSection = (key: keyof typeof openSections) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (meeting: Meeting) => {
+    setDraggedMeeting(meeting);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedMeeting(null);
+    setDragOverSection(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, section: string) => {
+    e.preventDefault();
+    setDragOverSection(section);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverSection(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetStatus: 'pending' | 'confirmed' | 'held' | 'no-show') => {
+    e.preventDefault();
+    if (draggedMeeting && onMeetingStatusChange) {
+      onMeetingStatusChange(draggedMeeting.id, targetStatus);
+    }
+    setDraggedMeeting(null);
+    setDragOverSection(null);
   };
 
   const filterMeetings = (meetings: Meeting[]) => {
@@ -119,7 +151,12 @@ export default function UnifiedMeetingLists({
       {/* Pending, Confirmed, Past Due Pending */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending Meetings */}
-        <div className="bg-white rounded-lg shadow-md border-t-4 border-yellow-400">
+        <div 
+          className={`bg-white rounded-lg shadow-md border-t-4 border-yellow-400 transition-all ${dragOverSection === 'pending' ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}`}
+          onDragOver={(e) => handleDragOver(e, 'pending')}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, 'pending')}
+        >
           <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-yellow-50 cursor-pointer select-none" onClick={() => toggleSection('pending')}>
             <Clock className="w-5 h-5 text-yellow-500" />
             <h3 className="text-lg font-semibold text-yellow-800 flex-1">Pending Meetings</h3>
@@ -130,7 +167,13 @@ export default function UnifiedMeetingLists({
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredPendingMeetings.length > 0 ? (
                 filteredPendingMeetings.map((meeting) => (
-                  <div key={meeting.id} className="mb-4 border border-yellow-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                  <div 
+                    key={meeting.id} 
+                    draggable
+                    onDragStart={() => handleDragStart(meeting)}
+                    onDragEnd={handleDragEnd}
+                    className={`mb-4 border border-yellow-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                  >
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -146,13 +189,20 @@ export default function UnifiedMeetingLists({
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                <p className="text-gray-500 text-sm text-center py-8">
+                  {dragOverSection === 'pending' ? 'Drop here to mark as Pending' : 'No meetings to display'}
+                </p>
               )}
             </div>
           )}
         </div>
         {/* Confirmed Meetings */}
-        <div className="bg-white rounded-lg shadow-md border-t-4 border-blue-400">
+        <div 
+          className={`bg-white rounded-lg shadow-md border-t-4 border-blue-400 transition-all ${dragOverSection === 'confirmed' ? 'ring-4 ring-blue-300 bg-blue-50' : ''}`}
+          onDragOver={(e) => handleDragOver(e, 'confirmed')}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, 'confirmed')}
+        >
           <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-blue-50 cursor-pointer select-none" onClick={() => toggleSection('confirmed')}>
             <CheckCircle className="w-5 h-5 text-blue-500" />
             <h3 className="text-lg font-semibold text-blue-800 flex-1">Confirmed Meetings</h3>
@@ -163,7 +213,13 @@ export default function UnifiedMeetingLists({
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredConfirmedMeetings.length > 0 ? (
                 filteredConfirmedMeetings.map((meeting) => (
-                  <div key={meeting.id} className="mb-4 border border-blue-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                  <div 
+                    key={meeting.id} 
+                    draggable
+                    onDragStart={() => handleDragStart(meeting)}
+                    onDragEnd={handleDragEnd}
+                    className={`mb-4 border border-blue-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                  >
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -179,7 +235,9 @@ export default function UnifiedMeetingLists({
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                <p className="text-gray-500 text-sm text-center py-8">
+                  {dragOverSection === 'confirmed' ? 'Drop here to mark as Confirmed' : 'No meetings to display'}
+                </p>
               )}
             </div>
           )}
@@ -221,7 +279,12 @@ export default function UnifiedMeetingLists({
       {/* Held Meetings and No Shows - Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {/* Held Meetings */}
-        <div className="bg-white rounded-lg shadow-md border-t-4 border-green-400">
+        <div 
+          className={`bg-white rounded-lg shadow-md border-t-4 border-green-400 transition-all ${dragOverSection === 'held' ? 'ring-4 ring-green-300 bg-green-50' : ''}`}
+          onDragOver={(e) => handleDragOver(e, 'held')}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, 'held')}
+        >
           <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-green-50 cursor-pointer select-none" onClick={() => toggleSection('held')}>
             <CheckCircle className="w-5 h-5 text-green-500" />
             <h3 className="text-lg font-semibold text-green-800 flex-1">Held Meetings</h3>
@@ -232,7 +295,13 @@ export default function UnifiedMeetingLists({
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredHeldMeetings.length > 0 ? (
                 filteredHeldMeetings.map((meeting) => (
-                  <div key={meeting.id} className="mb-4 border border-green-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                  <div 
+                    key={meeting.id} 
+                    draggable
+                    onDragStart={() => handleDragStart(meeting)}
+                    onDragEnd={handleDragEnd}
+                    className={`mb-4 border border-green-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                  >
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -248,13 +317,20 @@ export default function UnifiedMeetingLists({
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                <p className="text-gray-500 text-sm text-center py-8">
+                  {dragOverSection === 'held' ? 'Drop here to mark as Held' : 'No meetings to display'}
+                </p>
               )}
             </div>
           )}
         </div>
         {/* No Shows */}
-        <div className="bg-white rounded-lg shadow-md border-t-4 border-red-400">
+        <div 
+          className={`bg-white rounded-lg shadow-md border-t-4 border-red-400 transition-all ${dragOverSection === 'noShow' ? 'ring-4 ring-red-300 bg-red-50' : ''}`}
+          onDragOver={(e) => handleDragOver(e, 'noShow')}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, 'no-show')}
+        >
           <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-red-50 cursor-pointer select-none" onClick={() => toggleSection('noShow')}>
             <XCircle className="w-5 h-5 text-red-500" />
             <h3 className="text-lg font-semibold text-red-800 flex-1">No Shows</h3>
@@ -265,7 +341,13 @@ export default function UnifiedMeetingLists({
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredNoShowMeetings.length > 0 ? (
                 filteredNoShowMeetings.map((meeting) => (
-                  <div key={meeting.id} className="mb-4 border border-red-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                  <div 
+                    key={meeting.id} 
+                    draggable
+                    onDragStart={() => handleDragStart(meeting)}
+                    onDragEnd={handleDragEnd}
+                    className={`mb-4 border border-red-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                  >
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -281,7 +363,9 @@ export default function UnifiedMeetingLists({
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                <p className="text-gray-500 text-sm text-center py-8">
+                  {dragOverSection === 'noShow' ? 'Drop here to mark as No Show' : 'No meetings to display'}
+                </p>
               )}
             </div>
           )}
