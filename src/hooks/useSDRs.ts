@@ -6,6 +6,7 @@ import type { Database } from '../types/supabase';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface SDRWithMetrics extends Profile {
+  totalMeetingsSet: number;
   totalConfirmedMeetings: number;
   totalPendingMeetings: number;
   totalHeldMeetings: number;
@@ -15,6 +16,8 @@ interface SDRWithMetrics extends Profile {
     name: string;
     monthly_set_target: number;
     monthly_hold_target: number;
+    meetingsSet: number;
+    meetingsHeld: number;
     confirmedMeetings: number;
     pendingMeetings: number;
   }>;
@@ -29,10 +32,10 @@ export function useSDRs() {
 
   async function fetchSDRs() {
     try {
-      // Get current month's start and end dates
+      // Get current month's start and end dates (use UTC to match database timestamps and useClients logic)
       const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+      const monthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
 
       // Fetch all SDRs
       let sdrQuery = supabase
@@ -74,25 +77,27 @@ export function useSDRs() {
       const { data: assignments, error: assignmentsError } = await assignmentsQuery as any;
       if (assignmentsError) throw assignmentsError;
 
-      // Fetch meetings for this month
+      // Fetch ALL meetings (we'll filter by created_at and held_at in JS for accurate counts)
+      // Use same filtering logic as useMeetings to ensure consistency
       let meetingsQuery = supabase
         .from('meetings')
         .select('*')
-        .gte('scheduled_date', monthStart.toISOString())
-        .lte('scheduled_date', monthEnd.toISOString());
+        .order('created_at', { ascending: false }) // Get newest first to avoid missing recent meetings
+        .limit(10000); // Ensure we get enough meetings
       
       if (agency) {
-        meetingsQuery = meetingsQuery.eq('agency_id', agency.id as any);
+        // Include legacy meetings that may not have an agency_id set (same as useMeetings)
+        meetingsQuery = meetingsQuery.or(`agency_id.eq.${agency.id},agency_id.is.null`) as any;
       }
       
-      const { data: meetings, error: meetingsError } = await meetingsQuery as any;
+      const { data: allMeetings, error: meetingsError } = await meetingsQuery as any;
 
       if (meetingsError) throw meetingsError;
 
       // Process and combine the data
       const sdrsWithMetrics = sdrProfiles?.map((sdr: Profile) => {
         // Get all meetings for this SDR
-        const sdrMeetings = meetings?.filter(
+        const sdrMeetings = allMeetings?.filter(
           (meeting: any) => meeting.sdr_id === sdr.id
         ) || [];
 
@@ -104,8 +109,28 @@ export function useSDRs() {
               (meeting: any) => meeting.client_id === assignment.client_id
             );
 
+            // Meetings SET: filter by created_at (when meeting was booked)
+            const clientMeetingsSet = clientMeetings.filter((meeting: any) => {
+              const createdDate = new Date(meeting.created_at);
+              const isInMonth = createdDate >= monthStart && createdDate < monthEnd;
+              const icpStatus = meeting.icp_status;
+              const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+              return isInMonth && !isICPDisqualified;
+            });
+
+            // Meetings HELD: filter by scheduled_date (when meeting was scheduled to occur)
+            // This matches the SDR Dashboard logic
+            const clientMeetingsHeld = clientMeetings.filter((meeting: any) => {
+              if (!meeting.held_at || meeting.no_show) return false;
+              const scheduledDate = new Date(meeting.scheduled_date);
+              const isInMonth = scheduledDate >= monthStart && scheduledDate < monthEnd;
+              const icpStatus = meeting.icp_status;
+              const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+              return isInMonth && !isICPDisqualified;
+            });
+
             // Match the exact pending meetings calculation from Team Meetings
-            const pendingMeetings = clientMeetings.filter(
+            const pendingMeetings = clientMeetingsSet.filter(
               (meeting: any) => meeting.status === 'pending' && !meeting.no_show
             ).length;
 
@@ -114,7 +139,9 @@ export function useSDRs() {
               name: assignment.clients.name,
               monthly_set_target: assignment.monthly_set_target || 0,
               monthly_hold_target: assignment.monthly_hold_target || 0,
-              confirmedMeetings: clientMeetings.filter(
+              meetingsSet: clientMeetingsSet.length,
+              meetingsHeld: clientMeetingsHeld.length,
+              confirmedMeetings: clientMeetingsSet.filter(
                 (meeting: any) => meeting.status === 'confirmed' && !meeting.no_show
               ).length,
               pendingMeetings
@@ -122,26 +149,45 @@ export function useSDRs() {
           });
 
         // Calculate total meetings for this SDR
-        const totalConfirmedMeetings = sdrMeetings.filter(
+        // Meetings SET: filter by created_at
+        const sdrMeetingsSet = sdrMeetings.filter((meeting: any) => {
+          const createdDate = new Date(meeting.created_at);
+          const isInMonth = createdDate >= monthStart && createdDate < monthEnd;
+          const icpStatus = meeting.icp_status;
+          const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+          return isInMonth && !isICPDisqualified;
+        });
+
+        // Meetings HELD: filter by scheduled_date (when meeting was scheduled to occur)
+        // This matches the SDR Dashboard logic
+        const sdrMeetingsHeld = sdrMeetings.filter((meeting: any) => {
+          if (!meeting.held_at || meeting.no_show) return false;
+          const scheduledDate = new Date(meeting.scheduled_date);
+          const isInMonth = scheduledDate >= monthStart && scheduledDate < monthEnd;
+          const icpStatus = meeting.icp_status;
+          const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+          return isInMonth && !isICPDisqualified;
+        });
+
+        const totalConfirmedMeetings = sdrMeetingsSet.filter(
           (meeting: any) => meeting.status === 'confirmed' && !meeting.no_show
         ).length;
 
         // Match the exact pending meetings calculation from Team Meetings
-        const totalPendingMeetings = sdrMeetings.filter(
+        const totalPendingMeetings = sdrMeetingsSet.filter(
           (meeting: any) => meeting.status === 'pending' && !meeting.no_show
         ).length;
 
-        const totalHeldMeetings = sdrMeetings.filter(
-          (meeting: any) => meeting.held_at !== null
-        ).length;
+        const totalHeldMeetings = sdrMeetingsHeld.length;
 
-        const totalNoShows = sdrMeetings.filter(
+        const totalNoShows = sdrMeetingsSet.filter(
           (meeting: any) => meeting.no_show === true
         ).length;
 
         return {
           ...sdr,
           clients,
+          totalMeetingsSet: sdrMeetingsSet.length,
           totalConfirmedMeetings,
           totalPendingMeetings,
           totalHeldMeetings,

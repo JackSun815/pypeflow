@@ -104,7 +104,9 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
       let meetingsQuery = client
         .from('meetings')
         .select('*, clients(name)')
-        .eq('sdr_id', sdrId as any);
+        .eq('sdr_id', sdrId as any)
+        .order('created_at', { ascending: false }) // Get newest first
+        .limit(10000); // Ensure we get enough meetings
       
       if (agencyIdToUse) {
         meetingsQuery = meetingsQuery.eq('agency_id', agencyIdToUse);
@@ -135,17 +137,20 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
           }
         );
 
-        // Meetings HELD: by scheduled_date in current month
+        // Meetings HELD: by held_at timestamp in current month
         const clientMeetingsHeld = safeMeetings.filter(
           (meeting) => {
             const isForThisClient = meeting.client_id === assignment.clients.id;
-            const scheduledDate = new Date(meeting.scheduled_date);
-            const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
             const isHeld = meeting.held_at !== null && !meeting.no_show;
+            
+            if (!isHeld) return false;
+            
+            const heldDate = new Date(meeting.held_at);
+            const isInMonth = heldDate >= monthStart && heldDate < nextMonthStart;
             const icpStatus = (meeting as any).icp_status;
             const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
             
-            return isForThisClient && isInMonth && isHeld && !isICPDisqualified;
+            return isForThisClient && isInMonth && !isICPDisqualified;
           }
         );
 

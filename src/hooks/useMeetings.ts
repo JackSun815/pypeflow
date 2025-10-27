@@ -45,7 +45,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         let query = client
           .from('meetings')
           .select('*, clients(name), profiles:sdr_id(full_name)')
-          .order('scheduled_date', { ascending: true })
+          .order('created_at', { ascending: false }) // Get newest first to avoid missing recent meetings
           .limit(10000); // Increase limit to handle large datasets
         
         if (agencyIdToUse) {
@@ -83,7 +83,7 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       let query = client
         .from('meetings')
         .select('*, clients(name)')
-        .order('scheduled_date', { ascending: true })
+        .order('created_at', { ascending: false }) // Get newest first to avoid missing recent meetings
         .limit(10000) // Increase limit to handle large datasets
         .eq('sdr_id', sdrId as any);
       

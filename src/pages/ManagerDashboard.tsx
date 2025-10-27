@@ -777,15 +777,62 @@ export default function ManagerDashboard() {
   };
 
   const handleSDRClientClick = (sdrId: string, clientId: string, sdrName: string, clientName: string) => {
+    console.log('=== Modal Debug Info ===');
+    console.log('Selected Month:', selectedMonth);
+    console.log('SDR:', sdrName, '(ID:', sdrId, ')');
+    console.log('Client:', clientName, '(ID:', clientId, ')');
+    console.log('Month Range:', monthStart.toISOString(), 'to', nextMonthStart.toISOString());
+    
+    // Check ALL meetings for this SDR (not filtered by month yet)
+    const allSDRMeetings = meetings.filter(m => m.sdr_id === sdrId);
+    console.log('Total meetings for SDR (all time):', allSDRMeetings.length);
+    
+    // Check meetings for this SDR+Client (all time)
+    const allSDRClientMeetings = meetings.filter(m => m.sdr_id === sdrId && m.client_id === clientId);
+    console.log('Total meetings for SDR+Client (all time):', allSDRClientMeetings.length);
+    console.log('All SDR+Client meetings:', allSDRClientMeetings.map(m => ({ 
+      contact: m.contact_full_name, 
+      created_at: m.created_at,
+      scheduled_date: m.scheduled_date,
+      no_show: m.no_show,
+      icp_status: (m as any).icp_status
+    })));
+    
+    console.log('Total meetings in monthlyMeetingsSet:', monthlyMeetingsSet.length);
+    console.log('Meetings for this SDR+Client in monthlyMeetingsSet:', monthlyMeetingsSet.filter(m => m.sdr_id === sdrId && m.client_id === clientId).length);
+    
     // Filter meetings for this specific SDR and client
-    // SET meetings: by created_at
+    // SET meetings: by created_at (when SDR booked the meeting)
     const setMeetings = monthlyMeetingsSet.filter(m => 
       m.sdr_id === sdrId && m.client_id === clientId
     );
-    // HELD meetings: by scheduled_date
+    console.log('Set meetings (filtered by month):', setMeetings.map(m => ({ 
+      contact: m.contact_full_name, 
+      created_at: m.created_at,
+      scheduled_date: m.scheduled_date,
+      no_show: m.no_show,
+      icp_status: (m as any).icp_status
+    })));
+    
+    // HELD meetings: by scheduled_date (when meeting was scheduled to occur)
+    // This matches the SDR Dashboard logic
     const heldMeetings = monthlyMeetingsHeld.filter(m => 
       m.sdr_id === sdrId && m.client_id === clientId
     );
+    console.log('Held meetings:', heldMeetings.length);
+    
+    // PENDING meetings: from setMeetings that are not held yet
+    const nowDate = new Date();
+    const pendingMeetings = setMeetings.filter(m => 
+      m.status === 'pending' && !m.no_show && !m.held_at && new Date(m.scheduled_date) >= nowDate
+    );
+
+    // Get assignment targets
+    const assignment = assignments.find(a => 
+      a.sdr_id === sdrId && a.client_id === clientId && a.is_active !== false
+    );
+    const setTarget = assignment?.monthly_set_target || 0;
+    const heldTarget = assignment?.monthly_hold_target || 0;
 
     // Combine both for the modal display (show all relevant meetings)
     const allSdrClientMeetings = [...setMeetings];
@@ -802,9 +849,15 @@ export default function ManagerDashboard() {
       sdrName,
       clientName,
       setMeetings,
-      heldMeetings
+      heldMeetings,
+      pendingMeetings,
+      setTarget,
+      heldTarget
     });
-    setModalTitle(`${sdrName} - ${clientName} Meetings`);
+    
+    // Include the month in the title to be clear which period is shown
+    const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+    setModalTitle(`${clientName} - Meetings (${monthLabel})`);
     setModalType('sdrClientMeetings');
     setModalOpen(true);
   };
@@ -868,19 +921,21 @@ export default function ManagerDashboard() {
     return isInMonth && !isICPDisqualified;
   });
 
-  // Meetings HELD: Filter by scheduled_date (month it was scheduled for) AND exclude non-ICP-qualified
+  // Meetings HELD: Filter by scheduled_date (when meeting was scheduled to occur) AND exclude non-ICP-qualified
+  // This matches the SDR Dashboard logic
   const monthlyMeetingsHeld = meetings.filter(meeting => {
-    const scheduledDate = new Date(meeting.scheduled_date);
-    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
-    
     // Must be actually held
     const isHeld = meeting.held_at !== null && !meeting.no_show;
+    if (!isHeld) return false;
+    
+    const scheduledDate = new Date(meeting.scheduled_date);
+    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
     
     // Exclude non-ICP-qualified meetings
     const icpStatus = (meeting as any).icp_status;
     const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
     
-    return isInMonth && isHeld && !isICPDisqualified;
+    return isInMonth && !isICPDisqualified;
   });
 
   // Calculate total targets from all SDRs (separate set and held targets)
@@ -1614,11 +1669,9 @@ export default function ManagerDashboard() {
                         (sum, assignment) => sum + (assignment.monthly_hold_target || 0),
                         0
                       );
-                      // Calculate monthly meetings for this SDR
-                      // Meetings SET: Filter by created_at (when SDR booked it)
-                      const sdrMeetingsSet = monthlyMeetingsSet.filter(m => m.sdr_id === sdr.id).length;
-                      // Meetings HELD: Filter by scheduled_date (month it was scheduled for)
-                      const sdrHeldMeetings = monthlyMeetingsHeld.filter(m => m.sdr_id === sdr.id).length;
+                      // Use pre-calculated values from useSDRs hook (already filtered by created_at and held_at)
+                      const sdrMeetingsSet = sdr.totalMeetingsSet || 0;
+                      const sdrHeldMeetings = sdr.totalHeldMeetings || 0;
 
                       const setProgress = totalSetTarget > 0 ? (sdrMeetingsSet / totalSetTarget) * 100 : 0;
                       const heldProgress = totalHeldTarget > 0 ? (sdrHeldMeetings / totalHeldTarget) * 100 : 0;
@@ -1751,15 +1804,10 @@ export default function ManagerDashboard() {
                                       
                                       return (() => {
                                     
-                                    // Calculate monthly meetings for this client
-                                    // Meetings SET: Filter by created_at
-                                    const clientMeetingsSet = monthlyMeetingsSet.filter(m => 
-                                      m.sdr_id === sdr.id && m.client_id === client.id
-                                    ).length;
-                                    // Meetings HELD: Filter by scheduled_date
-                                    const clientHeldMeetings = monthlyMeetingsHeld.filter(m => 
-                                      m.sdr_id === sdr.id && m.client_id === client.id
-                                    ).length;
+                                    // Use pre-calculated values from useSDRs hook (already filtered by created_at and held_at)
+                                    const clientData = sdr.clients.find(c => c.id === client.id);
+                                    const clientMeetingsSet = clientData?.meetingsSet || 0;
+                                    const clientHeldMeetings = clientData?.meetingsHeld || 0;
                                     
                                     const clientSetProgress = (assignment.monthly_set_target || 0) > 0 ? 
                                       (clientMeetingsSet / (assignment.monthly_set_target || 0)) * 100 : 0;
@@ -2258,10 +2306,7 @@ export default function ManagerDashboard() {
                       },
                       {
                         label: 'Set Actual',
-                        data: sdrs.map(sdr => {
-                          const sdrMeetingsSet = monthlyMeetingsSet.filter((m: any) => m.sdr_id === sdr.id);
-                          return sdrMeetingsSet.length;
-                        }),
+                        data: sdrs.map(sdr => sdr.totalMeetingsSet || 0),
                         backgroundColor: 'rgba(59, 130, 246, 0.8)',
                         borderColor: 'rgba(59, 130, 246, 1)',
                         borderWidth: 2,
@@ -2275,10 +2320,7 @@ export default function ManagerDashboard() {
                       },
                       {
                         label: 'Held Actual',
-                        data: sdrs.map(sdr => {
-                          const sdrMeetingsHeld = monthlyMeetingsHeld.filter((m: any) => m.sdr_id === sdr.id);
-                          return sdrMeetingsHeld.length;
-                        }),
+                        data: sdrs.map(sdr => sdr.totalHeldMeetings || 0),
                         backgroundColor: 'rgba(34, 197, 94, 0.8)',
                         borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 2,
@@ -2814,30 +2856,34 @@ export default function ManagerDashboard() {
                   </div>
                 ) : modalContent?.type === 'sdrClientMeetings' ? (
                   <div className="space-y-6">
-                    <div className="bg-blue-50 p-4 rounded-md">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {modalContent.sdrName} - {modalContent.clientName}
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Meetings Set:</span> {modalContent.setMeetings.length}
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Meetings Held:</span> {modalContent.heldMeetings.length}
-                        </div>
+                    {/* Summary Section - Matching SDR Dashboard */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-3xl font-bold text-green-700">{modalContent.setMeetings.length}</p>
+                        <p className="text-sm text-green-600">Meetings Set</p>
+                        <p className="text-xs text-gray-500 mt-1">Target: {modalContent.setTarget}</p>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-3xl font-bold text-blue-700">{modalContent.heldMeetings.length}</p>
+                        <p className="text-sm text-blue-600">Meetings Held</p>
+                        <p className="text-xs text-gray-500 mt-1">Target: {modalContent.heldTarget}</p>
+                      </div>
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <p className="text-3xl font-bold text-yellow-700">{modalContent.pendingMeetings.length}</p>
+                        <p className="text-sm text-yellow-600">Pending</p>
                       </div>
                     </div>
                     
-                    {/* Meetings Held Section */}
-                    {modalContent.heldMeetings.length > 0 && (
-                      <div>
-                        <h4 className="text-md font-medium text-green-700 mb-3 flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5" />
-                          Meetings Held ({modalContent.heldMeetings.length})
-                        </h4>
+                    {/* Meetings Set Section - FIRST */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-green-600" />
+                        Meetings Set ({modalContent.setMeetings.length})
+                      </h3>
+                      {modalContent.setMeetings.length > 0 ? (
                         <div className="space-y-3">
-                          {modalContent.heldMeetings.map((meeting: any) => (
-                            <div key={meeting.id} className="bg-green-50">
+                          {modalContent.setMeetings.map((meeting: any) => (
+                            <div key={meeting.id}>
                               <MeetingCard
                                 meeting={meeting}
                                 showSDR={false}
@@ -2845,38 +2891,63 @@ export default function ManagerDashboard() {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
-
-                    {/* Other Meetings Section */}
-                    {modalContent.setMeetings.filter((m: any) => 
-                      !(m.status === 'confirmed' && !m.no_show && m.held_at !== null)
-                    ).length > 0 && (
-                      <div>
-                        <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
-                          <Clock className="w-5 h-5" />
-                          Other Meetings ({modalContent.setMeetings.filter((m: any) => 
-                            !(m.status === 'confirmed' && !m.no_show && m.held_at !== null)
-                          ).length})
-                        </h4>
-                        <div className="space-y-3">
-                          {modalContent.setMeetings
-                            .filter((m: any) => !(m.status === 'confirmed' && !m.no_show && m.held_at !== null))
-                            .map((meeting: any) => (
-                              <div key={meeting.id} className="bg-gray-50">
-                                <MeetingCard
-                                  meeting={meeting}
-                                  showSDR={false}
-                                />
-                              </div>
-                            ))}
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <p>No meetings set</p>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    {modalMeetings.length === 0 && (
-                      <p className="text-gray-500 text-center py-4">No meetings found for this SDR and client combination.</p>
-                    )}
+                    {/* Meetings Held Section - SECOND */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                        Meetings Held ({modalContent.heldMeetings.length})
+                      </h3>
+                      {modalContent.heldMeetings.length > 0 ? (
+                        <div className="space-y-3">
+                          {modalContent.heldMeetings.map((meeting: any) => (
+                            <div key={meeting.id}>
+                              <MeetingCard
+                                meeting={meeting}
+                                showSDR={false}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <CheckCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <p>No meetings held</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pending Meetings Section - THIRD */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-yellow-600" />
+                        Pending Meetings ({modalContent.pendingMeetings.length})
+                      </h3>
+                      {modalContent.pendingMeetings.length > 0 ? (
+                        <div className="space-y-3">
+                          {modalContent.pendingMeetings.map((meeting: any) => (
+                            <div key={meeting.id}>
+                              <MeetingCard
+                                meeting={meeting}
+                                showSDR={false}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <p>No pending meetings</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : modalMeetings.length > 0 ? (
                   <div className="space-y-4">

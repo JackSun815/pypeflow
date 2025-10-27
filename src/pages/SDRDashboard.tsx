@@ -1138,8 +1138,11 @@ function SDRDashboardContent() {
                           confirmedMeetings={client.confirmedMeetings}
                           pendingMeetings={client.pendingMeetings}
                           heldMeetings={client.heldMeetings}
+                          totalMeetingsSet={client.totalMeetingsSet}
                           todaysMeetings={client.todaysMeetings}
                           isInactive={false}
+                          allMeetings={meetings}
+                          clientId={client.id}
                           onAddMeeting={() => {
                             setSelectedClientId(client.id);
                             // Set booked date to today by default
@@ -1167,9 +1170,12 @@ function SDRDashboardContent() {
                           confirmedMeetings={client.confirmedMeetings}
                           pendingMeetings={client.pendingMeetings}
                           heldMeetings={client.heldMeetings}
+                          totalMeetingsSet={client.totalMeetingsSet}
                           todaysMeetings={client.todaysMeetings}
                           isInactive={true}
                           deactivatedAt={client.deactivated_at}
+                          allMeetings={meetings}
+                          clientId={client.id}
                           onAddMeeting={() => {
                             setSelectedClientId(client.id);
                             // Set booked date to today by default
