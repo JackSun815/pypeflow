@@ -185,7 +185,18 @@ export default function ManagerDashboard() {
     }
   };
   const { agency } = useAgency();
-  const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs();
+  
+  // Get current month for default selection
+  const nowForMonth = new Date();
+  const currentMonthForSelector = format(nowForMonth, 'yyyy-MM');
+  
+  // Initialize selectedMonth from localStorage or default to current month
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = localStorage.getItem('managerDashboardSelectedMonth');
+    return saved || currentMonthForSelector;
+  });
+  
+  const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs(selectedMonth);
   const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
   const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
   const [selectedSDR] = useState<string | null>(null);
@@ -217,16 +228,6 @@ export default function ManagerDashboard() {
       targets: true,
       timestamps: true
     }
-  });
-
-  // Month selector state for clients performance
-  const nowForMonth = new Date();
-  const currentMonthForSelector = format(nowForMonth, 'yyyy-MM');
-  
-  // Initialize selectedMonth from localStorage or default to current month
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const saved = localStorage.getItem('managerDashboardSelectedMonth');
-    return saved || currentMonthForSelector;
   });
 
   // Generate month options: next month + current month + 5 previous months
@@ -472,22 +473,22 @@ export default function ManagerDashboard() {
           return isInMonth && !isICPDisqualified;
         });
 
-        // Meetings HELD: Filter by scheduled_date (month it was scheduled for)
+        // Meetings HELD: Filter by held_at (when meeting was actually held)
         const monthlyMeetingsHeld = sdrMeetings.filter(meeting => {
-          const scheduledDate = new Date(meeting.scheduled_date);
+          // Must be actually held
+          if (!meeting.held_at || meeting.no_show) return false;
+          
+          const heldDate = new Date(meeting.held_at);
           const now = new Date();
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          const isInMonth = scheduledDate >= monthStart && scheduledDate <= monthEnd;
-          
-          // Must be actually held
-          const isHeld = meeting.held_at !== null && !meeting.no_show;
+          const isInMonth = heldDate >= monthStart && heldDate <= monthEnd;
           
           // Exclude non-ICP-qualified meetings
           const icpStatus = (meeting as any).icp_status;
           const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
           
-          return isInMonth && isHeld && !isICPDisqualified;
+          return isInMonth && !isICPDisqualified;
         });
 
         const totalMeetings = monthlyMeetingsSet.length;
@@ -581,22 +582,22 @@ export default function ManagerDashboard() {
           return isInMonth && !isICPDisqualified;
         });
 
-        // Meetings HELD: Filter by scheduled_date (month it was scheduled for)
+        // Meetings HELD: Filter by held_at (when meeting was actually held)
         const monthlyMeetingsHeld = clientMeetings.filter(meeting => {
-          const scheduledDate = new Date(meeting.scheduled_date);
+          // Must be actually held
+          if (!meeting.held_at || meeting.no_show) return false;
+          
+          const heldDate = new Date(meeting.held_at);
           const now = new Date();
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          const isInMonth = scheduledDate >= monthStart && scheduledDate <= monthEnd;
-          
-          // Must be actually held
-          const isHeld = meeting.held_at !== null && !meeting.no_show;
+          const isInMonth = heldDate >= monthStart && heldDate <= monthEnd;
           
           // Exclude non-ICP-qualified meetings
           const icpStatus = (meeting as any).icp_status;
           const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
           
-          return isInMonth && isHeld && !isICPDisqualified;
+          return isInMonth && !isICPDisqualified;
         });
 
         const totalMeetings = monthlyMeetingsSet.length;
@@ -814,8 +815,8 @@ export default function ManagerDashboard() {
       icp_status: (m as any).icp_status
     })));
     
-    // HELD meetings: by scheduled_date (when meeting was scheduled to occur)
-    // This matches the SDR Dashboard logic
+    // HELD meetings: by held_at (when meeting was actually held)
+    // This matches the SDR Dashboard useClients logic
     const heldMeetings = monthlyMeetingsHeld.filter(m => 
       m.sdr_id === sdrId && m.client_id === clientId
     );
@@ -903,8 +904,8 @@ export default function ManagerDashboard() {
    * "Meetings SET" = Count by created_at (when the meeting was booked)
    *   Example: Meeting created Oct 8, scheduled for Nov 27 → counts as "set" in October
    * 
-   * "Meetings HELD" = Count by scheduled_date (when the meeting was scheduled to occur)
-   *   Example: Meeting created Oct 8, scheduled for Nov 27, held on Nov 27 → counts as "held" in November
+   * "Meetings HELD" = Count by held_at (when the meeting was actually held)
+   *   Example: Meeting created Oct 8, scheduled for Nov 27, held on Nov 28 → counts as "held" in November
    * 
    * This ensures consistency between SDR Dashboard and Manager Dashboard.
    */
@@ -921,15 +922,14 @@ export default function ManagerDashboard() {
     return isInMonth && !isICPDisqualified;
   });
 
-  // Meetings HELD: Filter by scheduled_date (when meeting was scheduled to occur) AND exclude non-ICP-qualified
-  // This matches the SDR Dashboard logic
+  // Meetings HELD: Filter by held_at (when meeting was actually held) AND exclude non-ICP-qualified
+  // This matches the SDR Dashboard useClients logic
   const monthlyMeetingsHeld = meetings.filter(meeting => {
     // Must be actually held
-    const isHeld = meeting.held_at !== null && !meeting.no_show;
-    if (!isHeld) return false;
+    if (!meeting.held_at || meeting.no_show) return false;
     
-    const scheduledDate = new Date(meeting.scheduled_date);
-    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+    const heldDate = new Date(meeting.held_at);
+    const isInMonth = heldDate >= monthStart && heldDate < nextMonthStart;
     
     // Exclude non-ICP-qualified meetings
     const icpStatus = (meeting as any).icp_status;

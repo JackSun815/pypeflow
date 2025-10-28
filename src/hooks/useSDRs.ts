@@ -23,7 +23,7 @@ interface SDRWithMetrics extends Profile {
   }>;
 }
 
-export function useSDRs() {
+export function useSDRs(selectedMonth?: string) {
   const { agency } = useAgency();
   
   const [sdrs, setSDRs] = useState<SDRWithMetrics[]>([]);
@@ -32,10 +32,19 @@ export function useSDRs() {
 
   async function fetchSDRs() {
     try {
-      // Get current month's start and end dates (use UTC to match database timestamps and useClients logic)
-      const now = new Date();
-      const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-      const monthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+      // Get month's start and end dates (use UTC to match database timestamps and useClients logic)
+      // Use selectedMonth if provided, otherwise use current month
+      let monthStart: Date, monthEnd: Date;
+      
+      if (selectedMonth) {
+        const [year, month] = selectedMonth.split('-');
+        monthStart = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, 1));
+        monthEnd = new Date(Date.UTC(parseInt(year), parseInt(month), 1));
+      } else {
+        const now = new Date();
+        monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+        monthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+      }
 
       // Fetch all SDRs
       let sdrQuery = supabase
@@ -53,7 +62,8 @@ export function useSDRs() {
 
       if (sdrError) throw sdrError;
 
-      // Fetch assignments for all SDRs
+      // Fetch assignments for all SDRs for the selected month
+      const monthString = selectedMonth || `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`;
       let assignmentsQuery = supabase
         .from('assignments')
         .select(`
@@ -68,7 +78,7 @@ export function useSDRs() {
             monthly_hold_target
           )
         `)
-        .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}` as any);
+        .eq('month', monthString as any);
       
       if (agency) {
         assignmentsQuery = assignmentsQuery.eq('agency_id', agency.id as any);
@@ -118,12 +128,12 @@ export function useSDRs() {
               return isInMonth && !isICPDisqualified;
             });
 
-            // Meetings HELD: filter by scheduled_date (when meeting was scheduled to occur)
-            // This matches the SDR Dashboard logic
+            // Meetings HELD: filter by held_at (when meeting was actually held)
+            // This matches the SDR Dashboard useClients logic
             const clientMeetingsHeld = clientMeetings.filter((meeting: any) => {
               if (!meeting.held_at || meeting.no_show) return false;
-              const scheduledDate = new Date(meeting.scheduled_date);
-              const isInMonth = scheduledDate >= monthStart && scheduledDate < monthEnd;
+              const heldDate = new Date(meeting.held_at);
+              const isInMonth = heldDate >= monthStart && heldDate < monthEnd;
               const icpStatus = meeting.icp_status;
               const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
               return isInMonth && !isICPDisqualified;
@@ -158,12 +168,12 @@ export function useSDRs() {
           return isInMonth && !isICPDisqualified;
         });
 
-        // Meetings HELD: filter by scheduled_date (when meeting was scheduled to occur)
-        // This matches the SDR Dashboard logic
+        // Meetings HELD: filter by held_at (when meeting was actually held)
+        // This matches the SDR Dashboard useClients logic
         const sdrMeetingsHeld = sdrMeetings.filter((meeting: any) => {
           if (!meeting.held_at || meeting.no_show) return false;
-          const scheduledDate = new Date(meeting.scheduled_date);
-          const isInMonth = scheduledDate >= monthStart && scheduledDate < monthEnd;
+          const heldDate = new Date(meeting.held_at);
+          const isInMonth = heldDate >= monthStart && heldDate < monthEnd;
           const icpStatus = meeting.icp_status;
           const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
           return isInMonth && !isICPDisqualified;
@@ -244,7 +254,7 @@ export function useSDRs() {
         supabase.removeChannel(channel);
       };
     }
-  }, [agency]);
+  }, [agency, selectedMonth]);
 
   return { sdrs, loading, error, fetchSDRs };
 }
