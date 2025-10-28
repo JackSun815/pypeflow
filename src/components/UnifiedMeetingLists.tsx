@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Clock, CheckCircle, XCircle, AlertCircle, Ban, ChevronDown, UserX } from 'lucide-react';
+import { Search, Clock, CheckCircle, XCircle, AlertCircle, Ban, ChevronDown, UserX, GripVertical } from 'lucide-react';
 import type { Meeting } from '../types/database';
 import { MeetingCard } from './MeetingCard';
 
@@ -169,11 +169,17 @@ export default function UnifiedMeetingLists({
                 filteredPendingMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    draggable
-                    onDragStart={() => handleDragStart(meeting)}
-                    onDragEnd={handleDragEnd}
-                    className={`mb-4 border border-yellow-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border border-yellow-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
                   >
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(meeting)}
+                      onDragEnd={handleDragEnd}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      title="Drag to move"
+                    >
+                      <GripVertical className="w-3 h-3 text-gray-500" />
+                    </div>
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -215,11 +221,17 @@ export default function UnifiedMeetingLists({
                 filteredConfirmedMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    draggable
-                    onDragStart={() => handleDragStart(meeting)}
-                    onDragEnd={handleDragEnd}
-                    className={`mb-4 border border-blue-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border border-blue-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
                   >
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(meeting)}
+                      onDragEnd={handleDragEnd}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      title="Drag to move"
+                    >
+                      <GripVertical className="w-3 h-3 text-gray-500" />
+                    </div>
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -297,11 +309,17 @@ export default function UnifiedMeetingLists({
                 filteredHeldMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    draggable
-                    onDragStart={() => handleDragStart(meeting)}
-                    onDragEnd={handleDragEnd}
-                    className={`mb-4 border border-green-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border border-green-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
                   >
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(meeting)}
+                      onDragEnd={handleDragEnd}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      title="Drag to move"
+                    >
+                      <GripVertical className="w-3 h-3 text-gray-500" />
+                    </div>
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -343,11 +361,17 @@ export default function UnifiedMeetingLists({
                 filteredNoShowMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    draggable
-                    onDragStart={() => handleDragStart(meeting)}
-                    onDragEnd={handleDragEnd}
-                    className={`mb-4 border border-red-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all cursor-move ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border border-red-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
                   >
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(meeting)}
+                      onDragEnd={handleDragEnd}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      title="Drag to move"
+                    >
+                      <GripVertical className="w-3 h-3 text-gray-500" />
+                    </div>
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
