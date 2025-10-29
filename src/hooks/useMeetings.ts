@@ -42,22 +42,40 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
     // Only fetch all meetings if fetchAll is true (manager dashboard)
     if (fetchAll) {
       try {
-        let query = client
-          .from('meetings')
-          .select('*, clients(name), profiles:sdr_id(full_name)')
-          .order('created_at', { ascending: false }) // Get newest first to avoid missing recent meetings
-          .limit(10000); // Increase limit to handle large datasets
-        
-        if (agencyIdToUse) {
-          // Include legacy meetings that may not have an agency_id set
-          query = query.or(`agency_id.eq.${agencyIdToUse},agency_id.is.null`);
+        // Fetch all meetings using pagination to avoid Supabase's 1000 row limit
+        let allMeetings: any[] = [];
+        let pageSize = 1000;
+        let page = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          let query = client
+            .from('meetings')
+            .select('*, clients(name), profiles:sdr_id(full_name)')
+            .order('created_at', { ascending: false })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+          
+          if (agencyIdToUse) {
+            // Include legacy meetings that may not have an agency_id set
+            query = query.or(`agency_id.eq.${agencyIdToUse},agency_id.is.null`);
+          }
+          
+          const { data, error } = await query as any;
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            allMeetings = allMeetings.concat(data);
+            hasMore = data.length === pageSize; // Continue if we got a full page
+            page++;
+          } else {
+            hasMore = false;
+          }
         }
         
-        const { data, error } = await query as any;
-        if (error) throw error;
+        console.log(`📊 Fetched ${allMeetings.length} total meetings across ${page} page(s)`);
         
         // Map the data to include sdr_name for easier access
-        const meetingsWithSdrName = (data || []).map((meeting: any) => ({
+        const meetingsWithSdrName = allMeetings.map((meeting: any) => ({
           ...meeting,
           sdr_name: meeting.profiles?.full_name || 'Unknown SDR'
         }));
@@ -80,20 +98,39 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       return;
     }
     try {
-      let query = client
-        .from('meetings')
-        .select('*, clients(name)')
-        .order('created_at', { ascending: false }) // Get newest first to avoid missing recent meetings
-        .limit(10000) // Increase limit to handle large datasets
-        .eq('sdr_id', sdrId as any);
-      
-      if (agencyIdToUse) {
-        query = query.eq('agency_id', agencyIdToUse);
+      // Fetch all meetings using pagination to avoid Supabase's 1000 row limit
+      let allMeetings: any[] = [];
+      let pageSize = 1000;
+      let page = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = client
+          .from('meetings')
+          .select('*, clients(name)')
+          .order('created_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1)
+          .eq('sdr_id', sdrId as any);
+        
+        if (agencyIdToUse) {
+          query = query.eq('agency_id', agencyIdToUse);
+        }
+        
+        const { data, error } = await query as any;
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allMeetings = allMeetings.concat(data);
+          hasMore = data.length === pageSize; // Continue if we got a full page
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
       
-      const { data, error } = await query as any;
-      if (error) throw error;
-      setMeetings((data || []) as unknown as Meeting[]);
+      console.log(`📊 SDR ${sdrId}: Fetched ${allMeetings.length} total meetings across ${page} page(s)`);
+      
+      setMeetings(allMeetings as unknown as Meeting[]);
       setError(null);
     } catch (err) {
       console.error('Meetings fetch error:', err);
