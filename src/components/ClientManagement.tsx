@@ -53,8 +53,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   const [selectedSDR, setSelectedSDR] = useState<string | null>(null);
   const [monthlyHoldTarget, setMonthlyHoldTarget] = useState<number>(0);
   const [monthlySetTarget, setMonthlySetTarget] = useState<number>(0);
-  const [newClientHoldTarget, setNewClientHoldTarget] = useState<number>(0);
-  const [newClientSetTarget, setNewClientSetTarget] = useState<number>(0);
+  const [newClientHoldTarget, setNewClientHoldTarget] = useState<number | string>(0);
+  const [newClientSetTarget, setNewClientSetTarget] = useState<number | string>(0);
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [allClients, setAllClients] = useState<Client[]>([]);
 
@@ -199,24 +199,26 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             a.is_active !== false
           );
           
-          // Check if client was created recently (within last 7 days)
+          // Check if the selected month is on or after the client's creation month
+          // This allows newly added clients to appear only in the month they were created and future months
           const clientCreatedDate = new Date(client.created_at);
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          const clientCreatedMonth = format(clientCreatedDate, 'yyyy-MM');
           
-          const wasCreatedRecently = clientCreatedDate >= sevenDaysAgo;
+          // Show client if the selected month is the same as or after the month it was created
+          const isSelectedMonthAfterCreation = selectedMonth >= clientCreatedMonth;
           
           console.log(`🔍 Client "${client.name}":`, {
             hasAssignments,
-            wasCreatedRecently,
+            isSelectedMonthAfterCreation,
             clientCreatedDate: clientCreatedDate.toISOString(),
-            sevenDaysAgo: sevenDaysAgo.toISOString(),
+            clientCreatedMonth,
+            selectedMonth,
             assignments: client.assignments
           });
           
-          // Show client if it has assignments OR was created recently
-          // This allows newly added clients to appear in any month for assignment
-          const shouldShow = hasAssignments || wasCreatedRecently;
+          // Show client if it has assignments OR the selected month is on/after its creation month
+          // This allows newly added clients to appear in the month they were added and future months only
+          const shouldShow = hasAssignments || isSelectedMonthAfterCreation;
           if (!shouldShow) {
             console.log(`🔍 Client "${client.name}" excluded: no assignments and not created this month`);
           }
@@ -352,8 +354,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       .from('clients')
       .insert([{ 
         name: newClientName,
-        monthly_set_target: newClientSetTarget,
-        monthly_hold_target: newClientHoldTarget,
+        monthly_set_target: typeof newClientSetTarget === 'string' ? parseInt(newClientSetTarget) || 0 : newClientSetTarget,
+        monthly_hold_target: typeof newClientHoldTarget === 'string' ? parseInt(newClientHoldTarget) || 0 : newClientHoldTarget,
         agency_id: agency?.id
       }])
       .select()
@@ -1079,17 +1081,17 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             </button>
             <button
               onClick={async () => {
-                if (confirm(`Copy all clients and assignments from ${monthOptions.find(m => m.value === selectedMonth) === monthOptions[1] ? monthOptions[2]?.label : monthOptions[1]?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}?\n\nThis will:\n• Copy all client assignments\n• Copy all target values\n• Overwrite any existing assignments for ${monthOptions.find(m => m.value === selectedMonth)?.label}`)) {
+                if (confirm(`Migrate all clients and assignments from ${monthOptions.find(m => m.value === selectedMonth) === monthOptions[1] ? monthOptions[2]?.label : monthOptions[1]?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}?\n\nThis will:\n• Migrate all client assignments\n• Migrate all target values\n• Overwrite any existing assignments for ${monthOptions.find(m => m.value === selectedMonth)?.label}`)) {
                   await copyFromPreviousMonth();
                 }
               }}
               className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded hover:bg-green-100 border border-green-200"
-              title="Copy all clients and assignments from previous month"
+              title="Migrate all clients and assignments from previous month"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              Copy
+              Migrate
             </button>
             <button
               onClick={() => {
@@ -1644,7 +1646,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   id="clientSetTarget"
                   min="0"
                   value={newClientSetTarget}
-                  onChange={(e) => setNewClientSetTarget(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setNewClientSetTarget(e.target.value === '' ? '' : parseInt(e.target.value))}
                   required
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
@@ -1661,7 +1663,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   id="clientHoldTarget"
                   min="0"
                   value={newClientHoldTarget}
-                  onChange={(e) => setNewClientHoldTarget(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setNewClientHoldTarget(e.target.value === '' ? '' : parseInt(e.target.value))}
                   required
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
