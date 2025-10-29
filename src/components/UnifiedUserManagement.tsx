@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAgency } from '../contexts/AgencyContext';
-import { Mail, Trash2, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield } from 'lucide-react';
+import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck } from 'lucide-react';
 import CompensationManagement from './CompensationManagement';
 
 
@@ -332,8 +332,9 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
     }
   }
 
-  async function handleDeleteSDR(sdrId: string) {
-    if (!confirm('Are you sure you want to remove this SDR? This will deactivate their account.')) {
+  async function handleToggleSDRActive(sdrId: string, currentlyActive: boolean) {
+    const action = currentlyActive ? 'deactivate' : 'reactivate';
+    if (!confirm(`Are you sure you want to ${action} this SDR? ${currentlyActive ? 'They will no longer be able to access their dashboard.' : 'They will be able to access their dashboard again.'}`)) {
       return;
     }
 
@@ -341,21 +342,23 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
     setError(null);
 
     try {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          active: false,
-          updated_at: new Date().toISOString()
-        } as any)
-        .eq('id', sdrId as any);
+      // Use the secure database function that bypasses RLS
+      const { data, error: rpcError } = await supabase.rpc('toggle_sdr_active', {
+        sdr_id: sdrId,
+        new_active_status: !currentlyActive
+      });
 
-      if (updateError) throw updateError;
+      if (rpcError) {
+        console.error('RPC error details:', rpcError);
+        throw new Error(`Failed to ${action} SDR: ${rpcError.message}`);
+      }
 
-      setSuccess('SDR removed successfully');
+      console.log('Toggle result:', data);
+      setSuccess(`SDR ${action}d successfully`);
       onUpdate();
     } catch (err) {
-      console.error('Delete error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to remove SDR');
+      console.error('Toggle active error:', err);
+      setError(err instanceof Error ? err.message : `Failed to ${action} SDR. Please ensure you have the necessary permissions.`);
     } finally {
       setLoading(false);
     }
@@ -625,15 +628,20 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Current SDRs</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-4">Active SDRs</h3>
           <div className="space-y-3">
-            {sdrs.map((sdr) => (
+            {sdrs.filter(sdr => sdr.active).map((sdr) => (
               <div
                 key={sdr.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-l-4 border-green-500"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{sdr.full_name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900">{sdr.full_name}</p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-500">{sdr.email}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     Created {sdr.created_at && new Date(sdr.created_at).toLocaleDateString()}
@@ -664,21 +672,67 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                     )}
                   </button>
                   <button
-                    onClick={() => handleDeleteSDR(sdr.id)}
-                    className="p-2 text-red-600 hover:text-red-700 focus:outline-none"
-                    title="Remove SDR"
+                    onClick={() => handleToggleSDRActive(sdr.id, sdr.active)}
+                    className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                    title="Deactivate SDR"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <UserX className="w-4 h-4" />
+                    Deactivate
                   </button>
                 </div>
               </div>
             ))}
-            {sdrs.length === 0 && (
-              <p className="text-sm text-gray-500">No SDRs have been added yet</p>
+            {sdrs.filter(sdr => sdr.active).length === 0 && (
+              <p className="text-sm text-gray-500">No active SDRs</p>
             )}
           </div>
         </div>
       </div>
+
+      {sdrs.filter(sdr => !sdr.active).length > 0 && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Inactive SDRs</h3>
+            <div className="space-y-3">
+              {sdrs.filter(sdr => !sdr.active).map((sdr) => (
+                <div
+                  key={sdr.id}
+                  className="flex items-center justify-between p-4 bg-gray-100 rounded-lg border-l-4 border-gray-400 opacity-75"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-700">{sdr.full_name}</p>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                        Inactive
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">{sdr.email}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Created {sdr.created_at && new Date(sdr.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleSDRActive(sdr.id, sdr.active)}
+                      className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      title="Reactivate SDR"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      Reactivate
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {sdrs.length === 0 && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
+          <p className="text-sm text-gray-500">No SDRs have been added yet</p>
+        </div>
+      )}
     </div>
   );
 

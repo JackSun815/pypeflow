@@ -201,6 +201,7 @@ export default function ManagerDashboard() {
   const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
   const [selectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
+  const [allSDRs, setAllSDRs] = useState<any[]>([]);
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
   const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -254,6 +255,33 @@ export default function ManagerDashboard() {
   useEffect(() => {
     localStorage.setItem('managerDashboardSelectedMonth', selectedMonth);
   }, [selectedMonth]);
+
+  // Fetch all SDRs (including inactive) for user management
+  useEffect(() => {
+    async function fetchAllSDRs() {
+      if (!agency?.id || activeTab !== 'users') {
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, role, active, created_at, updated_at')
+          .eq('agency_id', agency.id as any)
+          .eq('role', 'sdr' as any)
+          .order('active', { ascending: false }) // Active SDRs first
+          .order('full_name', { ascending: true }) as any;
+
+        if (error) throw error;
+        setAllSDRs(data || []);
+      } catch (err) {
+        console.error('Error fetching all SDRs:', err);
+        setAllSDRs([]);
+      }
+    }
+
+    fetchAllSDRs();
+  }, [agency, activeTab, sdrs]); // Re-fetch when sdrs updates (after activation/deactivation)
 
   // State for assignments data
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -1337,10 +1365,10 @@ export default function ManagerDashboard() {
                 onClick={() => handleCardClick('sdrs')}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Total SDRs</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Active SDRs</h3>
                   <Users className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{sdrs.length}</p>
+                <p className="text-3xl font-bold text-gray-900">{sdrs.filter(sdr => sdr.active !== false).length}</p>
                 <p className="text-xs text-indigo-600 mt-2 font-medium">Click to view details →</p>
               </div>
 
@@ -2769,7 +2797,7 @@ export default function ManagerDashboard() {
 
         {activeTab === 'users' && (
           <UnifiedUserManagement 
-            sdrs={sdrs} 
+            sdrs={allSDRs.length > 0 ? allSDRs : sdrs} 
             clients={clients as any} 
             onUpdate={fetchSDRs} 
           />
