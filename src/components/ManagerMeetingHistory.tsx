@@ -10,7 +10,6 @@ interface MeetingStats {
   totalHeld: number;
   totalNoShow: number;
   showRate: number;
-  percentToGoal: number;
 }
 
 interface ManagerMeetingHistoryProps {
@@ -140,16 +139,12 @@ export default function ManagerMeetingHistory({
     const totalHeld = meetings.filter(m => m.held_at !== null && !m.no_show).length;
     const totalNoShow = meetings.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
-    const monthlyTarget = 50; // Example monthly target
-    const averageMonthlyBookings = totalBooked / 12; // Simplified calculation
-    const percentToGoal = (averageMonthlyBookings / monthlyTarget) * 100;
 
     return {
       totalBooked,
       totalHeld,
       totalNoShow,
-      showRate,
-      percentToGoal
+      showRate
     };
   };
 
@@ -184,15 +179,12 @@ export default function ManagerMeetingHistory({
     const totalHeld = monthMeetingsHeld.length;
     const totalNoShow = monthMeetingsSet.filter(m => m.no_show).length;
     const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
-    const monthlyTarget = 50; // Example monthly target
-    const percentToGoal = (totalBooked / monthlyTarget) * 100;
 
     return {
       totalBooked,
       totalHeld,
       totalNoShow,
-      showRate,
-      percentToGoal
+      showRate
     };
   };
 
@@ -238,7 +230,7 @@ export default function ManagerMeetingHistory({
       {/* All-time Stats */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">All-time Team Performance</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <p className="text-sm text-gray-500">Total Meetings Booked</p>
             <p className="text-2xl font-bold text-gray-900">{allTimeStats.totalBooked}</p>
@@ -256,11 +248,8 @@ export default function ManagerMeetingHistory({
             <p className="text-2xl font-bold text-indigo-600">
               {allTimeStats.showRate.toFixed(1)}%
             </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Avg. % to Goal</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {allTimeStats.percentToGoal.toFixed(1)}%
+            <p className="text-xs text-gray-500">
+              {allTimeStats.totalHeld} / {allTimeStats.totalBooked}
             </p>
           </div>
         </div>
@@ -379,6 +368,9 @@ export default function ManagerMeetingHistory({
             </div>
             <p className="text-2xl font-bold text-blue-600">
               {monthlyStats.showRate.toFixed(1)}%
+            </p>
+            <p className="text-xs text-gray-500">
+              {monthlyStats.totalHeld} / {monthlyStats.totalBooked}
             </p>
           </div>
         </div>
