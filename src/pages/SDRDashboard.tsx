@@ -887,6 +887,7 @@ function SDRDashboardContent() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-700">Theme</span>
                         <button
+                          type="button"
                           onClick={() => setDarkTheme(!darkTheme)}
                           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
                         >
