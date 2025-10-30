@@ -777,8 +777,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       const newAssignments = finalValidAssignments.map(assignment => ({
         client_id: assignment.client_id,
         sdr_id: assignment.sdr_id,
-        monthly_set_target: assignment.monthly_set_target,
-        monthly_hold_target: assignment.monthly_hold_target,
+        monthly_set_target: assignment.monthly_set_target ?? 0, // Default to 0 if null/undefined
+        monthly_hold_target: assignment.monthly_hold_target ?? 0, // Default to 0 if null/undefined
         month: selectedMonth,
         is_active: assignment.is_active !== false, // Ensure is_active is properly set
         agency_id: agency?.id, // Add agency_id from context
