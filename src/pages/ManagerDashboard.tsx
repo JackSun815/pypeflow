@@ -2834,16 +2834,26 @@ export default function ManagerDashboard() {
                 {modalContent?.type === 'sdrs' ? (
                   <div className="space-y-4">
                     {modalContent.data.map((sdr: any) => (
-                      <div key={sdr.id} className="bg-gray-50 p-4 rounded-md shadow-sm">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{sdr.full_name}</h3>
-                        <p className="text-sm text-gray-700">Email: {sdr.email}</p>
+                      <div key={sdr.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-indigo-500">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xl font-bold text-gray-900">{sdr.full_name}</h3>
+                          <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                            {sdr.clients.length} {sdr.clients.length === 1 ? 'Client' : 'Clients'}
+                          </span>
+                        </div>
                         <div className="mt-3">
-                          <h4 className="text-sm font-medium text-gray-900 mb-1">Clients:</h4>
-                          <ul className="list-disc list-inside text-sm text-gray-700">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-indigo-600" />
+                            Assigned Clients:
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {sdr.clients.map((client: any) => (
-                              <li key={client.id}>{client.name}</li>
+                              <div key={client.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-md">
+                                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                <span className="text-sm text-gray-700">{client.name}</span>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -2851,16 +2861,27 @@ export default function ManagerDashboard() {
                 ) : modalContent?.type === 'setTarget' ? (
                   <div className="space-y-4">
                     {modalContent.data.map((sdr: any) => (
-                      <div key={sdr.name} className="bg-gray-50 p-4 rounded-md shadow-sm">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{sdr.name}</h3>
-                        <p className="text-sm text-gray-700">Total Set Target: {sdr.totalTarget}</p>
+                      <div key={sdr.name} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xl font-bold text-gray-900">{sdr.name}</h3>
+                          <div className="text-right">
+                            <p className="text-3xl font-bold text-green-600">{sdr.totalTarget}</p>
+                            <p className="text-sm text-gray-500">Total Set Target</p>
+                          </div>
+                        </div>
                         <div className="mt-3">
-                          <h4 className="text-sm font-medium text-gray-900 mb-1">Clients:</h4>
-                          <ul className="list-disc list-inside text-sm text-gray-700">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <Target className="w-4 h-4 text-green-600" />
+                            Client Targets:
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {sdr.clients.map((client: any) => (
-                              <li key={client.name}>{client.name}: Set Target {client.target}</li>
+                              <div key={client.name} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md">
+                                <span className="text-sm text-gray-700">{client.name}</span>
+                                <span className="text-sm font-bold text-green-600">{client.target}</span>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -2868,16 +2889,27 @@ export default function ManagerDashboard() {
                 ) : modalContent?.type === 'heldTarget' ? (
                   <div className="space-y-4">
                     {modalContent.data.map((sdr: any) => (
-                      <div key={sdr.name} className="bg-gray-50 p-4 rounded-md shadow-sm">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{sdr.name}</h3>
-                        <p className="text-sm text-gray-700">Total Held Target: {sdr.totalTarget}</p>
+                      <div key={sdr.name} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xl font-bold text-gray-900">{sdr.name}</h3>
+                          <div className="text-right">
+                            <p className="text-3xl font-bold text-blue-600">{sdr.totalTarget}</p>
+                            <p className="text-sm text-gray-500">Total Held Target</p>
+                          </div>
+                        </div>
                         <div className="mt-3">
-                          <h4 className="text-sm font-medium text-gray-900 mb-1">Clients:</h4>
-                          <ul className="list-disc list-inside text-sm text-gray-700">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-blue-600" />
+                            Client Targets:
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {sdr.clients.map((client: any) => (
-                              <li key={client.name}>{client.name}: Held Target {client.target}</li>
+                              <div key={client.name} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md">
+                                <span className="text-sm text-gray-700">{client.name}</span>
+                                <span className="text-sm font-bold text-blue-600">{client.target}</span>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                       </div>
                     ))}
