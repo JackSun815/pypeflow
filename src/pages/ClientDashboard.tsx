@@ -1366,7 +1366,9 @@ export default function ClientDashboard() {
 
       const meetingsWithSdrName = data?.map((meeting: any) => ({
         ...meeting,
-        sdr_name: meeting.profiles?.full_name || 'Unknown SDR'
+        sdr_name: meeting.sdr_id === null 
+          ? (meeting.source ? `Direct/${meeting.source.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}` : 'Direct/Other')
+          : (meeting.profiles?.full_name || 'Unknown SDR')
       })) || [];
 
       // Log meeting statuses for debugging

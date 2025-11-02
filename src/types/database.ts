@@ -35,7 +35,7 @@ export interface Assignment {
 
 export interface Meeting {
   id: string;
-  sdr_id: string;
+  sdr_id: string | null;
   client_id: string;
   scheduled_date: string; // Now stores full ISO string with time
   booked_at: string;
@@ -51,6 +51,7 @@ export interface Meeting {
   title: string | null;
   linkedin_page: string | null;
   notes: string | null;
+  source?: string | null; // Meeting source: cold_call, cold_email, linkedin, referral, direct, other
   created_at: string;
   updated_at: string;
   timezone?: string; // IANA timezone string for meeting (e.g., 'America/New_York')

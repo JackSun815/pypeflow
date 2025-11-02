@@ -329,6 +329,12 @@ export default function ManagerDashboard() {
 
   // Add SDR names to meetings
   const meetingsWithSDRNames = meetings.map(meeting => {
+    if (meeting.sdr_id === null) {
+      return {
+        ...meeting,
+        sdr_name: meeting.source ? `Direct/${meeting.source.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}` : 'Direct/Other'
+      };
+    }
     const sdr = sdrs.find(sdr => sdr.id === meeting.sdr_id);
     return {
       ...meeting,
@@ -389,13 +395,13 @@ export default function ManagerDashboard() {
       // Filter by SDR
       if (exportFilters.sdrIds.length > 0) {
         filteredMeetings = filteredMeetings.filter(meeting => 
-          exportFilters.sdrIds.includes(meeting.sdr_id)
+          meeting.sdr_id !== null && exportFilters.sdrIds.includes(meeting.sdr_id)
         );
       }
       
       // Prepare export data
       const exportData = filteredMeetings.map(meeting => {
-        const sdr = sdrs.find(s => s.id === meeting.sdr_id);
+        const sdr = meeting.sdr_id ? sdrs.find(s => s.id === meeting.sdr_id) : null;
         const client = clients.find(c => c.id === meeting.client_id);
         
         const row: any = {};

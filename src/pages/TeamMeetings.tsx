@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { XCircle } from 'lucide-react';
+import { XCircle, Plus, X } from 'lucide-react';
 import { useSDRs } from '../hooks/useSDRs';
 import { useAllClients } from '../hooks/useAllClients';
 import { useMeetings } from '../hooks/useMeetings';
@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import type { Meeting } from '../types/database';
 import CalendarView from '../components/CalendarView';
+import toast from 'react-hot-toast';
 
 export default function TeamMeetings({
   fetchSDRs,
@@ -38,6 +39,20 @@ export default function TeamMeetings({
       meetingDetails: true,
       timestamps: true
     }
+  });
+
+  // Add Direct Meeting modal state
+  const [addDirectMeetingModalOpen, setAddDirectMeetingModalOpen] = useState(false);
+  const [newDirectMeeting, setNewDirectMeeting] = useState({
+    client_id: '',
+    contact_full_name: '',
+    contact_email: '',
+    contact_phone: '',
+    company: '',
+    title: '',
+    scheduled_date: '',
+    source: 'direct',
+    notes: ''
   });
 
   // Get meetings for the selected SDR
@@ -175,6 +190,77 @@ export default function TeamMeetings({
     }
   };
 
+  // Handle creating a direct meeting (no SDR)
+  const handleCreateDirectMeeting = async () => {
+    try {
+      if (!newDirectMeeting.client_id || !newDirectMeeting.contact_full_name || !newDirectMeeting.scheduled_date) {
+        toast.error('Please fill in required fields: Client, Contact Name, and Date');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('meetings')
+        .insert([{
+          client_id: newDirectMeeting.client_id,
+          sdr_id: null, // No SDR for direct meetings
+          contact_full_name: newDirectMeeting.contact_full_name,
+          contact_email: newDirectMeeting.contact_email || null,
+          contact_phone: newDirectMeeting.contact_phone || null,
+          company: newDirectMeeting.company || null,
+          title: newDirectMeeting.title || null,
+          scheduled_date: newDirectMeeting.scheduled_date,
+          source: newDirectMeeting.source || 'direct',
+          notes: newDirectMeeting.notes || null,
+          status: 'pending' as any,
+          booked_at: new Date().toISOString(),
+          agency_id: agency?.id
+        } as any])
+        .select();
+
+      if (error) throw error;
+
+      toast.success('Direct meeting added successfully!');
+      
+      // Reset form and close modal
+      setNewDirectMeeting({
+        client_id: '',
+        contact_full_name: '',
+        contact_email: '',
+        contact_phone: '',
+        company: '',
+        title: '',
+        scheduled_date: '',
+        source: 'direct',
+        notes: ''
+      });
+      setAddDirectMeetingModalOpen(false);
+
+      // Refetch meetings
+      if (selectedSDR === 'all' && agency?.id) {
+        const allSDRMeetings = await Promise.all(
+          sdrs.map(async (sdr) => {
+            const { data } = await supabase
+              .from('meetings')
+              .select('*, clients(name)')
+              .eq('agency_id', agency.id as any)
+              .eq('sdr_id', sdr.id as any);
+            
+            return (data || []).map((meeting: any) => ({
+              ...meeting,
+              sdr_name: sdr.full_name || ''
+            }));
+          })
+        );
+        setAllMeetings(allSDRMeetings.flat() as any);
+      }
+      
+      fetchSDRs();
+    } catch (error) {
+      console.error('Failed to create direct meeting:', error);
+      toast.error('Failed to create meeting. Please try again.');
+    }
+  };
+
   // Export function for Team's Meetings (organized by SDR)
   const exportTeamMeetings = async () => {
     try {
@@ -218,13 +304,13 @@ export default function TeamMeetings({
       // Apply SDR filter
       if (exportFilters.sdrIds.length > 0) {
         meetingsToExport = meetingsToExport.filter(meeting => 
-          exportFilters.sdrIds.includes(meeting.sdr_id)
+          meeting.sdr_id && exportFilters.sdrIds.includes(meeting.sdr_id)
         );
       }
 
       // Group meetings by SDR
       const meetingsBySDR = meetingsToExport.reduce((acc, meeting) => {
-        const sdrId = meeting.sdr_id;
+        const sdrId = meeting.sdr_id || 'direct'; // Use 'direct' for null SDR IDs
         if (!acc[sdrId]) {
           acc[sdrId] = [];
         }
@@ -236,8 +322,8 @@ export default function TeamMeetings({
       const exportData = [];
       
       for (const [sdrId, sdrMeetings] of Object.entries(meetingsBySDR)) {
-        const sdr = sdrs.find(s => s.id === sdrId);
-        const sdrName = sdr?.full_name || 'Unknown SDR';
+        const sdr = sdrId === 'direct' ? null : sdrs.find(s => s.id === sdrId);
+        const sdrName = sdrId === 'direct' ? 'Direct/Other' : (sdr?.full_name || 'Unknown SDR');
         
         for (const meeting of sdrMeetings) {
           const client = clients.find(c => c.id === meeting.client_id);
@@ -410,6 +496,14 @@ export default function TeamMeetings({
               </select>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAddDirectMeetingModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded hover:bg-indigo-100 border border-indigo-200"
+                title="Add meeting from other sources (email, LinkedIn, etc.)"
+              >
+                <Plus className="w-3 h-3" />
+                Add Direct Meeting
+              </button>
               <button
                 onClick={() => setExportModalOpen(true)}
                 className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 border border-blue-200"
@@ -672,6 +766,181 @@ export default function TeamMeetings({
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Export CSV
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Direct Meeting Modal */}
+      {addDirectMeetingModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Add Direct Meeting</h3>
+                <button
+                  onClick={() => setAddDirectMeetingModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-6">
+                Add meetings from other sources (email, LinkedIn, referrals, etc.) that aren't associated with an SDR.
+              </p>
+
+              <div className="space-y-4">
+                {/* Client Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Client <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newDirectMeeting.client_id}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, client_id: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select a client</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Source Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Source <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newDirectMeeting.source}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, source: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="direct">Direct</option>
+                    <option value="cold_email">Cold Email</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="referral">Referral</option>
+                    <option value="inbound">Inbound</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {/* Contact Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newDirectMeeting.contact_full_name}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, contact_full_name: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                {/* Contact Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newDirectMeeting.contact_email}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, contact_email: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="john@example.com"
+                  />
+                </div>
+
+                {/* Contact Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={newDirectMeeting.contact_phone}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, contact_phone: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+
+                {/* Company */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Company
+                  </label>
+                  <input
+                    type="text"
+                    value={newDirectMeeting.company}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, company: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Acme Inc."
+                  />
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={newDirectMeeting.title}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="CEO, VP of Sales, etc."
+                  />
+                </div>
+
+                {/* Scheduled Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled Date & Time <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newDirectMeeting.scheduled_date}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={newDirectMeeting.notes}
+                    onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, notes: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={3}
+                    placeholder="Additional details about the meeting..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setAddDirectMeetingModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateDirectMeeting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  Add Meeting
                 </button>
               </div>
             </div>
