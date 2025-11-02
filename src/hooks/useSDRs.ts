@@ -46,18 +46,19 @@ export function useSDRs(selectedMonth?: string) {
         monthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
       }
 
-      // Fetch all SDRs
+      // Fetch all SDRs (both active and inactive)
+      // The filtering by active status will be done in the component based on context
       let sdrQuery = supabase
         .from('profiles')
-        .select('id, full_name, role, active')
-        .eq('role', 'sdr' as any)
-        .eq('active', true as any);
+        .select('id, full_name, role, active, updated_at')
+        .eq('role', 'sdr' as any);
       
       if (agency) {
         sdrQuery = sdrQuery.eq('agency_id', agency.id as any);
       }
       
       const { data: sdrProfiles, error: sdrError } = await sdrQuery
+        .order('active', { ascending: false }) // Active SDRs first
         .order('full_name', { ascending: true }) as any;
 
       if (sdrError) throw sdrError;

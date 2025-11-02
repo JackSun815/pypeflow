@@ -762,17 +762,17 @@ export default function ManagerDashboard() {
         title = 'Pending Meetings';
         break;
       case 'sdrs':
-        title = 'SDR Team Details';
+        title = 'Active SDR Team Details';
         content = {
           type: 'sdrs',
-          data: sdrs
+          data: sdrs.filter(sdr => sdr.active !== false)
         };
         break;
       case 'setTarget':
         title = 'Monthly Set Targets by SDR';
         content = {
           type: 'setTarget',
-          data: sdrs.map(sdr => ({
+          data: sdrs.filter(sdr => sdr.active !== false).map(sdr => ({
             name: sdr.full_name,
             totalTarget: sdr.clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0),
             clients: sdr.clients.map(client => ({
@@ -786,7 +786,7 @@ export default function ManagerDashboard() {
         title = 'Monthly Held Targets by SDR';
         content = {
           type: 'heldTarget',
-          data: sdrs.map(sdr => ({
+          data: sdrs.filter(sdr => sdr.active !== false).map(sdr => ({
             name: sdr.full_name,
             totalTarget: sdr.clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0),
             clients: sdr.clients.map(client => ({
@@ -966,16 +966,20 @@ export default function ManagerDashboard() {
     return isInMonth && !isICPDisqualified;
   });
 
-  // Calculate total targets from all SDRs (separate set and held targets)
-  const totalSetTarget = sdrs.reduce(
-    (sum, sdr) => sum + sdr.clients.reduce((acc, client) => acc + (client.monthly_set_target || 0), 0),
-    0
-  );
+  // Calculate total targets from all ACTIVE SDRs (separate set and held targets)
+  const totalSetTarget = sdrs
+    .filter(sdr => sdr.active !== false)
+    .reduce(
+      (sum, sdr) => sum + sdr.clients.reduce((acc, client) => acc + (client.monthly_set_target || 0), 0),
+      0
+    );
 
-  const totalHeldTarget = sdrs.reduce(
-    (sum, sdr) => sum + sdr.clients.reduce((acc, client) => acc + (client.monthly_hold_target || 0), 0),
-    0
-  );
+  const totalHeldTarget = sdrs
+    .filter(sdr => sdr.active !== false)
+    .reduce(
+      (sum, sdr) => sum + sdr.clients.reduce((acc, client) => acc + (client.monthly_hold_target || 0), 0),
+      0
+    );
 
 
   // Calculate monthly metrics
@@ -1601,7 +1605,16 @@ export default function ManagerDashboard() {
             {/* SDR Performance Table */}
             {chartVisibility.sdrPerformance && (() => {
               // Filter SDRs to show only those with assignments for the selected month
+              // For current month: only show active SDRs
+              // For past months: show all SDRs with assignments (to preserve historical data)
+              const isCurrentMonth = selectedMonth === currentMonthForSelector;
+              
               const activeSDRsForMonth = sdrs.filter(sdr => {
+                // For current month, exclude deactivated SDRs
+                if (isCurrentMonth && sdr.active === false) {
+                  return false;
+                }
+                
                 // Check if SDR has assignments for the selected month
                 const hasAssignments = assignments.some(assignment => 
                   assignment.sdr_id === sdr.id && 
@@ -1738,8 +1751,22 @@ export default function ManagerDashboard() {
                                 ) : (
                                   <ChevronRight className="w-4 h-4 text-gray-400" />
                                 )}
-                                <div className="text-sm font-medium text-gray-900">
-                                  {sdr.full_name}
+                                <div className="flex flex-col">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {sdr.full_name}
+                                  </div>
+                                  {sdr.active === false && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        Deactivated
+                                      </span>
+                                      {sdr.updated_at && (
+                                        <span className="text-xs text-gray-500">
+                                          {new Date(sdr.updated_at).toLocaleDateString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -2317,38 +2344,40 @@ export default function ManagerDashboard() {
             </div>
 
             {/* SDR Performance Chart - Moved to bottom */}
-            {chartVisibility.sdrPerformanceComparison && (
+            {chartVisibility.sdrPerformanceComparison && (() => {
+              const activeSDRs = sdrs.filter(sdr => sdr.active !== false);
+              return (
               <div className={`rounded-lg shadow-md p-6 mt-8 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
-                <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>SDR Performance Comparison</h3>
+                <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Active SDR Performance Comparison</h3>
               <div className="h-80">
                 <Bar
                   data={{
-                    labels: sdrs.map(sdr => sdr.full_name),
+                    labels: activeSDRs.map(sdr => sdr.full_name),
                     datasets: [
                       {
                         label: 'Set Target',
-                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0)),
+                        data: activeSDRs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0)),
                         backgroundColor: 'rgba(59, 130, 246, 0.2)',
                         borderColor: 'rgba(59, 130, 246, 1)',
                         borderWidth: 2,
                       },
                       {
                         label: 'Set Actual',
-                        data: sdrs.map(sdr => sdr.totalMeetingsSet || 0),
+                        data: activeSDRs.map(sdr => sdr.totalMeetingsSet || 0),
                         backgroundColor: 'rgba(59, 130, 246, 0.8)',
                         borderColor: 'rgba(59, 130, 246, 1)',
                         borderWidth: 2,
                       },
                       {
                         label: 'Held Target',
-                        data: sdrs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0)),
+                        data: activeSDRs.map(sdr => sdr.clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0)),
                         backgroundColor: 'rgba(34, 197, 94, 0.2)',
                         borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 2,
                       },
                       {
                         label: 'Held Actual',
-                        data: sdrs.map(sdr => sdr.totalHeldMeetings || 0),
+                        data: activeSDRs.map(sdr => sdr.totalHeldMeetings || 0),
                         backgroundColor: 'rgba(34, 197, 94, 0.8)',
                         borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 2,
@@ -2375,7 +2404,8 @@ export default function ManagerDashboard() {
                 />
               </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Client Progress Visualization */}
             {chartVisibility.clientProgressVisualization && (
