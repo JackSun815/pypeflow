@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAgency } from '../contexts/AgencyContext';
-import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck } from 'lucide-react';
+import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck, Archive, ArchiveRestore } from 'lucide-react';
 import CompensationManagement from './CompensationManagement';
 
 
@@ -24,6 +24,7 @@ interface ClientWithTargets {
   monthly_hold_target: number;
   cumulative_set_target: number;
   cumulative_hold_target: number;
+  archived_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -388,6 +389,38 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
     }
   }
 
+  async function handleToggleClientArchive(clientId: string, currentlyArchived: boolean) {
+    const action = currentlyArchived ? 'unarchive' : 'archive';
+    if (!confirm(`Are you sure you want to ${action} this client?`)) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const newArchivedAt = currentlyArchived ? null : new Date().toISOString();
+      
+      const { error: updateError } = await supabase
+        .from('clients')
+        .update({ 
+          archived_at: newArchivedAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', clientId);
+
+      if (updateError) throw updateError;
+
+      setSuccess(`Client ${action}d successfully`);
+      onUpdate();
+    } catch (err) {
+      console.error('Toggle client archive error:', err);
+      setError(err instanceof Error ? err.message : `Failed to ${action} client`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const renderManagers = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -747,9 +780,14 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
         </div>
 
         <div className="p-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Current Clients</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-4">Active Clients</h3>
           <div className="space-y-3">
-            {clientTokens.map((token) => (
+            {clientTokens.filter(token => {
+              const client = clients.find(c => c.id === token.client_id);
+              return !client?.archived_at;
+            }).map((token) => {
+              const client = clients.find(c => c.id === token.client_id);
+              return (
               <div
                 key={token.id}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
@@ -757,7 +795,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                 <div>
                   <p className="text-sm font-medium text-gray-900">{token.client_name}</p>
                   <p className="text-xs text-gray-500">
-                    Set Target: {clients.find(c => c.id === token.client_id)?.monthly_set_target || 0} | Hold Target: {clients.find(c => c.id === token.client_id)?.monthly_hold_target || 0}
+                    Set Target: {client?.monthly_set_target || 0} | Hold Target: {client?.monthly_hold_target || 0}
                   </p>
                   <p className="text-xs text-gray-500">
                     Created {new Date(token.created_at).toLocaleDateString()}
@@ -781,15 +819,81 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                       </>
                     )}
                   </button>
+                  <button
+                    onClick={() => handleToggleClientArchive(token.client_id, false)}
+                    className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-orange-700 bg-orange-50 rounded-md hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    title="Archive client"
+                  >
+                    <Archive className="w-4 h-4" />
+                    Archive
+                  </button>
                 </div>
               </div>
-            ))}
-            {clientTokens.length === 0 && (
-              <p className="text-sm text-gray-500">No clients have been added yet. Add clients in the Client Management page.</p>
+            )})}
+            {clientTokens.filter(token => {
+              const client = clients.find(c => c.id === token.client_id);
+              return !client?.archived_at;
+            }).length === 0 && (
+              <p className="text-sm text-gray-500">No active clients</p>
             )}
           </div>
         </div>
       </div>
+
+      {clientTokens.filter(token => {
+        const client = clients.find(c => c.id === token.client_id);
+        return client?.archived_at;
+      }).length > 0 && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Archived Clients</h3>
+            <div className="space-y-3">
+              {clientTokens.filter(token => {
+                const client = clients.find(c => c.id === token.client_id);
+                return client?.archived_at;
+              }).map((token) => {
+                const client = clients.find(c => c.id === token.client_id);
+                return (
+                <div
+                  key={token.id}
+                  className="flex items-center justify-between p-4 bg-gray-100 rounded-lg border-l-4 border-gray-400 opacity-75"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-700">{token.client_name}</p>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                        Archived
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Set Target: {client?.monthly_set_target || 0} | Hold Target: {client?.monthly_hold_target || 0}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Archived {client?.archived_at && new Date(client.archived_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleClientArchive(token.client_id, true)}
+                      className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      title="Unarchive client"
+                    >
+                      <ArchiveRestore className="w-4 h-4" />
+                      Unarchive
+                    </button>
+                  </div>
+                </div>
+              )})}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {clientTokens.length === 0 && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
+          <p className="text-sm text-gray-500">No clients have been added yet. Add clients in the Client Management page.</p>
+        </div>
+      )}
     </div>
   );
 

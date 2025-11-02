@@ -15,6 +15,7 @@ export interface Client {
   name: string;
   monthly_set_target: number;
   monthly_hold_target: number;
+  archived_at?: string | null;
   created_at: string;
   updated_at: string;
 }

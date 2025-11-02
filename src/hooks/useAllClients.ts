@@ -12,10 +12,11 @@ export function useAllClients() {
 
   async function fetchAllClients() {
     try {
+      // Fetch all clients (both active and archived)
+      // The filtering by archived status will be done in the component based on context
       let clientsQuery = supabase
         .from('clients')
         .select('*')
-        .is('archived_at', null) // Only fetch non-archived clients
         .order('name', { ascending: true });
       
       if (agency) {

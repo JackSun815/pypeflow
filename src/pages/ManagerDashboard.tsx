@@ -1850,7 +1850,13 @@ export default function ManagerDashboard() {
                                   </h4>
                                   {(() => {
                                     console.log(`SDR ${sdr.full_name} - Assignments for ${selectedMonth}:`, sdrAssignments);
-                                    return sdrAssignments.map((assignment) => {
+                                    return sdrAssignments
+                                      .filter((assignment) => {
+                                        // Filter out archived clients
+                                        const client = assignment.clients;
+                                        return client && !client.archived_at;
+                                      })
+                                      .map((assignment) => {
                                       const client = assignment.clients;
                                       if (!client) {
                                         console.warn('Assignment without client data:', assignment);
@@ -1925,9 +1931,9 @@ export default function ManagerDashboard() {
                                       })();
                                     });
                                   })()}
-                                  {sdrAssignments.length === 0 && (
+                                  {sdrAssignments.filter(a => a.clients && !a.clients.archived_at).length === 0 && (
                                     <p className="text-sm text-gray-500">
-                                      No clients assigned for {monthOptions.find(m => m.value === selectedMonth)?.label}
+                                      No active clients assigned for {monthOptions.find(m => m.value === selectedMonth)?.label}
                                     </p>
                                   )}
                                 </div>
@@ -1947,8 +1953,16 @@ export default function ManagerDashboard() {
             {/* Clients Performance Table */}
             {chartVisibility.clientsPerformance && (() => {
               // Filter clients to show only those active for the selected month
-              // This logic matches the ClientManagement component's filtering
+              // For current month: only show active clients (archived_at is null)
+              // For past months: show all clients with assignments (to preserve historical data)
+              const isCurrentMonth = selectedMonth === currentMonthForSelector;
+              
               const activeClientsForMonth = clients.filter(client => {
+                // For current month, exclude archived clients
+                if (isCurrentMonth && client.archived_at !== null) {
+                  return false;
+                }
+                
                 // Check if client has assignments in the selected month
                 const hasAssignments = assignments.some(assignment => 
                   assignment.client_id === client.id && 
@@ -2108,8 +2122,20 @@ export default function ManagerDashboard() {
                                 ) : (
                                   <ChevronRight className="w-4 h-4 text-gray-400" />
                                 )}
-                                <div className="text-sm font-medium text-gray-900">
-                                  {client.name}
+                                <div className="flex flex-col">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {client.name}
+                                  </div>
+                                  {client.archived_at && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        Archived
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(client.archived_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>
