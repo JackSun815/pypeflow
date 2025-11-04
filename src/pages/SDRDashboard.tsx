@@ -1046,9 +1046,12 @@ function SDRDashboardContent() {
             <>
               {(() => {
               const calculateMetrics = () => {
-                // Calculate targets from clients (which are already assignment targets from useClients hook)
-                const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
-                const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+                // Filter to only active clients (matching manager dashboard logic)
+                const activeClients = clients.filter((c: any) => c.is_active !== false);
+                
+                // Calculate targets from active clients only
+                const totalSetTarget = activeClients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
+                const totalHeldTarget = activeClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                 
                 const now = new Date();
                 const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
@@ -1245,8 +1248,12 @@ function SDRDashboardContent() {
               {/* Data Visualizations - Moved to bottom */}
               {(() => {
                 const calculateMetrics = () => {
-                  const totalSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
-                  const totalHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+                  // Filter to only active clients (matching manager dashboard logic)
+                  const activeClients = clients.filter((c: any) => c.is_active !== false);
+                  
+                  // Calculate targets from active clients only
+                  const totalSetTarget = activeClients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
+                  const totalHeldTarget = activeClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                   
                   const now = new Date();
                   const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
