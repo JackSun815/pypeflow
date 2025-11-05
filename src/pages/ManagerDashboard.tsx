@@ -538,6 +538,11 @@ export default function ManagerDashboard() {
         const setTargetProgress = totalSetTarget > 0 ? (totalMeetings / totalSetTarget) * 100 : 0;
         const heldTargetProgress = totalHeldTarget > 0 ? (heldMeetings / totalHeldTarget) * 100 : 0;
 
+        // Calculate rates excluding pending meetings
+        const completedMeetings = totalMeetings - pendingMeetings;
+        const holdRate = completedMeetings > 0 ? ((heldMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+        const noShowRate = completedMeetings > 0 ? ((noShowMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+
         return {
           'SDR Name': sdr.full_name,
           'Total Meetings Set': totalMeetings,
@@ -549,8 +554,8 @@ export default function ManagerDashboard() {
           'Monthly Held Target': totalHeldTarget,
           'Set Target Progress (%)': setTargetProgress.toFixed(1),
           'Held Target Progress (%)': heldTargetProgress.toFixed(1),
-          'Hold Rate (%)': totalMeetings > 0 ? ((heldMeetings / totalMeetings) * 100).toFixed(1) : '0.0',
-          'No Show Rate (%)': totalMeetings > 0 ? ((noShowMeetings / totalMeetings) * 100).toFixed(1) : '0.0'
+          'Hold Rate (%)': holdRate,
+          'No Show Rate (%)': noShowRate
         };
       });
 
@@ -645,6 +650,11 @@ export default function ManagerDashboard() {
           sdr.clients?.some(c => c.id === client.id)
         ).map(sdr => sdr.full_name).join(', ');
 
+        // Calculate rates excluding pending meetings
+        const completedMeetings = totalMeetings - pendingMeetings;
+        const holdRate = completedMeetings > 0 ? ((heldMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+        const noShowRate = completedMeetings > 0 ? ((noShowMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+
         return {
           'Client Name': client.name,
           'Assigned SDRs': assignedSDRs || 'No SDRs Assigned',
@@ -657,8 +667,8 @@ export default function ManagerDashboard() {
           'Monthly Held Target': client.monthly_hold_target || 0,
           'Set Target Progress (%)': client.monthly_set_target > 0 ? ((totalMeetings / client.monthly_set_target) * 100).toFixed(1) : '0.0',
           'Held Target Progress (%)': client.monthly_hold_target > 0 ? ((heldMeetings / client.monthly_hold_target) * 100).toFixed(1) : '0.0',
-          'Hold Rate (%)': totalMeetings > 0 ? ((heldMeetings / totalMeetings) * 100).toFixed(1) : '0.0',
-          'No Show Rate (%)': totalMeetings > 0 ? ((noShowMeetings / totalMeetings) * 100).toFixed(1) : '0.0',
+          'Hold Rate (%)': holdRate,
+          'No Show Rate (%)': noShowRate,
           'Client Created': new Date(client.created_at).toLocaleDateString()
         };
       });
@@ -1501,13 +1511,21 @@ export default function ManagerDashboard() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Held Rate (All Time):</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {totalMeetingsSet > 0 ? ((totalHeldMeetings / totalMeetingsSet) * 100).toFixed(1) : '0.0'}%
+                    {(() => {
+                      const completedMeetings = Math.max(0, totalMeetingsSet - totalPendingMeetings);
+                      const heldRate = completedMeetings > 0 ? ((totalHeldMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+                      return `${heldRate}% (${totalHeldMeetings}/${completedMeetings})`;
+                    })()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-sm text-gray-600">No-Show Rate (All Time):</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {totalMeetingsSet > 0 ? ((totalNoShowMeetings / totalMeetingsSet) * 100).toFixed(1) : '0.0'}%
+                    {(() => {
+                      const completedMeetings = Math.max(0, totalMeetingsSet - totalPendingMeetings);
+                      const noShowRate = completedMeetings > 0 ? ((totalNoShowMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+                      return `${noShowRate}% (${totalNoShowMeetings}/${completedMeetings})`;
+                    })()}
                   </span>
                 </div>
               </div>

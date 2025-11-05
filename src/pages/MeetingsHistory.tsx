@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search, Download } from 'lucide-react';
+import { Calendar, CheckCircle, AlertCircle, TrendingUp, Target, Clock, Search, Download, Hourglass } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { MeetingCard } from '../components/MeetingCard';
 import type { Meeting } from '../types/database';
@@ -11,6 +11,7 @@ interface MeetingStats {
   totalBooked: number;
   totalHeld: number;
   totalNoShow: number;
+  totalPending: number;
   showRate: number;
   percentToGoal: number;
 }
@@ -49,7 +50,7 @@ export default function MeetingsHistory({
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'set' | 'held' | 'booked' | 'held' | 'noShows' | null>(null);
+  const [modalType, setModalType] = useState<'set' | 'held' | 'booked' | 'held' | 'noShows' | 'pending' | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsError, setClientsError] = useState<string | null>(null);
@@ -211,7 +212,7 @@ export default function MeetingsHistory({
     setModalOpen(true);
   };
   
-  const openMeetingsModal = (type: 'booked' | 'held' | 'noShows') => {
+  const openMeetingsModal = (type: 'booked' | 'held' | 'noShows' | 'pending') => {
     setModalType(type);
     setModalOpen(true);
   };
@@ -251,12 +252,15 @@ export default function MeetingsHistory({
     const totalBooked = icpQualifiedMeetings.length;
     const totalHeld = icpQualifiedMeetings.filter(m => m.held_at !== null && !m.no_show).length;
     const totalNoShow = icpQualifiedMeetings.filter(m => m.no_show).length;
-    const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
+    const totalPending = icpQualifiedMeetings.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
+    const completedMeetings = Math.max(0, totalBooked - totalPending);
+    const showRate = completedMeetings > 0 ? (totalHeld / completedMeetings) * 100 : 0;
 
     return {
       totalBooked,
       totalHeld,
       totalNoShow,
+      totalPending,
       showRate,
       percentToGoal: 0 // Not used anymore but kept for interface compatibility
     };
@@ -292,7 +296,9 @@ export default function MeetingsHistory({
     const totalBooked = monthMeetingsSet.length;
     const totalHeld = monthMeetingsHeld.length;
     const totalNoShow = monthMeetingsSet.filter(m => m.no_show).length;
-    const showRate = totalBooked > 0 ? (totalHeld / totalBooked) * 100 : 0;
+    const totalPending = monthMeetingsSet.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
+    const completedMeetings = Math.max(0, totalBooked - totalPending);
+    const showRate = completedMeetings > 0 ? (totalHeld / completedMeetings) * 100 : 0;
     
     // Use the appropriate target based on goalType toggle
     const monthlyTarget = goalType === 'set' ? totalSetTarget : totalHeldTarget;
@@ -303,6 +309,7 @@ export default function MeetingsHistory({
       totalBooked,
       totalHeld,
       totalNoShow,
+      totalPending,
       showRate,
       percentToGoal
     };
@@ -374,7 +381,7 @@ export default function MeetingsHistory({
       {/* All-time Stats */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">All-time Performance</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div>
             <p className="text-sm text-gray-500">Total Meetings Booked</p>
             <p className="text-2xl font-bold text-gray-900">{allTimeStats.totalBooked}</p>
@@ -388,12 +395,24 @@ export default function MeetingsHistory({
             <p className="text-2xl font-bold text-red-600">{allTimeStats.totalNoShow}</p>
           </div>
           <div>
+            <p className="text-sm text-gray-500">Total Pending</p>
+            <p className="text-2xl font-bold text-yellow-600">{allTimeStats.totalPending}</p>
+          </div>
+          <div>
             <p className="text-sm text-gray-500">Show Rate</p>
             <p className="text-2xl font-bold text-indigo-600">
               {allTimeStats.showRate.toFixed(1)}%
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              {allTimeStats.totalHeld} / {allTimeStats.totalBooked}
+              {(() => {
+                const icpQualifiedMeetings = meetings.filter(m => {
+                  const icpStatus = (m as any).icp_status;
+                  return icpStatus !== 'not_qualified' && icpStatus !== 'rejected' && icpStatus !== 'denied';
+                });
+                const totalPending = icpQualifiedMeetings.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
+                const completed = Math.max(0, allTimeStats.totalBooked - totalPending);
+                return `${allTimeStats.totalHeld} / ${completed}`;
+              })()}
             </p>
           </div>
         </div>
@@ -530,6 +549,17 @@ export default function MeetingsHistory({
             <p className="text-2xl font-bold text-red-600">{monthlyStats.totalNoShow}</p>
           </div>
 
+          <div 
+            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-yellow-50 transition-all duration-200 border-2 border-transparent hover:border-yellow-200"
+            onClick={() => openMeetingsModal('pending')}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-500">Pending</h3>
+              <Hourglass className="w-5 h-5 text-yellow-600" />
+            </div>
+            <p className="text-2xl font-bold text-yellow-600">{monthlyStats.totalPending}</p>
+          </div>
+
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-500">Show Rate</h3>
@@ -539,7 +569,11 @@ export default function MeetingsHistory({
               {monthlyStats.showRate.toFixed(1)}%
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              {monthlyStats.totalHeld} / {monthlyStats.totalBooked}
+              {(() => {
+                const totalPending = monthMeetingsSet.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
+                const completed = Math.max(0, monthlyStats.totalBooked - totalPending);
+                return `${monthlyStats.totalHeld} / ${completed}`;
+              })()}
             </p>
           </div>
 
@@ -620,7 +654,8 @@ export default function MeetingsHistory({
                 {modalType === 'set' ? 'Monthly Set Target Clients' : 
                  modalType === 'held' ? 'Monthly Held Target Clients' :
                  modalType === 'booked' ? 'Meetings Booked This Month' :
-                 modalType === 'noShows' ? 'No-Show Meetings This Month' : 'Modal'}
+                 modalType === 'noShows' ? 'No-Show Meetings This Month' :
+                 modalType === 'pending' ? 'Pending Meetings This Month' : 'Modal'}
               </h3>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
             </div>
@@ -658,39 +693,46 @@ export default function MeetingsHistory({
             )}
 
             {/* Meetings modals (new functionality) */}
-            {(modalType === 'booked' || modalType === 'held' || modalType === 'noShows') && (
+            {(modalType === 'booked' || modalType === 'held' || modalType === 'noShows' || modalType === 'pending') && (
               <div className="space-y-4">
                 {/* Summary section */}
                 <div className={`p-4 rounded-lg ${
                   modalType === 'booked' ? 'bg-indigo-50' :
                   modalType === 'held' ? 'bg-green-50' :
+                  modalType === 'pending' ? 'bg-yellow-50' :
                   'bg-red-50'
                 }`}>
                   <h4 className={`text-lg font-semibold mb-2 ${
                     modalType === 'booked' ? 'text-indigo-900' :
                     modalType === 'held' ? 'text-green-900' :
+                    modalType === 'pending' ? 'text-yellow-900' :
                     'text-red-900'
                   }`}>
                     {modalType === 'booked' ? 'Meetings Booked This Month' :
                      modalType === 'held' ? 'Meetings Held This Month' :
+                     modalType === 'pending' ? 'Pending Meetings This Month' :
                      'No-Show Meetings This Month'}
                   </h4>
                   <p className={`text-2xl font-bold ${
                     modalType === 'booked' ? 'text-indigo-700' :
                     modalType === 'held' ? 'text-green-700' :
+                    modalType === 'pending' ? 'text-yellow-700' :
                     'text-red-700'
                   }`}>
                     {modalType === 'booked' ? monthlyStats.totalBooked :
                      modalType === 'held' ? monthlyStats.totalHeld :
+                     modalType === 'pending' ? monthlyStats.totalPending :
                      monthlyStats.totalNoShow}
                   </p>
                   <p className={`text-sm ${
                     modalType === 'booked' ? 'text-indigo-600' :
                     modalType === 'held' ? 'text-green-600' :
+                    modalType === 'pending' ? 'text-yellow-600' :
                     'text-red-600'
                   }`}>
                     {modalType === 'booked' ? 'Total meetings scheduled' :
                      modalType === 'held' ? 'Successfully completed meetings' :
+                     modalType === 'pending' ? 'Meetings awaiting confirmation' :
                      'Meetings marked as no-shows'}
                   </p>
                 </div>
@@ -705,6 +747,8 @@ export default function MeetingsHistory({
                       filteredMeetings = monthMeetingsHeld;
                     } else if (modalType === 'noShows') {
                       filteredMeetings = monthMeetingsSet.filter(m => m.no_show);
+                    } else if (modalType === 'pending') {
+                      filteredMeetings = monthMeetingsSet.filter(m => m.status === 'pending' && !m.no_show && !m.held_at);
                     }
                     
                     return filteredMeetings.length > 0 ? (
@@ -723,6 +767,7 @@ export default function MeetingsHistory({
                         <p>
                           {modalType === 'booked' ? 'No meetings booked this month' :
                            modalType === 'held' ? 'No meetings held this month' :
+                           modalType === 'pending' ? 'No pending meetings this month' :
                            'No no-show meetings this month'}
                         </p>
                       </div>
