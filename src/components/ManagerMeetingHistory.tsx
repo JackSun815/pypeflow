@@ -11,6 +11,7 @@ interface MeetingStats {
   totalNoShow: number;
   totalPending: number;
   showRate: number;
+  noShowRate: number;
 }
 
 interface ManagerMeetingHistoryProps {
@@ -140,15 +141,17 @@ export default function ManagerMeetingHistory({
     const totalHeld = meetings.filter(m => m.held_at !== null && !m.no_show).length;
     const totalNoShow = meetings.filter(m => m.no_show).length;
     const totalPending = meetings.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
-    const completedMeetings = Math.max(0, totalBooked - totalPending);
-    const showRate = completedMeetings > 0 ? (totalHeld / completedMeetings) * 100 : 0;
+    const heldAndNoShow = totalHeld + totalNoShow;
+    const showRate = heldAndNoShow > 0 ? (totalHeld / heldAndNoShow) * 100 : 0;
+    const noShowRate = heldAndNoShow > 0 ? (totalNoShow / heldAndNoShow) * 100 : 0;
 
     return {
       totalBooked,
       totalHeld,
       totalNoShow,
       totalPending,
-      showRate
+      showRate,
+      noShowRate
     };
   };
 
@@ -183,15 +186,17 @@ export default function ManagerMeetingHistory({
     const totalHeld = monthMeetingsHeld.length;
     const totalNoShow = monthMeetingsSet.filter(m => m.no_show).length;
     const totalPending = monthMeetingsSet.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
-    const completedMeetings = Math.max(0, totalBooked - totalPending);
-    const showRate = completedMeetings > 0 ? (totalHeld / completedMeetings) * 100 : 0;
+    const heldAndNoShow = totalHeld + totalNoShow;
+    const showRate = heldAndNoShow > 0 ? (totalHeld / heldAndNoShow) * 100 : 0;
+    const noShowRate = heldAndNoShow > 0 ? (totalNoShow / heldAndNoShow) * 100 : 0;
 
     return {
       totalBooked,
       totalHeld,
       totalNoShow,
       totalPending,
-      showRate
+      showRate,
+      noShowRate
     };
   };
 
@@ -255,15 +260,26 @@ export default function ManagerMeetingHistory({
             <p className="text-2xl font-bold text-yellow-600">{allTimeStats.totalPending}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Show Rate</p>
+            <p className="text-sm text-gray-500">Held Rate</p>
             <p className="text-2xl font-bold text-indigo-600">
               {allTimeStats.showRate.toFixed(1)}%
             </p>
             <p className="text-xs text-gray-500">
               {(() => {
-                const totalPending = meetings.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
-                const completed = Math.max(0, allTimeStats.totalBooked - totalPending);
-                return `${allTimeStats.totalHeld} / ${completed}`;
+                const heldAndNoShow = allTimeStats.totalHeld + allTimeStats.totalNoShow;
+                return `${allTimeStats.totalHeld} / ${heldAndNoShow}`;
+              })()}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">No Show Rate</p>
+            <p className="text-2xl font-bold text-red-600">
+              {allTimeStats.noShowRate.toFixed(1)}%
+            </p>
+            <p className="text-xs text-gray-500">
+              {(() => {
+                const heldAndNoShow = allTimeStats.totalHeld + allTimeStats.totalNoShow;
+                return `${allTimeStats.totalNoShow} / ${heldAndNoShow}`;
               })()}
             </p>
           </div>
@@ -389,17 +405,31 @@ export default function ManagerMeetingHistory({
 
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Show Rate</h3>
-              <Target className="w-5 h-5 text-blue-600" />
+              <h3 className="text-sm font-medium text-gray-500">Held Rate</h3>
+              <Target className="w-5 h-5 text-indigo-600" />
             </div>
-            <p className="text-2xl font-bold text-blue-600">
+            <p className="text-2xl font-bold text-indigo-600">
               {monthlyStats.showRate.toFixed(1)}%
             </p>
             <p className="text-xs text-gray-500 mt-1">
               {(() => {
-                const totalPending = monthMeetingsSet.filter(m => m.status === 'pending' && !m.no_show && !m.held_at).length;
-                const completed = Math.max(0, monthlyStats.totalBooked - totalPending);
-                return `${monthlyStats.totalHeld} / ${completed}`;
+                const heldAndNoShow = monthlyStats.totalHeld + monthlyStats.totalNoShow;
+                return `${monthlyStats.totalHeld} / ${heldAndNoShow}`;
+              })()}
+            </p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-500">No Show Rate</h3>
+              <Clock className="w-5 h-5 text-red-600" />
+            </div>
+            <p className="text-2xl font-bold text-red-600">
+              {monthlyStats.noShowRate.toFixed(1)}%
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {(() => {
+                const heldAndNoShow = monthlyStats.totalHeld + monthlyStats.totalNoShow;
+                return `${monthlyStats.totalNoShow} / ${heldAndNoShow}`;
               })()}
             </p>
           </div>

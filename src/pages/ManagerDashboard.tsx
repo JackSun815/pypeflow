@@ -538,10 +538,10 @@ export default function ManagerDashboard() {
         const setTargetProgress = totalSetTarget > 0 ? (totalMeetings / totalSetTarget) * 100 : 0;
         const heldTargetProgress = totalHeldTarget > 0 ? (heldMeetings / totalHeldTarget) * 100 : 0;
 
-        // Calculate rates excluding pending meetings
-        const completedMeetings = totalMeetings - pendingMeetings;
-        const holdRate = completedMeetings > 0 ? ((heldMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
-        const noShowRate = completedMeetings > 0 ? ((noShowMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+        // Calculate rates: held rate = held / (held + no show), no show rate = no show / (held + no show)
+        const heldAndNoShow = heldMeetings + noShowMeetings;
+        const holdRate = heldAndNoShow > 0 ? ((heldMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
+        const noShowRate = heldAndNoShow > 0 ? ((noShowMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
 
         return {
           'SDR Name': sdr.full_name,
@@ -650,10 +650,10 @@ export default function ManagerDashboard() {
           sdr.clients?.some(c => c.id === client.id)
         ).map(sdr => sdr.full_name).join(', ');
 
-        // Calculate rates excluding pending meetings
-        const completedMeetings = totalMeetings - pendingMeetings;
-        const holdRate = completedMeetings > 0 ? ((heldMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
-        const noShowRate = completedMeetings > 0 ? ((noShowMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
+        // Calculate rates: held rate = held / (held + no show), no show rate = no show / (held + no show)
+        const heldAndNoShow = heldMeetings + noShowMeetings;
+        const holdRate = heldAndNoShow > 0 ? ((heldMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
+        const noShowRate = heldAndNoShow > 0 ? ((noShowMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
 
         return {
           'Client Name': client.name,
@@ -1512,9 +1512,9 @@ export default function ManagerDashboard() {
                   <span className="text-sm text-gray-600">Held Rate (All Time):</span>
                   <span className="text-sm font-medium text-gray-900">
                     {(() => {
-                      const completedMeetings = Math.max(0, totalMeetingsSet - totalPendingMeetings);
-                      const heldRate = completedMeetings > 0 ? ((totalHeldMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
-                      return `${heldRate}% (${totalHeldMeetings}/${completedMeetings})`;
+                      const heldAndNoShow = totalHeldMeetings + totalNoShowMeetings;
+                      const heldRate = heldAndNoShow > 0 ? ((totalHeldMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
+                      return `${heldRate}% (${totalHeldMeetings}/${heldAndNoShow})`;
                     })()}
                   </span>
                 </div>
@@ -1522,9 +1522,9 @@ export default function ManagerDashboard() {
                   <span className="text-sm text-gray-600">No-Show Rate (All Time):</span>
                   <span className="text-sm font-medium text-gray-900">
                     {(() => {
-                      const completedMeetings = Math.max(0, totalMeetingsSet - totalPendingMeetings);
-                      const noShowRate = completedMeetings > 0 ? ((totalNoShowMeetings / completedMeetings) * 100).toFixed(1) : '0.0';
-                      return `${noShowRate}% (${totalNoShowMeetings}/${completedMeetings})`;
+                      const heldAndNoShow = totalHeldMeetings + totalNoShowMeetings;
+                      const noShowRate = heldAndNoShow > 0 ? ((totalNoShowMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
+                      return `${noShowRate}% (${totalNoShowMeetings}/${heldAndNoShow})`;
                     })()}
                   </span>
                 </div>
