@@ -520,8 +520,13 @@ export default function ClientDashboard() {
       };
 
       if (action === 'held') {
-        // Mark as held: set held_at timestamp, clear no_show flag
-        updateData.held_at = new Date().toISOString();
+        // Mark as held: use scheduled_date instead of current time
+        const meeting = meetings.find(m => m.id === meetingId);
+        if (meeting && meeting.scheduled_date) {
+          updateData.held_at = meeting.scheduled_date;
+        } else {
+          updateData.held_at = new Date().toISOString();
+        }
         updateData.no_show = false;
         updateData.no_longer_interested = false;
       } else if (action === 'no-show') {

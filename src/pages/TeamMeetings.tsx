@@ -151,8 +151,13 @@ export default function TeamMeetings({
       const updates: any = {};
       
       if (newStatus === 'held') {
-        // Mark as held
-        updates.held_at = new Date().toISOString();
+        // Mark as held - use scheduled_date instead of current time
+        const meeting = allMeetings.find(m => m.id === meetingId);
+        if (meeting && meeting.scheduled_date) {
+          updates.held_at = meeting.scheduled_date;
+        } else {
+          updates.held_at = new Date().toISOString();
+        }
         updates.no_show = false;
       } else if (newStatus === 'no-show') {
         // Mark as no-show

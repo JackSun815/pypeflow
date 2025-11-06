@@ -534,8 +534,13 @@ function SDRDashboardContent() {
       const updates: any = {};
       
       if (newStatus === 'held') {
-        // Mark as held
-        updates.held_at = new Date().toISOString();
+        // Mark as held - use scheduled_date instead of current time
+        const meeting = meetings.find(m => m.id === meetingId);
+        if (meeting && meeting.scheduled_date) {
+          updates.held_at = meeting.scheduled_date;
+        } else {
+          updates.held_at = new Date().toISOString();
+        }
         updates.no_show = false;
       } else if (newStatus === 'no-show') {
         // Mark as no-show
@@ -582,7 +587,10 @@ function SDRDashboardContent() {
   // Handler to mark as held
   const handleMarkHeld = async (meetingId: string) => {
     try {
-      await updateMeetingHeldDate(meetingId, new Date().toISOString());
+      // Use scheduled_date instead of current time
+      const meeting = meetings.find(m => m.id === meetingId);
+      const heldDate = meeting && meeting.scheduled_date ? meeting.scheduled_date : new Date().toISOString();
+      await updateMeetingHeldDate(meetingId, heldDate);
     } catch (error) {
       alert('Failed to mark as held');
     }

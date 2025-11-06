@@ -438,7 +438,9 @@ export function MeetingCard({
                           } else if (newStatus === 'past_due') {
                             setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'held') {
-                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: new Date().toISOString(), no_show: false, no_longer_interested: false }));
+                            // Use scheduled_date instead of current time
+                            const heldDate = meeting.scheduled_date || new Date().toISOString();
+                            setEditedData(d => ({ ...d, status: 'confirmed', held_at: heldDate, no_show: false, no_longer_interested: false }));
                           } else if (newStatus === 'no_show') {
                             setEditedData(d => ({ ...d, status: 'confirmed', held_at: null, no_show: true, no_longer_interested: false }));
                           } else if (newStatus === 'no_longer_interested') {
@@ -573,7 +575,8 @@ export function MeetingCard({
                                 updated.no_longer_interested = false;
                               } else if (newStatus === 'held') {
                                 updated.status = 'confirmed';
-                                updated.held_at = new Date().toISOString();
+                                // Use scheduled_date instead of current time
+                                updated.held_at = meeting.scheduled_date || new Date().toISOString();
                                 updated.no_show = false;
                                 updated.no_longer_interested = false;
                               } else if (newStatus === 'no_show') {
