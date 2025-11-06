@@ -51,12 +51,17 @@ export default function ClientCard({
   clientId
 }: ClientCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [progressType, setProgressType] = useState<'held' | 'set'>('held');
   
   // Use totalMeetingsSet if provided, otherwise calculate from individual counts
   const meetingsSetCount = totalMeetingsSet ?? (confirmedMeetings + pendingMeetings + heldMeetings);
   
   // Calculate progress percentages
   const heldProgress = monthly_hold_target > 0 ? (heldMeetings / monthly_hold_target) * 100 : 0;
+  const setProgress = monthly_set_target > 0 ? (meetingsSetCount / monthly_set_target) * 100 : 0;
+  
+  // Current progress based on toggle
+  const currentProgress = progressType === 'held' ? heldProgress : setProgress;
   
   // Filter meetings for this specific client (current month)
   const now = new Date();
@@ -117,19 +122,19 @@ export default function ClientCard({
   const monthProgress = (dayOfMonth / daysInMonth) * 100;
 
   // Consistent color scheme based on percentage
-  const getProgressBarColor = () => {
-    if (heldProgress >= 100) return 'bg-green-600';
-    if (heldProgress >= 75) return 'bg-green-400';
-    if (heldProgress >= 50) return 'bg-yellow-500';
-    if (heldProgress >= 25) return 'bg-orange-500';
+  const getProgressBarColor = (progress: number) => {
+    if (progress >= 100) return 'bg-green-600';
+    if (progress >= 75) return 'bg-green-400';
+    if (progress >= 50) return 'bg-yellow-500';
+    if (progress >= 25) return 'bg-orange-500';
     return 'bg-red-500';
   };
   
-  const getProgressTextColor = () => {
-    if (heldProgress >= 100) return 'text-green-600';
-    if (heldProgress >= 75) return 'text-green-600';
-    if (heldProgress >= 50) return 'text-yellow-600';
-    if (heldProgress >= 25) return 'text-orange-600';
+  const getProgressTextColor = (progress: number) => {
+    if (progress >= 100) return 'text-green-600';
+    if (progress >= 75) return 'text-green-600';
+    if (progress >= 50) return 'text-yellow-600';
+    if (progress >= 25) return 'text-orange-600';
     return 'text-red-600';
   };
 
@@ -211,16 +216,28 @@ export default function ClientCard({
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="font-medium">Held Progress</span>
-            <span className={`font-semibold ${getProgressTextColor()}`}>
-              {heldProgress.toFixed(1)}%
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{progressType === 'held' ? 'Held Progress' : 'Set Progress'}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setProgressType(progressType === 'held' ? 'set' : 'held');
+                }}
+                className="px-2 py-0.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                title={`Switch to ${progressType === 'held' ? 'Set' : 'Held'} Progress`}
+              >
+                {progressType === 'held' ? 'Set' : 'Held'}
+              </button>
+            </div>
+            <span className={`font-semibold ${getProgressTextColor(currentProgress)}`}>
+              {currentProgress.toFixed(1)}%
             </span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${getProgressBarColor()}`}
-              style={{ width: `${Math.min(heldProgress, 100)}%` }}
+              className={`h-full rounded-full transition-all duration-300 ${getProgressBarColor(currentProgress)}`}
+              style={{ width: `${Math.min(currentProgress, 100)}%` }}
             />
           </div>
           <div className="flex justify-between text-sm text-gray-500">
