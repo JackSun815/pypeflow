@@ -1449,6 +1449,21 @@ export default function ClientDashboard() {
     .filter(meeting => isMeetingFinalized(meeting))
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
+  const heldMeetingsHistory = completedMeetings.filter(
+    meeting => !!meeting.held_at && !meeting.no_show && !meeting.no_longer_interested
+  );
+
+  const noShowMeetingsHistory = completedMeetings.filter(
+    meeting => !!meeting.no_show
+  );
+
+  const cancelledMeetingsHistory = completedMeetings.filter(
+    meeting => !!meeting.no_longer_interested && !meeting.no_show
+  );
+
+  const totalFinalizedMeetings =
+    heldMeetingsHistory.length + noShowMeetingsHistory.length + cancelledMeetingsHistory.length;
+
   const confirmedMeetings = meetings.filter(meeting => 
     meeting.status === 'confirmed'
   );
@@ -1461,6 +1476,187 @@ export default function ClientDashboard() {
   const textPrimary = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const textSecondary = isDarkMode ? 'text-gray-400' : 'text-gray-600';
   const textTertiary = isDarkMode ? 'text-gray-500' : 'text-gray-500';
+
+  const outcomeStyles: Record<
+    'held' | 'no-show' | 'cancelled',
+    {
+      cardLight: string;
+      cardDark: string;
+      iconBgLight: string;
+      iconBgDark: string;
+      iconColor: string;
+      badgeClass: string;
+      badgeIcon: typeof CheckCircle;
+      badgeLabel: string;
+      headerIconBgLight: string;
+      headerIconBgDark: string;
+      headerIconColor: string;
+      emptyTitle: string;
+      emptyDescription: string;
+    }
+  > = {
+    held: {
+      cardLight: 'bg-gradient-to-r from-green-50/40 to-white hover:border-green-300',
+      cardDark: 'bg-gray-700/50 hover:border-green-400',
+      iconBgLight: 'bg-green-100',
+      iconBgDark: 'bg-green-900/50',
+      iconColor: 'text-green-600',
+      badgeClass: 'bg-green-100 text-green-800 border border-green-200',
+      badgeIcon: CheckCircle,
+      badgeLabel: 'Held',
+      headerIconBgLight: 'bg-green-50',
+      headerIconBgDark: 'bg-green-900/40',
+      headerIconColor: 'text-green-600',
+      emptyTitle: 'No held meetings yet',
+      emptyDescription: 'Held meetings will appear here once they are marked as held.',
+    },
+    'no-show': {
+      cardLight: 'bg-gradient-to-r from-yellow-50/40 to-white hover:border-yellow-300',
+      cardDark: 'bg-gray-700/50 hover:border-yellow-400',
+      iconBgLight: 'bg-yellow-100',
+      iconBgDark: 'bg-yellow-900/40',
+      iconColor: 'text-yellow-600',
+      badgeClass: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      badgeIcon: AlertTriangle,
+      badgeLabel: 'No-Show',
+      headerIconBgLight: 'bg-yellow-50',
+      headerIconBgDark: 'bg-yellow-900/40',
+      headerIconColor: 'text-yellow-600',
+      emptyTitle: 'No no-shows yet',
+      emptyDescription: 'If a meeting is marked as a no-show it will appear here.',
+    },
+    cancelled: {
+      cardLight: 'bg-gradient-to-r from-red-50/40 to-white hover:border-red-300',
+      cardDark: 'bg-gray-700/50 hover:border-red-400',
+      iconBgLight: 'bg-red-100',
+      iconBgDark: 'bg-red-900/40',
+      iconColor: 'text-red-600',
+      badgeClass: 'bg-red-100 text-red-800 border border-red-200',
+      badgeIcon: X,
+      badgeLabel: 'Cancelled',
+      headerIconBgLight: 'bg-red-50',
+      headerIconBgDark: 'bg-red-900/40',
+      headerIconColor: 'text-red-600',
+      emptyTitle: 'No cancellations yet',
+      emptyDescription: 'Cancelled meetings will appear here once they are updated in the dashboard.',
+    },
+  };
+
+  const renderOutcomeMeetingCard = (
+    meeting: Meeting,
+    variant: keyof typeof outcomeStyles
+  ) => {
+    const meta = outcomeStyles[variant];
+    const BadgeIcon = meta.badgeIcon;
+
+    return (
+      <div
+        key={meeting.id}
+        className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${
+          isDarkMode ? meta.cardDark : meta.cardLight
+        }`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className={`p-2 rounded-full ${
+                  isDarkMode ? meta.iconBgDark : meta.iconBgLight
+                }`}
+              >
+                <User className={`w-4 h-4 ${meta.iconColor}`} />
+              </div>
+              <div>
+                <h4 className={`text-lg font-semibold ${textPrimary}`}>
+                  {meeting.contact_full_name || 'Meeting'}
+                </h4>
+                <div className="flex items-center gap-4 mt-1">
+                  <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
+                    <Calendar className="w-3 h-3" />
+                    {new Date(meeting.scheduled_date).toLocaleDateString()}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
+                    <Clock className="w-3 h-3" />
+                    {new Date(meeting.scheduled_date).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {meeting.contact_email && (
+                <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                  <Mail className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium">Email:</span>
+                  <span>{meeting.contact_email}</span>
+                </div>
+              )}
+              {meeting.company && (
+                <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                  <Building className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium">Company:</span>
+                  <span>{meeting.company}</span>
+                </div>
+              )}
+              <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                <Users className="w-4 h-4 text-gray-400" />
+                <span className="font-medium">SDR:</span>
+                <span>{meeting.sdr_name}</span>
+              </div>
+            </div>
+
+            {meeting.notes && (
+              <div
+                className={`mt-3 p-3 rounded-lg border-l-4 ${
+                  variant === 'held'
+                    ? 'border-green-400'
+                    : variant === 'no-show'
+                    ? 'border-yellow-400'
+                    : 'border-red-400'
+                } ${isDarkMode ? 'bg-gray-600/50' : 'bg-gray-50'}`}
+              >
+                <p className={`text-sm ${textSecondary} leading-relaxed`}>
+                  <span className={`font-medium ${textPrimary}`}>Notes:</span> {meeting.notes}
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="ml-4 flex flex-col items-end gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${meta.badgeClass}`}
+            >
+              <BadgeIcon className="w-4 h-4" />
+              {meta.badgeLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const meetingOutcomeGroups = [
+    {
+      key: 'held' as const,
+      title: 'Held Meetings',
+      description: 'Successfully completed conversations.',
+      items: heldMeetingsHistory,
+    },
+    {
+      key: 'no-show' as const,
+      title: 'No-Shows',
+      description: 'Prospects who missed the scheduled conversation.',
+      items: noShowMeetingsHistory,
+    },
+    {
+      key: 'cancelled' as const,
+      title: 'Cancelled',
+      description: 'Meetings cancelled or prospects no longer interested.',
+      items: cancelledMeetingsHistory,
+    },
+  ];
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
@@ -1920,13 +2116,16 @@ export default function ClientDashboard() {
                 </div>
               </div>
               <div 
-                onClick={() => completedMeetings.length > 0 && scrollToSection('held-section')}
-                className={`${cardBg} rounded-lg shadow-md p-4 border-l-4 border-green-500 ${completedMeetings.length > 0 ? 'cursor-pointer hover:shadow-lg transform hover:scale-105' : ''} transition-all duration-200`}
+                onClick={() => totalFinalizedMeetings > 0 && scrollToSection('held-section')}
+                className={`${cardBg} rounded-lg shadow-md p-4 border-l-4 border-green-500 ${totalFinalizedMeetings > 0 ? 'cursor-pointer hover:shadow-lg transform hover:scale-105' : ''} transition-all duration-200`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-sm ${textSecondary}`}>Held</p>
-                    <p className={`text-2xl font-bold ${textPrimary}`}>{completedMeetings.length}</p>
+                    <p className={`text-sm ${textSecondary}`}>Meeting Outcomes</p>
+                    <p className={`text-2xl font-bold ${textPrimary}`}>{totalFinalizedMeetings}</p>
+                    <p className={`text-xs mt-1 ${textSecondary}`}>
+                      Held {heldMeetingsHistory.length} • No-Show {noShowMeetingsHistory.length} • Cancelled {cancelledMeetingsHistory.length}
+                    </p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-green-500" />
                 </div>
@@ -2187,8 +2386,10 @@ export default function ClientDashboard() {
                       <CheckCircle className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
-                      <h3 className={`text-lg font-semibold ${textPrimary}`}>Held Meetings</h3>
-                      <p className={`text-sm ${textSecondary} mt-1`}>{completedMeetings.length} meetings held, cancelled, or no-show</p>
+                      <h3 className={`text-lg font-semibold ${textPrimary}`}>Meeting Outcomes</h3>
+                      <p className={`text-sm ${textSecondary} mt-1`}>
+                        {totalFinalizedMeetings} finalized meetings · Held {heldMeetingsHistory.length} · No-Show {noShowMeetingsHistory.length} · Cancelled {cancelledMeetingsHistory.length}
+                      </p>
                     </div>
                   </div>
                   <button className={`p-2 hover:bg-green-100 rounded-lg transition-colors ${textPrimary}`}>
@@ -2197,116 +2398,51 @@ export default function ClientDashboard() {
                 </div>
               </div>
               {!isHeldCollapsed && (
-              <div className="p-6">
-                {completedMeetings.map((meeting) => (
-                  <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-gray-700/50 hover:border-gray-500' : 'bg-gradient-to-r from-gray-50/30 to-white hover:border-gray-300'}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
-                            <User className={`w-4 h-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+              <div className="p-6 space-y-8">
+                {meetingOutcomeGroups.map((group) => {
+                  const meta = outcomeStyles[group.key];
+                  const HeaderIcon = meta.badgeIcon;
+                  return (
+                    <div key={group.key} className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`p-2 rounded-lg ${
+                              isDarkMode ? meta.headerIconBgDark : meta.headerIconBgLight
+                            }`}
+                          >
+                            <HeaderIcon className={`w-5 h-5 ${meta.headerIconColor}`} />
                           </div>
                           <div>
-                            <h4 className={`text-lg font-semibold ${textPrimary}`}>
-                              {meeting.contact_full_name || 'Meeting'}
-                            </h4>
-                            <div className="flex items-center gap-4 mt-1">
-                              <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
-                                <Calendar className="w-3 h-3" />
-                                {new Date(meeting.scheduled_date).toLocaleDateString()}
-                              </span>
-                              <span className={`inline-flex items-center gap-1 text-xs ${textSecondary}`}>
-                                <Clock className="w-3 h-3" />
-                                {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
-                                })}
-                              </span>
-                            </div>
+                            <h4 className={`text-md font-semibold ${textPrimary}`}>{group.title}</h4>
+                            <p className={`text-sm ${textSecondary}`}>{group.description}</p>
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          {meeting.contact_email && (
-                            <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                              <Mail className="w-4 h-4 text-gray-400" />
-                              <span className="font-medium">Email:</span>
-                              <span>{meeting.contact_email}</span>
-                            </div>
-                          )}
-                          {meeting.company && (
-                            <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                              <Building className="w-4 h-4 text-gray-400" />
-                              <span className="font-medium">Company:</span>
-                              <span>{meeting.company}</span>
-                            </div>
-                          )}
-                          <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium">SDR:</span>
-                            <span>{meeting.sdr_name}</span>
-                          </div>
+                        <span className={`text-sm font-medium ${textSecondary}`}>
+                          {group.items.length}{' '}
+                          {group.items.length === 1 ? 'meeting' : 'meetings'}
+                        </span>
+                      </div>
+
+                      {group.items.length > 0 ? (
+                        group.items.map((meeting) => renderOutcomeMeetingCard(meeting, group.key))
+                      ) : (
+                        <div
+                          className={`text-center py-10 border ${cardBorder} rounded-xl ${
+                            isDarkMode ? 'bg-gray-700/40' : 'bg-gray-50'
+                          }`}
+                        >
+                          <p className={`font-medium ${textSecondary}`}>
+                            {meta.emptyTitle}
+                          </p>
+                          <p className={`text-sm mt-1 ${textTertiary}`}>
+                            {meta.emptyDescription}
+                          </p>
                         </div>
-                        
-                        {meeting.notes && (
-                          <div className={`mt-3 p-3 rounded-lg border-l-4 ${isDarkMode ? 'bg-gray-600/50 border-gray-500' : 'bg-gray-50 border-gray-200'}`}>
-                            <p className={`text-sm ${textSecondary} leading-relaxed`}>
-                              <span className={`font-medium ${textPrimary}`}>Notes:</span> {meeting.notes}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="ml-4 flex flex-col items-end gap-2">
-                        {(() => {
-                          // Derive display status from database fields
-                          const displayStatus = meeting.held_at 
-                            ? 'held' 
-                            : meeting.no_show 
-                            ? 'no-show' 
-                            : meeting.no_longer_interested 
-                            ? 'cancelled' 
-                            : meeting.status;
-                          
-                          return (
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
-                              displayStatus === 'held' 
-                                ? 'bg-green-100 text-green-800 border border-green-200'
-                                : displayStatus === 'cancelled'
-                                ? 'bg-red-100 text-red-800 border border-red-200'
-                                : displayStatus === 'no-show'
-                                ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                                : displayStatus === 'confirmed'
-                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                : displayStatus === 'pending'
-                                ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                                : 'bg-gray-100 text-gray-800 border border-gray-200'
-                            }`}>
-                              {displayStatus === 'held' ? (
-                                <CheckCircle className="w-4 h-4" />
-                              ) : displayStatus === 'cancelled' ? (
-                                <X className="w-4 h-4" />
-                              ) : displayStatus === 'confirmed' ? (
-                                <CheckCircle className="w-4 h-4" />
-                              ) : (
-                                <AlertTriangle className="w-4 h-4" />
-                              )}
-                              {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1).replace('-', ' ')}
-                            </span>
-                          );
-                        })()}
-                      </div>
+                      )}
                     </div>
-                  </div>
-                ))}
-                {completedMeetings.length === 0 && (
-                  <div className="text-center py-12">
-                    <div className={`p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <CheckCircle className={`w-8 h-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                    </div>
-                    <p className={`font-medium ${textSecondary}`}>No held meetings yet</p>
-                    <p className={`text-sm mt-1 ${textTertiary}`}>Held meetings will appear here</p>
-                  </div>
-                )}
+                  );
+                })}
               </div>
               )}
             </div>
