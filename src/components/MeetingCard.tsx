@@ -45,6 +45,7 @@ export function MeetingCard({
     held_at: meeting.held_at,
     icp_status: meeting.icp_status || 'pending',
     company: meeting.company || '',
+    title: meeting.title || '',
     linkedin_page: meeting.linkedin_page || '',
     notes: meeting.notes || '',
     timezone: meeting.timezone || 'America/New_York'
@@ -107,6 +108,7 @@ export function MeetingCard({
       held_at: editedData.held_at,
       icp_status: editedData.icp_status,
       company: editedData.company,
+      title: editedData.title,
       linkedin_page: editedData.linkedin_page,
       notes: editedData.notes,
       timezone: editedData.timezone
@@ -296,8 +298,8 @@ export function MeetingCard({
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</p>
-                    {showSDR && meeting.sdr_name && (
-                      <p className="text-sm text-gray-500">Booked by {meeting.sdr_name}</p>
+                    {meeting.sdr_name && (
+                      <p className="text-sm text-gray-500">SDR: {meeting.sdr_name}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -468,6 +470,16 @@ export function MeetingCard({
                         <option value="approved">Approved</option>
                         <option value="denied">Denied</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        value={editedData.title}
+                        onChange={e => setEditedData({ ...editedData, title: e.target.value })}
+                        placeholder="CEO, VP of Sales, etc."
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
@@ -675,6 +687,12 @@ export function MeetingCard({
                       <div className="text-sm text-gray-600">
                         <span className="font-medium text-gray-700">Contact: </span>
                         <span className="text-gray-900">{meeting.contact_full_name}</span>
+                      </div>
+                    )}
+                    {meeting.title && (
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium text-gray-700">Title: </span>
+                        <span className="text-gray-900">{meeting.title}</span>
                       </div>
                     )}
                     {meeting.contact_email && (

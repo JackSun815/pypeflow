@@ -96,7 +96,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
       ...m,
       start,
       end,
-      title: m.sdr_name ? `SDR: ${m.sdr_name}` : undefined,
+      title: m.title || undefined, // Use prospect's title, not SDR name
     };
   });
 
@@ -236,6 +236,13 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Contact:</span>
                   <span>{event.contact_full_name}</span>
+                </div>
+              )}
+              
+              {event.title && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Title:</span>
+                  <span>{event.title}</span>
                 </div>
               )}
               
@@ -408,8 +415,11 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
                 </div>
               )}
               <h2 className="text-xl font-semibold text-gray-900">
-                {selectedMeeting.contact_full_name || selectedMeeting.title || 'Untitled Meeting'}
+                {selectedMeeting.contact_full_name || 'Untitled Meeting'}
               </h2>
+              {selectedMeeting.sdr_name && (
+                <p className="text-sm text-gray-500 mt-1">SDR: {selectedMeeting.sdr_name}</p>
+              )}
             </div>
             <div className="text-sm text-gray-700 space-y-2">
               <div>

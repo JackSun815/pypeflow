@@ -122,6 +122,7 @@ export default function TeamMeetings({
         status: updatedMeeting.status,
         no_show: updatedMeeting.no_show,
         company: updatedMeeting.company,           // <-- add this
+        title: updatedMeeting.title,                // <-- add this
         linkedin_page: updatedMeeting.linkedin_page, // <-- add this
         notes: updatedMeeting.notes,               // <-- add this
         contact_full_name: updatedMeeting.contact_full_name, // (optional, for completeness)
