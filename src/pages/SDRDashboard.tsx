@@ -4,6 +4,7 @@ import { useClients } from '../hooks/useClients';
 import { useMeetings } from '../hooks/useMeetings';
 import { supabasePublic } from '../lib/supabase';
 import { AgencyProvider } from '../contexts/AgencyContext';
+import { useDemo } from '../contexts/DemoContext';
 import ClientCard from '../components/ClientCard';
 import MeetingsList from '../components/MeetingsList';
 import DashboardMetrics from '../components/DashboardMetrics';
@@ -81,6 +82,7 @@ ChartJS.register(
 function SDRDashboardContent() {
   const { token } = useParams();
   const location = useLocation();
+  const { isDemoMode } = useDemo();
   const [sdrId, setSdrId] = useState<string | null>(null);
   const [sdrName, setSdrName] = useState<string | null>(null);
   const [sdrAgencyId, setSdrAgencyId] = useState<string | null>(null);
@@ -262,20 +264,31 @@ function SDRDashboardContent() {
 
 
   const handleSaveMeeting = async (updatedMeeting: Meeting) => {
-  console.log('Saving meeting:', updatedMeeting);
-  try {
-    await updateMeeting(updatedMeeting);
-    setEditingMeeting(null);
-  } catch (error) {
-    console.error('Failed to update meeting:', error);
-  }
-};
+    if (isDemoMode) {
+      alert('Updating meetings is disabled in demo mode.');
+      return;
+    }
+    console.log('Saving meeting:', updatedMeeting);
+    try {
+      await updateMeeting(updatedMeeting);
+      setEditingMeeting(null);
+    } catch (error) {
+      console.error('Failed to update meeting:', error);
+    }
+  };
 
   const handleCancelEdit = () => {
     setEditingMeeting(null);
   };
-  const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  const nowDate = new Date();
+
+  // Lock "current time" for demo mode so the dashboard always shows the same sample period
+  const demoNow = useMemo(
+    () => (isDemoMode ? new Date('2025-11-15T12:00:00Z') : new Date()),
+    [isDemoMode]
+  );
+
+  const currentMonth = demoNow.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const nowDate = demoNow;
 
   const pendingMeetings = meetings.filter(
     meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.no_longer_interested && (meeting.icp_status || 'pending') !== 'denied' && new Date(meeting.scheduled_date) >= nowDate
@@ -401,54 +414,60 @@ function SDRDashboardContent() {
     setEditingMeeting(meeting.id);
   };
   async function handleAddMeeting(e: React.FormEvent) {
-  e.preventDefault();
-  if (!selectedClientId || !meetingDate || !sdrId || !contactFullName || !contactEmail || !bookedDate) {
-    setAddMeetingError('Please fill all required fields');
-    return;
-  }
+    e.preventDefault();
 
-  try {
-    const { createZonedDateTime } = await import('../utils/timeUtils');
-    const scheduledDateTime = createZonedDateTime(meetingDate, meetingTime, 'America/New_York'); // Always EST
-    
-    // Convert bookedDate to ISO timestamp
-    const bookedAtTimestamp = new Date(`${bookedDate}T00:00:00Z`).toISOString();
-    
-    const meetingData = {
-      contact_full_name: contactFullName,
-      contact_email: contactEmail,
-      contact_phone: contactPhone || null,
-      title: title || null,
-      company: company || null,
-      linkedin_page: linkedinPage || null,
-      notes: notes || null,
-      status: 'pending',
-      timezone: prospectTimezone, // Save prospect's timezone for reference
-      booked_at: bookedAtTimestamp, // Include the booking date
-    };
-    await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
-    await fetchClients(); // Refresh client stats after adding a meeting
-    setShowAddMeeting(false);
-    setBookedDate('');
-    setMeetingDate('');
-    setMeetingTime('09:00');
-    setProspectTimezone('America/New_York');
-    setSelectedClientId(null);
-    setContactFullName('');
-    setContactEmail('');
-    setContactPhone('');
-    setTitle('');
-    setCompany('');
-    setLinkedinPage('');
-    setNotes('');
-    setEditingMeeting(null);
-    setAddMeetingError(null);
-    triggerConfetti();
-  } catch (error) {
-    console.error('Failed to add meeting:', error);
-    setAddMeetingError(error instanceof Error ? error.message : 'Failed to add meeting');
+    if (isDemoMode) {
+      alert('Creating meetings is disabled in demo mode.');
+      return;
+    }
+
+    if (!selectedClientId || !meetingDate || !sdrId || !contactFullName || !contactEmail || !bookedDate) {
+      setAddMeetingError('Please fill all required fields');
+      return;
+    }
+
+    try {
+      const { createZonedDateTime } = await import('../utils/timeUtils');
+      const scheduledDateTime = createZonedDateTime(meetingDate, meetingTime, 'America/New_York'); // Always EST
+      
+      // Convert bookedDate to ISO timestamp
+      const bookedAtTimestamp = new Date(`${bookedDate}T00:00:00Z`).toISOString();
+      
+      const meetingData = {
+        contact_full_name: contactFullName,
+        contact_email: contactEmail,
+        contact_phone: contactPhone || null,
+        title: title || null,
+        company: company || null,
+        linkedin_page: linkedinPage || null,
+        notes: notes || null,
+        status: 'pending',
+        timezone: prospectTimezone, // Save prospect's timezone for reference
+        booked_at: bookedAtTimestamp, // Include the booking date
+      };
+      await addMeeting(selectedClientId, scheduledDateTime, sdrId, meetingData);
+      await fetchClients(); // Refresh client stats after adding a meeting
+      setShowAddMeeting(false);
+      setBookedDate('');
+      setMeetingDate('');
+      setMeetingTime('09:00');
+      setProspectTimezone('America/New_York');
+      setSelectedClientId(null);
+      setContactFullName('');
+      setContactEmail('');
+      setContactPhone('');
+      setTitle('');
+      setCompany('');
+      setLinkedinPage('');
+      setNotes('');
+      setEditingMeeting(null);
+      setAddMeetingError(null);
+      triggerConfetti();
+    } catch (error) {
+      console.error('Failed to add meeting:', error);
+      setAddMeetingError(error instanceof Error ? error.message : 'Failed to add meeting');
+    }
   }
-}
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -491,7 +510,7 @@ function SDRDashboardContent() {
     );
   }
 
-  const now = new Date();
+  const now = demoNow;
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const dayOfMonth = now.getDate();
   const monthProgress = (dayOfMonth / daysInMonth) * 100;
@@ -506,6 +525,10 @@ function SDRDashboardContent() {
   );
 
   const handleMeetingHeldDateUpdate = async (meetingId: string, heldDate: string | null) => {
+    if (isDemoMode) {
+      alert('Updating meetings is disabled in demo mode.');
+      return;
+    }
     try {
       await updateMeetingHeldDate(meetingId, heldDate);
       if (heldDate) {
@@ -517,6 +540,10 @@ function SDRDashboardContent() {
   };
 
   const handleMeetingConfirmedDateUpdate = async (meetingId: string, confirmedDate: string | null) => {
+    if (isDemoMode) {
+      alert('Updating meetings is disabled in demo mode.');
+      return;
+    }
     try {
       await updateMeetingConfirmedDate(meetingId, confirmedDate);
       if (confirmedDate) {
@@ -529,6 +556,10 @@ function SDRDashboardContent() {
 
   // Drag and drop status change handler
   const handleMeetingStatusChange = async (meetingId: string, newStatus: 'pending' | 'confirmed' | 'held' | 'no-show') => {
+    if (isDemoMode) {
+      alert('Updating meetings is disabled in demo mode.');
+      return;
+    }
     try {
       const { supabase } = await import('../lib/supabase');
       const updates: any = {};
@@ -586,6 +617,10 @@ function SDRDashboardContent() {
 
   // Handler to mark as held
   const handleMarkHeld = async (meetingId: string) => {
+    if (isDemoMode) {
+      alert('Updating meetings is disabled in demo mode.');
+      return;
+    }
     try {
       // Use scheduled_date instead of current time
       const meeting = meetings.find(m => m.id === meetingId);
@@ -598,6 +633,10 @@ function SDRDashboardContent() {
 
   // Handler to mark as no show
   const handleMarkNoShow = async (meetingId: string) => {
+    if (isDemoMode) {
+      alert('Updating meetings is disabled in demo mode.');
+      return;
+    }
     try {
       await updateMeeting({ ...meetings.find(m => m.id === meetingId)!, no_show: true });
     } catch (error) {
@@ -1061,9 +1100,8 @@ function SDRDashboardContent() {
                 const totalSetTarget = activeClients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
                 const totalHeldTarget = activeClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                 
-                const now = new Date();
-                const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-                const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+                const monthStart = new Date(Date.UTC(demoNow.getFullYear(), demoNow.getMonth(), 1));
+                const nextMonthStart = new Date(Date.UTC(demoNow.getFullYear(), demoNow.getMonth() + 1, 1));
                 
                 // Meetings SET: Filter by created_at (when SDR booked it) AND exclude non-ICP-qualified
                 const monthlyMeetingsSet = meetings.filter(meeting => {
@@ -1156,9 +1194,13 @@ function SDRDashboardContent() {
                           allMeetings={meetings}
                           clientId={client.id}
                           onAddMeeting={() => {
+                            if (isDemoMode) {
+                              alert('Creating meetings is disabled in demo mode.');
+                              return;
+                            }
                             setSelectedClientId(client.id);
-                            // Set booked date to today by default
-                            const today = new Date().toISOString().split('T')[0];
+                            // Set booked date to today by default (locked in demo mode)
+                            const today = now.toISOString().split('T')[0];
                             setBookedDate(today);
                             setShowAddMeeting(true);
                           }}
@@ -1189,9 +1231,13 @@ function SDRDashboardContent() {
                           allMeetings={meetings}
                           clientId={client.id}
                           onAddMeeting={() => {
+                            if (isDemoMode) {
+                              alert('Creating meetings is disabled in demo mode.');
+                              return;
+                            }
                             setSelectedClientId(client.id);
-                            // Set booked date to today by default
-                            const today = new Date().toISOString().split('T')[0];
+                            // Set booked date to today by default (locked in demo mode)
+                            const today = now.toISOString().split('T')[0];
                             setBookedDate(today);
                             setShowAddMeeting(true);
                           }}
@@ -1263,9 +1309,8 @@ function SDRDashboardContent() {
                   const totalSetTarget = activeClients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
                   const totalHeldTarget = activeClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
                   
-                  const now = new Date();
-                  const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-                  const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+                  const monthStart = new Date(Date.UTC(demoNow.getFullYear(), demoNow.getMonth(), 1));
+                  const nextMonthStart = new Date(Date.UTC(demoNow.getFullYear(), demoNow.getMonth() + 1, 1));
                   
                   // Meetings SET: Filter by created_at (when SDR booked it)
                   const monthlyMeetingsSet = meetings.filter(meeting => {

@@ -4,6 +4,7 @@ import { useSDRs } from '../hooks/useSDRs';
 import { useAllClients } from '../hooks/useAllClients';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAgency } from '../contexts/AgencyContext';
+import { useDemo } from '../contexts/DemoContext';
 import { supabase } from '../lib/supabase';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import type { Meeting } from '../types/database';
@@ -17,6 +18,7 @@ export default function TeamMeetings({
   fetchSDRs: () => void;
 }) {
   const { agency } = useAgency();
+  const { isDemoMode } = useDemo();
   const { sdrs, loading: sdrsLoading } = useSDRs();
   const { clients, loading: clientsLoading } = useAllClients();
   const [selectedSDR, setSelectedSDR] = useState<string | 'all'>('all');
@@ -101,6 +103,10 @@ export default function TeamMeetings({
   });
 
   const handleDeleteMeeting = async (meetingId: string) => {
+    if (isDemoMode) {
+      toast.error('This action is disabled in demo mode');
+      return;
+    }
     const { error } = await supabase
       .from('meetings')
       .delete()
@@ -115,6 +121,10 @@ export default function TeamMeetings({
   };
 
   const handleSaveMeeting = async (updatedMeeting: Meeting) => {
+    if (isDemoMode) {
+      toast.error('This action is disabled in demo mode');
+      return;
+    }
     const { error } = await supabase
       .from('meetings')
       .update({
@@ -148,6 +158,10 @@ export default function TeamMeetings({
 
   // Drag and drop status change handler
   const handleMeetingStatusChange = async (meetingId: string, newStatus: 'pending' | 'confirmed' | 'held' | 'no-show') => {
+    if (isDemoMode) {
+      toast.error('This action is disabled in demo mode');
+      return;
+    }
     try {
       const updates: any = {};
       
@@ -198,6 +212,10 @@ export default function TeamMeetings({
 
   // Handle creating a direct meeting (no SDR)
   const handleCreateDirectMeeting = async () => {
+    if (isDemoMode) {
+      toast.error('This action is disabled in demo mode');
+      return;
+    }
     try {
       if (!newDirectMeeting.client_id || !newDirectMeeting.contact_full_name || !newDirectMeeting.scheduled_date) {
         toast.error('Please fill in required fields: Client, Contact Name, and Date');
@@ -503,9 +521,16 @@ export default function TeamMeetings({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setAddDirectMeetingModalOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded hover:bg-indigo-100 border border-indigo-200"
-                title="Add meeting from other sources (email, LinkedIn, etc.)"
+                onClick={() => {
+                  if (isDemoMode) {
+                    toast.error('This action is disabled in demo mode');
+                    return;
+                  }
+                  setAddDirectMeetingModalOpen(true);
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded hover:bg-indigo-100 border border-indigo-200 ${isDemoMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={isDemoMode ? 'Disabled in demo mode' : "Add meeting from other sources (email, LinkedIn, etc.)"}
+                disabled={isDemoMode}
               >
                 <Plus className="w-3 h-3" />
                 Add Direct Meeting
@@ -539,7 +564,7 @@ export default function TeamMeetings({
           heldMeetings={heldMeetings}
           noShowMeetings={noShowMeetings}
           pastDuePendingMeetings={pastDuePendingMeetings}
-          editable={true}
+          editable={!isDemoMode}
           editingMeetingId={editingMeetingId}
           onEdit={handleEditMeeting}
           onDelete={handleDeleteMeeting}

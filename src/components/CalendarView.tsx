@@ -45,6 +45,7 @@ export interface MeetingEvent {
 interface CalendarViewProps {
   meetings: Meeting[];
   colorByStatus?: boolean;
+  defaultDate?: Date;
 }
 
 // Add a color palette for SDRs
@@ -69,7 +70,7 @@ function getSDRColor(sdrId: string) {
   return SDR_COLORS[Math.abs(hash) % SDR_COLORS.length];
 }
 
-export default function CalendarView({ meetings, colorByStatus = false }: CalendarViewProps) {
+export default function CalendarView({ meetings, colorByStatus = false, defaultDate }: CalendarViewProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingEvent | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -377,6 +378,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
         endAccessor="end"
         defaultView="week"
         views={['month', 'week', 'day', 'agenda']}
+        defaultDate={defaultDate || new Date()}
         style={{ height: '100%' }}
         eventPropGetter={eventStyleGetter}
         onSelectEvent={handleSelectEvent}
@@ -396,7 +398,7 @@ export default function CalendarView({ meetings, colorByStatus = false }: Calend
         timeslots={2}
         min={new Date(0, 0, 0, 0, 0, 0)} // Start at midnight (12:00 AM)
         max={new Date(0, 0, 0, 23, 59, 59)} // End at 11:59 PM (full 24 hours)
-        scrollToTime={new Date(0, 0, 0, 6, 0, 0)} // Default scroll position at 6 AM
+        scrollToTime={new Date(0, 0, 0, new Date().getHours(), new Date().getMinutes(), 0)} // Scroll near user's current time
       />
       {selectedMeeting && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">

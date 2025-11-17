@@ -5,7 +5,8 @@ import { useSDRs } from '../hooks/useSDRs';
 import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { useAgency } from '../contexts/AgencyContext';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building } from 'lucide-react';
+import { useDemo } from '../contexts/DemoContext';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
@@ -15,6 +16,7 @@ import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
 import confetti from 'canvas-confetti';
 import html2canvas from 'html2canvas';
+import DemoBanner, { LockedTabMessage } from '../components/DemoBanner';
 
 // Add custom CSS for flow animation
 const flowStyles = `
@@ -80,6 +82,7 @@ ChartJS.register(
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
+  const { isDemoMode } = useDemo();
 
   // Theme and chart visibility settings (Manager-specific)
   const [darkTheme, setDarkTheme] = useState(() => {
@@ -201,6 +204,13 @@ export default function ManagerDashboard() {
   const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
   const [selectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
+  
+  // Ensure we don't switch to locked tabs in demo mode
+  useEffect(() => {
+    if (isDemoMode && (activeTab === 'clients' || activeTab === 'users' || activeTab === 'history' || activeTab === 'icp')) {
+      setActiveTab('overview');
+    }
+  }, [isDemoMode, activeTab]);
   const [allSDRs, setAllSDRs] = useState<any[]>([]);
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
   const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
@@ -1018,6 +1028,7 @@ export default function ManagerDashboard() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
+      {isDemoMode && <DemoBanner />}
       <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-r from-slate-800/95 via-indigo-900/95 to-slate-800/95 border-indigo-800/50 backdrop-blur-sm' : 'bg-gradient-to-r from-white via-indigo-50/30 to-white border-indigo-100'}`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-100/20 to-transparent"></div>
@@ -1329,48 +1340,76 @@ export default function ManagerDashboard() {
               Team's Meetings
             </button>
             <button
-              onClick={() => setActiveTab('clients')}
+              onClick={() => {
+                if (!isDemoMode) {
+                  setActiveTab('clients');
+                }
+              }}
               className={`${
                 activeTab === 'clients'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
+              disabled={isDemoMode}
+              title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
               <Building className={`w-4 h-4 transition-colors ${activeTab === 'clients' ? '' : 'group-hover:text-purple-500'}`} />
               Client Management
+              {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
             <button
-              onClick={() => setActiveTab('users')}
+              onClick={() => {
+                if (!isDemoMode) {
+                  setActiveTab('users');
+                }
+              }}
               className={`${
                 activeTab === 'users'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
+              disabled={isDemoMode}
+              title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
               <Users className={`w-4 h-4 transition-colors ${activeTab === 'users' ? '' : 'group-hover:text-orange-500'}`} />
               User Management
+              {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
             <button
-              onClick={() => setActiveTab('history')}
+              onClick={() => {
+                if (!isDemoMode) {
+                  setActiveTab('history');
+                }
+              }}
               className={`${
                 activeTab === 'history'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
+              disabled={isDemoMode}
+              title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
               <History className={`w-4 h-4 transition-colors ${activeTab === 'history' ? '' : 'group-hover:text-teal-500'}`} />
               Meeting History
+              {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
             <button
-              onClick={() => setActiveTab('icp')}
+              onClick={() => {
+                if (!isDemoMode) {
+                  setActiveTab('icp');
+                }
+              }}
               className={`${
                 activeTab === 'icp'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
+              disabled={isDemoMode}
+              title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
               <Shield className={`w-4 h-4 transition-colors ${activeTab === 'icp' ? '' : 'group-hover:text-rose-500'}`} />
               ICP Check
+              {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
           </nav>
         </div>
@@ -2872,29 +2911,45 @@ export default function ManagerDashboard() {
 
 
         {activeTab === 'clients' && (
-          <ClientManagement sdrs={sdrs} onUpdate={fetchSDRs} />
+          isDemoMode ? (
+            <LockedTabMessage featureName="Client Management" />
+          ) : (
+            <ClientManagement sdrs={sdrs} onUpdate={fetchSDRs} />
+          )
         )}
 
         {activeTab === 'users' && (
-          <UnifiedUserManagement 
-            sdrs={allSDRs.length > 0 ? allSDRs : sdrs} 
-            clients={clients as any} 
-            onUpdate={fetchSDRs} 
-          />
+          isDemoMode ? (
+            <LockedTabMessage featureName="User Management" />
+          ) : (
+            <UnifiedUserManagement 
+              sdrs={allSDRs.length > 0 ? allSDRs : sdrs} 
+              clients={clients as any} 
+              onUpdate={fetchSDRs} 
+            />
+          )
         )}
 
-                {activeTab === 'history' && (
-          <ManagerMeetingHistory 
-            meetings={meetings} 
-            loading={meetingsLoading} 
-            error={null} 
-            onUpdateHeldDate={updateMeetingHeldDate}
-            onUpdateConfirmedDate={updateMeetingConfirmedDate}
-          />
+        {activeTab === 'history' && (
+          isDemoMode ? (
+            <LockedTabMessage featureName="Meeting History" />
+          ) : (
+            <ManagerMeetingHistory 
+              meetings={meetings} 
+              loading={meetingsLoading} 
+              error={null} 
+              onUpdateHeldDate={updateMeetingHeldDate}
+              onUpdateConfirmedDate={updateMeetingConfirmedDate}
+            />
+          )
         )}
 
         {activeTab === 'icp' && (
-          <ICPCheck />
+          isDemoMode ? (
+            <LockedTabMessage featureName="ICP Check" />
+          ) : (
+            <ICPCheck />
+          )
         )}
 
         {/* Modal */}

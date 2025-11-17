@@ -13,10 +13,13 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import DemoViewer from '../components/DemoViewer';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'sdr' | 'manager' | 'client'>('sdr');
+  const [showDemo, setShowDemo] = useState(false);
+  const [demoType, setDemoType] = useState<'manager' | 'sdr' | 'client'>('manager');
 
   const features = {
     sdr: [
@@ -193,6 +196,28 @@ export default function LandingPage() {
                 <p className="text-gray-600">{feature.description}</p>
               </div>
             ))}
+          </div>
+
+          {/* Demo CTA */}
+          <div className="mt-12 text-center">
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-8 border-2 border-blue-100">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                Want to see it in action?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Try our interactive demo and explore the dashboard with real data (read-only mode)
+              </p>
+              <button
+                onClick={() => {
+                  setDemoType(activeTab === 'sdr' ? 'sdr' : activeTab === 'manager' ? 'manager' : 'client');
+                  setShowDemo(true);
+                }}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                <Play className="w-5 h-5" />
+                Try {activeTab === 'sdr' ? 'SDR' : activeTab === 'manager' ? 'Manager' : 'Client'} Demo
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -806,6 +831,14 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Demo Viewer Modal */}
+      {showDemo && (
+        <DemoViewer 
+          type={demoType} 
+          onClose={() => setShowDemo(false)} 
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AgencyProvider, useAgency } from './contexts/AgencyContext';
+import { DemoProvider } from './contexts/DemoContext';
 import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
@@ -12,6 +13,7 @@ import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Sitemap from './pages/Sitemap';
 import GoogleAnalytics from './components/GoogleAnalytics';
+import StaticManagerDemo from './pages/StaticManagerDemo';
 
 // Component to handle routing with agency context
 function AppRoutes() {
@@ -87,6 +89,21 @@ function AppRoutes() {
 
       {/* Public client dashboard routes */}
       <Route path="/dashboard/client/:token/*" element={<ClientDashboard />} />
+
+      {/* Demo/Sandbox routes - read-only versions */}
+      <Route path="/demo/manager" element={
+        <StaticManagerDemo />
+      } />
+      <Route path="/demo/sdr" element={
+        <DemoProvider>
+          <SDRDashboard />
+        </DemoProvider>
+      } />
+      <Route path="/demo/client" element={
+        <DemoProvider>
+          <ClientDashboard />
+        </DemoProvider>
+      } />
 
       {/* Blog routes - public */}
       <Route path="/blog" element={<Blog />} />
@@ -171,10 +188,12 @@ function App() {
   return (
     <HelmetProvider>
       <AgencyProvider>
-        <Router>
-          <GoogleAnalytics />
-          <AppRoutes />
-        </Router>
+        <DemoProvider>
+          <Router>
+            <GoogleAnalytics />
+            <AppRoutes />
+          </Router>
+        </DemoProvider>
       </AgencyProvider>
     </HelmetProvider>
   );
