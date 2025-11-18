@@ -5,7 +5,8 @@ import CalendarView from '../components/CalendarView';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import DemoBanner from '../components/DemoBanner';
 import type { Meeting } from '../types/database';
-import { BarChart2, Calendar as CalendarIcon, Building, Users, Lock } from 'lucide-react';
+import { BarChart2, Calendar as CalendarIcon, Building, Users, Lock, History, Shield, Rocket, Sun, Eye, EyeOff, LogOut } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 type PreviewClient = {
   id: string;
@@ -282,7 +283,7 @@ const MEETINGS: Meeting[] = [
 ];
 
 export default function ManagerDemoPreview() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'meetings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'clients' | 'users' | 'history' | 'icp'>('overview');
   const [selectedSDRFilter, setSelectedSDRFilter] = useState<'all' | string>('all');
   const [selectedClientFilter, setSelectedClientFilter] = useState<'all' | string>('all');
 
@@ -373,6 +374,14 @@ export default function ManagerDemoPreview() {
     alert('This action is disabled in the read-only demo.');
   };
 
+  const handleLockedTabClick = (tab: 'clients' | 'users' | 'history' | 'icp') => {
+    setActiveTab(tab);
+  };
+
+  const handleLockedFeature = () => {
+    alert('Contact for full access to unlock this feature.');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <DemoBanner />
@@ -397,9 +406,138 @@ export default function ManagerDemoPreview() {
               <p className="text-sm text-gray-500">November 2025</p>
             </div>
           </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-xl border border-indigo-200"
+                onClick={() => {
+                  // Easter egg: confetti and rocket animation
+                  confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                  });
+                  
+                  // Add a subtle bounce effect to the rocket
+                  const rocket = document.querySelector('.rocket-easter-egg-manager-demo');
+                  if (rocket) {
+                    rocket.classList.add('animate-bounce');
+                    setTimeout(() => {
+                      rocket.classList.remove('animate-bounce');
+                    }, 1000);
+                  }
+                }}
+                title="🎉 Click for a surprise!"
+              >
+                <span className="text-sm font-semibold text-indigo-700 group-hover:text-indigo-800 transition-colors">Manager</span>
+                <Rocket className="w-4 h-4 text-indigo-600 group-hover:text-indigo-700 transition-colors rocket-easter-egg-manager-demo" />
+              </div>
+              
+              {/* Dropdown menu */}
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0">
+                <div className="py-2">
+                  {/* Theme Toggle */}
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Theme</span>
+                      <button
+                        onClick={handleLockedFeature}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
+                      >
+                        <Sun className="w-4 h-4 text-gray-700" />
+                        <span className="text-sm text-gray-700">Light</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Chart Visibility Toggles */}
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Chart Visibility</div>
+                    
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1 cursor-pointer"
+                    >
+                      <span>Cumulative Performance</span>
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1 cursor-pointer"
+                    >
+                      <span>Monthly Performance</span>
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1 cursor-pointer"
+                    >
+                      <span>Meeting Status</span>
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1 cursor-pointer"
+                    >
+                      <span>SDR Performance</span>
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1 cursor-pointer"
+                    >
+                      <span>Clients Performance</span>
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1 cursor-pointer"
+                    >
+                      <span>SDR Comparison</span>
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <span>Client Progress</span>
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+                  
+                  {/* Export and Logout */}
+                  <div className="px-4 py-2">
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors mb-1 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export
+                    </button>
+                    <button
+                      onClick={handleLockedFeature}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="border-t border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-4 sm:px-6 lg:px-8">
+          <nav className="-mb-px flex space-x-8 px-4 sm:px-6 lg:px-8 pt-4">
             <button
               className={`${
                 activeTab === 'overview'
@@ -422,14 +560,52 @@ export default function ManagerDemoPreview() {
               <CalendarIcon className="w-4 h-4" />
               Team&apos;s Meetings
             </button>
-            <button className="border-transparent text-gray-400 pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors cursor-not-allowed">
+            <button
+              onClick={() => handleLockedTabClick('clients')}
+              className={`${
+                activeTab === 'clients'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-500'
+              } pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer`}
+            >
               <Building className="w-4 h-4" />
               Client Management
               <Lock className="w-3 h-3" />
             </button>
-            <button className="border-transparent text-gray-400 pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors cursor-not-allowed">
+            <button
+              onClick={() => handleLockedTabClick('users')}
+              className={`${
+                activeTab === 'users'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-500'
+              } pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer`}
+            >
               <Users className="w-4 h-4" />
               User Management
+              <Lock className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => handleLockedTabClick('history')}
+              className={`${
+                activeTab === 'history'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-500'
+              } pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer`}
+            >
+              <History className="w-4 h-4" />
+              Meeting History
+              <Lock className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => handleLockedTabClick('icp')}
+              className={`${
+                activeTab === 'icp'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-500'
+              } pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer`}
+            >
+              <Shield className="w-4 h-4" />
+              ICP Check
               <Lock className="w-3 h-3" />
             </button>
           </nav>
@@ -532,6 +708,30 @@ export default function ManagerDemoPreview() {
               onCancel={() => {}}
               onMeetingStatusChange={() => {}}
             />
+          </div>
+        )}
+
+        {(activeTab === 'clients' || activeTab === 'users' || activeTab === 'history' || activeTab === 'icp') && (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center p-8 bg-white rounded-lg shadow-md border border-gray-200 max-w-md">
+              <div className="mb-4 flex justify-center">
+                <div className="p-4 bg-blue-100 rounded-full">
+                  <Lock className="w-8 h-8 text-blue-600" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {activeTab === 'clients' && 'Client Management'}
+                {activeTab === 'users' && 'User Management'}
+                {activeTab === 'history' && 'Meeting History'}
+                {activeTab === 'icp' && 'ICP Check'}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                This feature is locked in the demo environment.
+              </p>
+              <p className="text-sm font-medium text-blue-600">
+                Contact for full access
+              </p>
+            </div>
           </div>
         )}
       </main>
