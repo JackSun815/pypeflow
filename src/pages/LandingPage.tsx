@@ -81,9 +81,16 @@ export default function LandingPage() {
             
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <a href="#features" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Features</a>
-                <a href="#pricing" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Pricing</a>
-                <a href="#testimonials" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Testimonials</a>
+                <button
+                  onClick={() => {
+                    setDemoType('manager');
+                    setShowDemo(true);
+                  }}
+                  className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Demo
+                </button>
+                <a href="/docs" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Documentation</a>
                 <a href="/blog" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Blog</a>
                 <a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors">
                   Sign In
@@ -106,9 +113,17 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-100">
-              <a href="#features" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Features</a>
-              <a href="#pricing" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Pricing</a>
-              <a href="#testimonials" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Testimonials</a>
+              <button
+                onClick={() => {
+                  setDemoType('manager');
+                  setShowDemo(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors w-full text-left"
+              >
+                Demo
+              </button>
+              <a href="/docs" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Documentation</a>
               <a href="/blog" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Blog</a>
               <a href="/login" className="bg-blue-500 text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-600 transition-colors">Sign In</a>
             </div>

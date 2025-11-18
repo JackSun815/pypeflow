@@ -14,6 +14,7 @@ import BlogPost from './pages/BlogPost';
 import Sitemap from './pages/Sitemap';
 import GoogleAnalytics from './components/GoogleAnalytics';
 import ManagerDemoPreview from './pages/ManagerDemoPreview';
+import Documentation from './pages/Documentation';
 
 // Component to handle routing with agency context
 function AppRoutes() {
@@ -109,6 +110,9 @@ function AppRoutes() {
       {/* Blog routes - public */}
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPost />} />
+      
+      {/* Documentation route - public */}
+      <Route path="/docs" element={<Documentation />} />
       
       {/* SEO routes */}
       <Route path="/sitemap.xml" element={<Sitemap />} />
