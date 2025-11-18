@@ -13,7 +13,7 @@ import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Sitemap from './pages/Sitemap';
 import GoogleAnalytics from './components/GoogleAnalytics';
-import StaticManagerDemo from './pages/StaticManagerDemo';
+import ManagerDemoPreview from './pages/ManagerDemoPreview';
 
 // Component to handle routing with agency context
 function AppRoutes() {
@@ -91,9 +91,10 @@ function AppRoutes() {
       <Route path="/dashboard/client/:token/*" element={<ClientDashboard />} />
 
       {/* Demo/Sandbox routes - read-only versions */}
-      <Route path="/demo/manager" element={
-        <StaticManagerDemo />
-      } />
+      <Route
+        path="/demo/manager"
+        element={<ManagerDemoPreview />}
+      />
       <Route path="/demo/sdr" element={
         <DemoProvider>
           <SDRDashboard />
