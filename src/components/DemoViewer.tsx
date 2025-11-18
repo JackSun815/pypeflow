@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { X, Maximize2, Minimize2, Briefcase, Users, User } from 'lucide-react';
 import ManagerDemoPreview from '../pages/ManagerDemoPreview';
 
@@ -7,39 +7,16 @@ interface DemoViewerProps {
   onClose: () => void;
 }
 
-const SDR_PROFILE_ID = 'a51a5f5a-4d83-4e52-85e0-6f63e0ce3eca';
-const CLIENT_PROFILE_ID = '7693120d-82a6-4156-add8-4517f122deb3';
-
-function encodePayload(payload: Record<string, unknown>) {
-  const json = JSON.stringify(payload);
-  if (typeof btoa === 'function') {
-    return encodeURIComponent(btoa(json));
-  }
-  return encodeURIComponent(json);
-}
+// Static production token URLs that are validated by the backend
+const SDR_DEMO_URL = 'https://www.pypeflow.com/dashboard/sdr/eyJpZCI6ImE1MWE1ZjVhLTRkODMtNGU1Mi04NWUwLTZmNjNlMGNlM2VjYSIsInRpbWVzdGFtcCI6MTc2MzQwODM3MTE2OSwidHlwZSI6InNkcl9hY2Nlc3MifQ==';
+const CLIENT_DEMO_URL = 'https://www.pypeflow.com/dashboard/client/eyJpZCI6Ijc2OTMxMjBkLTgyYTYtNDE1Ni1hZGQ4LTQ1MTdmMTIyZGViMyIsInRpbWVzdGFtcCI6MTc2MzQwODQxMjM2OSwidHlwZSI6ImNsaWVudF9hY2Nlc3MiLCJleHAiOjE3OTQ5NDQ0MTIzNjl9';
 
 export default function DemoViewer({ type, onClose }: DemoViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeRole, setActiveRole] = useState<'manager' | 'sdr' | 'client'>(type);
 
-  const sdrUrl = useMemo(() => {
-    const token = encodePayload({
-      id: SDR_PROFILE_ID,
-      timestamp: Date.now(),
-      type: 'sdr_access',
-    });
-    return `https://www.pypeflow.com/dashboard/sdr/${token}`;
-  }, []);
-
-  const clientUrl = useMemo(() => {
-    const token = encodePayload({
-      id: CLIENT_PROFILE_ID,
-      timestamp: Date.now(),
-      type: 'client_access',
-      exp: Date.now() + 1000 * 60 * 60 * 24 * 30,
-    });
-    return `https://www.pypeflow.com/dashboard/client/${token}`;
-  }, []);
+  const sdrUrl = SDR_DEMO_URL;
+  const clientUrl = CLIENT_DEMO_URL;
 
   const toggleFullscreen = () => {
     if (!isFullscreen) {
