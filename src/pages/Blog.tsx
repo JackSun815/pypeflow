@@ -40,33 +40,65 @@ export default function Blog() {
       if (!strapiUrl) {
         console.warn('VITE_STRAPI_URL not configured, using mock data');
         setPosts(getMockPosts());
+        setLoading(false);
         return;
       }
       
       console.log('Loading blog posts from Strapi...');
       
+      // Create a fetch with timeout using AbortController
+      const fetchWithTimeout = (url: string, timeout = 5000): Promise<Response> => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        return fetch(url, { signal: controller.signal })
+          .finally(() => clearTimeout(timeoutId));
+      };
+      
       // Try both possible endpoints - articles and blog-posts
       let response;
       let data;
+      const timeout = 5000; // 5 second timeout
       
       try {
         // First try the articles endpoint (most common in Strapi)
-        response = await fetch(`${strapiUrl}/api/articles?populate=*&sort=publishedAt:desc`);
+        // Only populate what we need instead of * to reduce payload size
+        const articlesUrl = `${strapiUrl}/api/articles?populate[cover][fields][0]=url&populate[author][fields][0]=name&populate[category][fields][0]=name&sort=publishedAt:desc`;
+        response = await fetchWithTimeout(articlesUrl, timeout);
         if (response.ok) {
           data = await response.json();
           console.log('Successfully loaded from /api/articles');
         } else {
           throw new Error(`Articles endpoint failed: ${response.status}`);
         }
-      } catch (articlesError) {
-        console.log('Articles endpoint failed, trying blog-posts...');
-        // Fallback to blog-posts endpoint
-        response = await fetch(`${strapiUrl}/api/blog-posts?populate=*&sort=publishedAt:desc`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      } catch (articlesError: any) {
+        // Check if it's a timeout or abort error
+        if (articlesError.name === 'AbortError' || articlesError.message === 'Request timeout') {
+          console.warn('Articles endpoint timed out, trying blog-posts...');
+        } else {
+          console.log('Articles endpoint failed, trying blog-posts...', articlesError);
         }
-        data = await response.json();
-        console.log('Successfully loaded from /api/blog-posts');
+        
+        try {
+          // Fallback to blog-posts endpoint with optimized populate
+          const blogPostsUrl = `${strapiUrl}/api/blog-posts?populate[cover][fields][0]=url&populate[author][fields][0]=name&populate[category][fields][0]=name&sort=publishedAt:desc`;
+          response = await fetchWithTimeout(blogPostsUrl, timeout);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          data = await response.json();
+          console.log('Successfully loaded from /api/blog-posts');
+        } catch (blogPostsError: any) {
+          // If both endpoints fail or timeout, use mock data immediately
+          if (blogPostsError.name === 'AbortError' || blogPostsError.message === 'Request timeout') {
+            console.warn('Blog posts endpoint also timed out, using mock data');
+          } else {
+            console.error('Both endpoints failed, using mock data', blogPostsError);
+          }
+          setPosts(getMockPosts());
+          setLoading(false);
+          return;
+        }
       }
       
       console.log('Strapi response:', data);
