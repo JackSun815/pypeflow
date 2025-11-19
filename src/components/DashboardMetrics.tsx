@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Calendar, HelpCircle, Clock, CheckCircle, X, User, Mail, Phone, MapPin, Calendar as CalendarIcon } from 'lucide-react';
+import { Target, Calendar, HelpCircle, Clock, CheckCircle, X, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Building } from 'lucide-react';
 import type { Meeting } from '../types/database';
 
 interface DashboardMetricsProps {
@@ -35,6 +35,14 @@ export default function DashboardMetrics({
   const [modalType, setModalType] = useState<'setTarget' | 'heldTarget' | 'meetingsSet' | 'meetingsHeld' | 'pending' | 'noShows' | null>(null);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<any>(null);
+  
+  // Filter, sort, and group state for each modal type
+  const [filterOptions, setFilterOptions] = useState<Record<string, { filter: string; sortBy: 'date' | 'client'; sortOrder: 'asc' | 'desc'; groupBy: 'none' | 'client' }>>({
+    meetingsSet: { filter: 'all', sortBy: 'date', sortOrder: 'desc', groupBy: 'none' },
+    meetingsHeld: { filter: 'all', sortBy: 'date', sortOrder: 'desc', groupBy: 'none' },
+    pending: { filter: 'all', sortBy: 'date', sortOrder: 'asc', groupBy: 'none' },
+    noShows: { filter: 'all', sortBy: 'date', sortOrder: 'desc', groupBy: 'none' },
+  });
 
   const overallProgress = totalSetTarget > 0 ? (totalMeetingsSet / totalSetTarget) * 100 : 0;
   const isOnTrack = overallProgress >= monthProgress;
@@ -182,6 +190,115 @@ export default function DashboardMetrics({
     if (noShow) return 'No Show';
     if (status === 'confirmed') return 'Confirmed';
     return 'Pending';
+  };
+
+  // Helper function to process meetings with filter, sort, and group
+  const processMeetings = (meetings: Meeting[], type: 'meetingsSet' | 'meetingsHeld' | 'pending' | 'noShows') => {
+    const options = filterOptions[type] || { filter: 'all', sortBy: 'date', sortOrder: 'desc', groupBy: 'none' };
+    let processed = [...meetings];
+    
+    // Apply filter
+    if (options.filter !== 'all') {
+      const clientName = options.filter.replace('client_', '');
+      processed = processed.filter(m => {
+        const meetingClientName = (m as any).clients?.name || '';
+        return meetingClientName === clientName;
+      });
+    }
+    
+    // Apply sorting
+    if (options.sortBy === 'date') {
+      processed.sort((a, b) => {
+        const dateA = new Date(a.scheduled_date || a.created_at).getTime();
+        const dateB = new Date(b.scheduled_date || b.created_at).getTime();
+        return options.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    } else if (options.sortBy === 'client') {
+      processed.sort((a, b) => {
+        const clientA = (a as any).clients?.name || '';
+        const clientB = (b as any).clients?.name || '';
+        return options.sortOrder === 'asc' 
+          ? clientA.localeCompare(clientB)
+          : clientB.localeCompare(clientA);
+      });
+    }
+    
+    return { processed, options };
+  };
+
+  // Helper component for filter/sort/group controls
+  const SectionControls = ({ type, meetings }: { type: 'meetingsSet' | 'meetingsHeld' | 'pending' | 'noShows'; meetings: Meeting[] }) => {
+    if (meetings.length === 0) return null;
+    
+    const options = filterOptions[type] || { filter: 'all', sortBy: 'date', sortOrder: 'desc', groupBy: 'none' };
+    const uniqueClients = Array.from(new Set(meetings.map(m => (m as any).clients?.name).filter(Boolean))) as string[];
+    
+    return (
+      <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Filter</label>
+            <select
+              value={options.filter}
+              onChange={(e) => setFilterOptions(prev => ({
+                ...prev,
+                [type]: { ...prev[type], filter: e.target.value }
+              }))}
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="all">All</option>
+              {uniqueClients.map(clientName => (
+                <option key={clientName} value={`client_${clientName}`}>
+                  {clientName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Sort By</label>
+            <select
+              value={options.sortBy}
+              onChange={(e) => setFilterOptions(prev => ({
+                ...prev,
+                [type]: { ...prev[type], sortBy: e.target.value as 'date' | 'client' }
+              }))}
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="date">Date</option>
+              <option value="client">Client</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Order</label>
+            <select
+              value={options.sortOrder}
+              onChange={(e) => setFilterOptions(prev => ({
+                ...prev,
+                [type]: { ...prev[type], sortOrder: e.target.value as 'asc' | 'desc' }
+              }))}
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Group By</label>
+            <select
+              value={options.groupBy}
+              onChange={(e) => setFilterOptions(prev => ({
+                ...prev,
+                [type]: { ...prev[type], groupBy: e.target.value as 'none' | 'client' }
+              }))}
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="none">None</option>
+              <option value="client">Client</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -445,63 +562,145 @@ export default function DashboardMetrics({
                     </p>
                   </div>
                   <div className="space-y-3">
-                    {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                        <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              {meeting.clients?.name && (
-                                <div className="mb-2">
-                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
-                                    <User className="w-3 h-3 mr-1" />
-                                    {meeting.clients.name}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2 mb-2">
-                                <User className="w-4 h-4 text-gray-400" />
-                                <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(meeting.status, meeting.no_show)}`}>
-                                  {getStatusText(meeting.status, meeting.no_show)}
-                                </span>
-                              </div>
-                              <div className="space-y-1 text-sm text-gray-600">
-                                {meeting.contact_email && (
-                                  <div className="flex items-center gap-2">
-                                    <Mail className="w-3 h-3" />
-                                    <span>{meeting.contact_email}</span>
-                                  </div>
-                                )}
-                                {meeting.contact_phone && (
-                                  <div className="flex items-center gap-2">
-                                    <Phone className="w-3 h-3" />
-                                    <span>{meeting.contact_phone}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                  <CalendarIcon className="w-3 h-3" />
-                                  <span>{formatDate(meeting.scheduled_date)}</span>
-                                </div>
-                                {meeting.company && (
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-3 h-3" />
-                                    <span>{meeting.company}</span>
-                                  </div>
-                                )}
-                                {meeting.title && (
-                                  <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
-                                )}
-                              </div>
-                            </div>
+                    {(() => {
+                      const { processed, options } = processMeetings(modalContent.data.meetings, 'meetingsSet');
+                      
+                      if (processed.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No meetings set this month</p>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No meetings set this month</p>
-                      </div>
-                    )}
+                        );
+                      }
+                      
+                      if (options.groupBy === 'client') {
+                        const grouped = processed.reduce((acc, meeting) => {
+                          const clientName = (meeting as any).clients?.name || 'Unknown Client';
+                          if (!acc[clientName]) {
+                            acc[clientName] = [];
+                          }
+                          acc[clientName].push(meeting);
+                          return acc;
+                        }, {} as Record<string, Meeting[]>);
+                        
+                        return (
+                          <>
+                            <SectionControls type="meetingsSet" meetings={modalContent.data.meetings} />
+                            {Object.entries(grouped)
+                              .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
+                              .map(([clientName, groupMeetings]) => (
+                                <div key={clientName} className="mb-4">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                    <Building className="w-4 h-4 text-indigo-600" />
+                                    {clientName} ({groupMeetings.length})
+                                  </h4>
+                                  <div className="space-y-3 pl-4">
+                                    {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <User className="w-4 h-4 text-gray-400" />
+                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(meeting.status, meeting.no_show)}`}>
+                                                {getStatusText(meeting.status, meeting.no_show)}
+                                              </span>
+                                            </div>
+                                            <div className="space-y-1 text-sm text-gray-600">
+                                              {meeting.contact_email && (
+                                                <div className="flex items-center gap-2">
+                                                  <Mail className="w-3 h-3" />
+                                                  <span>{meeting.contact_email}</span>
+                                                </div>
+                                              )}
+                                              {meeting.contact_phone && (
+                                                <div className="flex items-center gap-2">
+                                                  <Phone className="w-3 h-3" />
+                                                  <span>{meeting.contact_phone}</span>
+                                                </div>
+                                              )}
+                                              <div className="flex items-center gap-2">
+                                                <CalendarIcon className="w-3 h-3" />
+                                                <span>{formatDate(meeting.scheduled_date)}</span>
+                                              </div>
+                                              {meeting.company && (
+                                                <div className="flex items-center gap-2">
+                                                  <MapPin className="w-3 h-3" />
+                                                  <span>{meeting.company}</span>
+                                                </div>
+                                              )}
+                                              {meeting.title && (
+                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <SectionControls type="meetingsSet" meetings={modalContent.data.meetings} />
+                            {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    {meeting.clients?.name && (
+                                      <div className="mb-2">
+                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                          <User className="w-3 h-3 mr-1" />
+                                          {meeting.clients.name}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <User className="w-4 h-4 text-gray-400" />
+                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(meeting.status, meeting.no_show)}`}>
+                                        {getStatusText(meeting.status, meeting.no_show)}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 text-sm text-gray-600">
+                                      {meeting.contact_email && (
+                                        <div className="flex items-center gap-2">
+                                          <Mail className="w-3 h-3" />
+                                          <span>{meeting.contact_email}</span>
+                                        </div>
+                                      )}
+                                      {meeting.contact_phone && (
+                                        <div className="flex items-center gap-2">
+                                          <Phone className="w-3 h-3" />
+                                          <span>{meeting.contact_phone}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2">
+                                        <CalendarIcon className="w-3 h-3" />
+                                        <span>{formatDate(meeting.scheduled_date)}</span>
+                                      </div>
+                                      {meeting.company && (
+                                        <div className="flex items-center gap-2">
+                                          <MapPin className="w-3 h-3" />
+                                          <span>{meeting.company}</span>
+                                        </div>
+                                      )}
+                                      {meeting.title && (
+                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               ) : modalContent?.type === 'meetingsHeld' ? (
@@ -547,69 +746,157 @@ export default function DashboardMetrics({
                     </p>
                   </div>
                   <div className="space-y-3">
-                    {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                        <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              {meeting.clients?.name && (
-                                <div className="mb-2">
-                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
-                                    <User className="w-3 h-3 mr-1" />
-                                    {meeting.clients.name}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2 mb-2">
-                                <User className="w-4 h-4 text-gray-400" />
-                                <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
-                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                                  Held
-                                </span>
-                              </div>
-                              <div className="space-y-1 text-sm text-gray-600">
-                                {meeting.contact_email && (
-                                  <div className="flex items-center gap-2">
-                                    <Mail className="w-3 h-3" />
-                                    <span>{meeting.contact_email}</span>
-                                  </div>
-                                )}
-                                {meeting.contact_phone && (
-                                  <div className="flex items-center gap-2">
-                                    <Phone className="w-3 h-3" />
-                                    <span>{meeting.contact_phone}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                  <CalendarIcon className="w-3 h-3" />
-                                  <span>{formatDate(meeting.scheduled_date)}</span>
-                                </div>
-                                {meeting.company && (
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-3 h-3" />
-                                    <span>{meeting.company}</span>
-                                  </div>
-                                )}
-                                {meeting.title && (
-                                  <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
-                                )}
-                                {meeting.held_at && (
-                                  <div className="flex items-center gap-2 text-green-600">
-                                    <CheckCircle className="w-3 h-3" />
-                                    <span className="text-xs">Held on {formatDate(meeting.held_at)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                    {(() => {
+                      const { processed, options } = processMeetings(modalContent.data.meetings, 'meetingsHeld');
+                      
+                      if (processed.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <CheckCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No meetings held this month</p>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <CheckCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No meetings held this month</p>
-                      </div>
-                    )}
+                        );
+                      }
+                      
+                      if (options.groupBy === 'client') {
+                        const grouped = processed.reduce((acc, meeting) => {
+                          const clientName = (meeting as any).clients?.name || 'Unknown Client';
+                          if (!acc[clientName]) {
+                            acc[clientName] = [];
+                          }
+                          acc[clientName].push(meeting);
+                          return acc;
+                        }, {} as Record<string, Meeting[]>);
+                        
+                        return (
+                          <>
+                            <SectionControls type="meetingsHeld" meetings={modalContent.data.meetings} />
+                            {Object.entries(grouped)
+                              .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
+                              .map(([clientName, groupMeetings]) => (
+                                <div key={clientName} className="mb-4">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                    <Building className="w-4 h-4 text-indigo-600" />
+                                    {clientName} ({groupMeetings.length})
+                                  </h4>
+                                  <div className="space-y-3 pl-4">
+                                    {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <User className="w-4 h-4 text-gray-400" />
+                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                                Held
+                                              </span>
+                                            </div>
+                                            <div className="space-y-1 text-sm text-gray-600">
+                                              {meeting.contact_email && (
+                                                <div className="flex items-center gap-2">
+                                                  <Mail className="w-3 h-3" />
+                                                  <span>{meeting.contact_email}</span>
+                                                </div>
+                                              )}
+                                              {meeting.contact_phone && (
+                                                <div className="flex items-center gap-2">
+                                                  <Phone className="w-3 h-3" />
+                                                  <span>{meeting.contact_phone}</span>
+                                                </div>
+                                              )}
+                                              <div className="flex items-center gap-2">
+                                                <CalendarIcon className="w-3 h-3" />
+                                                <span>{formatDate(meeting.scheduled_date)}</span>
+                                              </div>
+                                              {meeting.company && (
+                                                <div className="flex items-center gap-2">
+                                                  <MapPin className="w-3 h-3" />
+                                                  <span>{meeting.company}</span>
+                                                </div>
+                                              )}
+                                              {meeting.title && (
+                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                              )}
+                                              {meeting.held_at && (
+                                                <div className="flex items-center gap-2 text-green-600">
+                                                  <CheckCircle className="w-3 h-3" />
+                                                  <span className="text-xs">Held on {formatDate(meeting.held_at)}</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <SectionControls type="meetingsHeld" meetings={modalContent.data.meetings} />
+                            {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    {meeting.clients?.name && (
+                                      <div className="mb-2">
+                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                          <User className="w-3 h-3 mr-1" />
+                                          {meeting.clients.name}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <User className="w-4 h-4 text-gray-400" />
+                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                        Held
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 text-sm text-gray-600">
+                                      {meeting.contact_email && (
+                                        <div className="flex items-center gap-2">
+                                          <Mail className="w-3 h-3" />
+                                          <span>{meeting.contact_email}</span>
+                                        </div>
+                                      )}
+                                      {meeting.contact_phone && (
+                                        <div className="flex items-center gap-2">
+                                          <Phone className="w-3 h-3" />
+                                          <span>{meeting.contact_phone}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2">
+                                        <CalendarIcon className="w-3 h-3" />
+                                        <span>{formatDate(meeting.scheduled_date)}</span>
+                                      </div>
+                                      {meeting.company && (
+                                        <div className="flex items-center gap-2">
+                                          <MapPin className="w-3 h-3" />
+                                          <span>{meeting.company}</span>
+                                        </div>
+                                      )}
+                                      {meeting.title && (
+                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                      )}
+                                      {meeting.held_at && (
+                                        <div className="flex items-center gap-2 text-green-600">
+                                          <CheckCircle className="w-3 h-3" />
+                                          <span className="text-xs">Held on {formatDate(meeting.held_at)}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               ) : modalContent?.type === 'pending' ? (
@@ -626,63 +913,145 @@ export default function DashboardMetrics({
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                        <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              {meeting.clients?.name && (
-                                <div className="mb-2">
-                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
-                                    <User className="w-3 h-3 mr-1" />
-                                    {meeting.clients.name}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2 mb-2">
-                                <User className="w-4 h-4 text-gray-400" />
-                                <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
-                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
-                                  Pending
-                                </span>
-                              </div>
-                              <div className="space-y-1 text-sm text-gray-600">
-                                {meeting.contact_email && (
-                                  <div className="flex items-center gap-2">
-                                    <Mail className="w-3 h-3" />
-                                    <span>{meeting.contact_email}</span>
-                                  </div>
-                                )}
-                                {meeting.contact_phone && (
-                                  <div className="flex items-center gap-2">
-                                    <Phone className="w-3 h-3" />
-                                    <span>{meeting.contact_phone}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                  <CalendarIcon className="w-3 h-3" />
-                                  <span>{formatDate(meeting.scheduled_date)}</span>
-                                </div>
-                                {meeting.company && (
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-3 h-3" />
-                                    <span>{meeting.company}</span>
-                                  </div>
-                                )}
-                                {meeting.title && (
-                                  <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
-                                )}
-                              </div>
-                            </div>
+                    {(() => {
+                      const { processed, options } = processMeetings(modalContent.data.meetings, 'pending');
+                      
+                      if (processed.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No pending meetings</p>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No pending meetings</p>
-                      </div>
-                    )}
+                        );
+                      }
+                      
+                      if (options.groupBy === 'client') {
+                        const grouped = processed.reduce((acc, meeting) => {
+                          const clientName = (meeting as any).clients?.name || 'Unknown Client';
+                          if (!acc[clientName]) {
+                            acc[clientName] = [];
+                          }
+                          acc[clientName].push(meeting);
+                          return acc;
+                        }, {} as Record<string, Meeting[]>);
+                        
+                        return (
+                          <>
+                            <SectionControls type="pending" meetings={modalContent.data.meetings} />
+                            {Object.entries(grouped)
+                              .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
+                              .map(([clientName, groupMeetings]) => (
+                                <div key={clientName} className="mb-4">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                    <Building className="w-4 h-4 text-indigo-600" />
+                                    {clientName} ({groupMeetings.length})
+                                  </h4>
+                                  <div className="space-y-3 pl-4">
+                                    {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <User className="w-4 h-4 text-gray-400" />
+                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                                                Pending
+                                              </span>
+                                            </div>
+                                            <div className="space-y-1 text-sm text-gray-600">
+                                              {meeting.contact_email && (
+                                                <div className="flex items-center gap-2">
+                                                  <Mail className="w-3 h-3" />
+                                                  <span>{meeting.contact_email}</span>
+                                                </div>
+                                              )}
+                                              {meeting.contact_phone && (
+                                                <div className="flex items-center gap-2">
+                                                  <Phone className="w-3 h-3" />
+                                                  <span>{meeting.contact_phone}</span>
+                                                </div>
+                                              )}
+                                              <div className="flex items-center gap-2">
+                                                <CalendarIcon className="w-3 h-3" />
+                                                <span>{formatDate(meeting.scheduled_date)}</span>
+                                              </div>
+                                              {meeting.company && (
+                                                <div className="flex items-center gap-2">
+                                                  <MapPin className="w-3 h-3" />
+                                                  <span>{meeting.company}</span>
+                                                </div>
+                                              )}
+                                              {meeting.title && (
+                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <SectionControls type="pending" meetings={modalContent.data.meetings} />
+                            {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    {meeting.clients?.name && (
+                                      <div className="mb-2">
+                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                          <User className="w-3 h-3 mr-1" />
+                                          {meeting.clients.name}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <User className="w-4 h-4 text-gray-400" />
+                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                                        Pending
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 text-sm text-gray-600">
+                                      {meeting.contact_email && (
+                                        <div className="flex items-center gap-2">
+                                          <Mail className="w-3 h-3" />
+                                          <span>{meeting.contact_email}</span>
+                                        </div>
+                                      )}
+                                      {meeting.contact_phone && (
+                                        <div className="flex items-center gap-2">
+                                          <Phone className="w-3 h-3" />
+                                          <span>{meeting.contact_phone}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2">
+                                        <CalendarIcon className="w-3 h-3" />
+                                        <span>{formatDate(meeting.scheduled_date)}</span>
+                                      </div>
+                                      {meeting.company && (
+                                        <div className="flex items-center gap-2">
+                                          <MapPin className="w-3 h-3" />
+                                          <span>{meeting.company}</span>
+                                        </div>
+                                      )}
+                                      {meeting.title && (
+                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               ) : modalContent?.type === 'noShows' ? (
@@ -699,63 +1068,145 @@ export default function DashboardMetrics({
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {modalContent.data.meetings.length > 0 ? (
-                      modalContent.data.meetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                        <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              {meeting.clients?.name && (
-                                <div className="mb-2">
-                                  <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
-                                    <User className="w-3 h-3 mr-1" />
-                                    {meeting.clients.name}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2 mb-2">
-                                <User className="w-4 h-4 text-gray-400" />
-                                <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
-                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
-                                  No Show
-                                </span>
-                              </div>
-                              <div className="space-y-1 text-sm text-gray-600">
-                                {meeting.contact_email && (
-                                  <div className="flex items-center gap-2">
-                                    <Mail className="w-3 h-3" />
-                                    <span>{meeting.contact_email}</span>
-                                  </div>
-                                )}
-                                {meeting.contact_phone && (
-                                  <div className="flex items-center gap-2">
-                                    <Phone className="w-3 h-3" />
-                                    <span>{meeting.contact_phone}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                  <CalendarIcon className="w-3 h-3" />
-                                  <span>{formatDate(meeting.scheduled_date)}</span>
-                                </div>
-                                {meeting.company && (
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-3 h-3" />
-                                    <span>{meeting.company}</span>
-                                  </div>
-                                )}
-                                {meeting.title && (
-                                  <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
-                                )}
-                              </div>
-                            </div>
+                    {(() => {
+                      const { processed, options } = processMeetings(modalContent.data.meetings, 'noShows');
+                      
+                      if (processed.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            <X className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No no-show meetings</p>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No no-show meetings</p>
-                      </div>
-                    )}
+                        );
+                      }
+                      
+                      if (options.groupBy === 'client') {
+                        const grouped = processed.reduce((acc, meeting) => {
+                          const clientName = (meeting as any).clients?.name || 'Unknown Client';
+                          if (!acc[clientName]) {
+                            acc[clientName] = [];
+                          }
+                          acc[clientName].push(meeting);
+                          return acc;
+                        }, {} as Record<string, Meeting[]>);
+                        
+                        return (
+                          <>
+                            <SectionControls type="noShows" meetings={modalContent.data.meetings} />
+                            {Object.entries(grouped)
+                              .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
+                              .map(([clientName, groupMeetings]) => (
+                                <div key={clientName} className="mb-4">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                    <Building className="w-4 h-4 text-indigo-600" />
+                                    {clientName} ({groupMeetings.length})
+                                  </h4>
+                                  <div className="space-y-3 pl-4">
+                                    {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <User className="w-4 h-4 text-gray-400" />
+                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                                                No Show
+                                              </span>
+                                            </div>
+                                            <div className="space-y-1 text-sm text-gray-600">
+                                              {meeting.contact_email && (
+                                                <div className="flex items-center gap-2">
+                                                  <Mail className="w-3 h-3" />
+                                                  <span>{meeting.contact_email}</span>
+                                                </div>
+                                              )}
+                                              {meeting.contact_phone && (
+                                                <div className="flex items-center gap-2">
+                                                  <Phone className="w-3 h-3" />
+                                                  <span>{meeting.contact_phone}</span>
+                                                </div>
+                                              )}
+                                              <div className="flex items-center gap-2">
+                                                <CalendarIcon className="w-3 h-3" />
+                                                <span>{formatDate(meeting.scheduled_date)}</span>
+                                              </div>
+                                              {meeting.company && (
+                                                <div className="flex items-center gap-2">
+                                                  <MapPin className="w-3 h-3" />
+                                                  <span>{meeting.company}</span>
+                                                </div>
+                                              )}
+                                              {meeting.title && (
+                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <SectionControls type="noShows" meetings={modalContent.data.meetings} />
+                            {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
+                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    {meeting.clients?.name && (
+                                      <div className="mb-2">
+                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                          <User className="w-3 h-3 mr-1" />
+                                          {meeting.clients.name}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <User className="w-4 h-4 text-gray-400" />
+                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                                        No Show
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 text-sm text-gray-600">
+                                      {meeting.contact_email && (
+                                        <div className="flex items-center gap-2">
+                                          <Mail className="w-3 h-3" />
+                                          <span>{meeting.contact_email}</span>
+                                        </div>
+                                      )}
+                                      {meeting.contact_phone && (
+                                        <div className="flex items-center gap-2">
+                                          <Phone className="w-3 h-3" />
+                                          <span>{meeting.contact_phone}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2">
+                                        <CalendarIcon className="w-3 h-3" />
+                                        <span>{formatDate(meeting.scheduled_date)}</span>
+                                      </div>
+                                      {meeting.company && (
+                                        <div className="flex items-center gap-2">
+                                          <MapPin className="w-3 h-3" />
+                                          <span>{meeting.company}</span>
+                                        </div>
+                                      )}
+                                      {meeting.title && (
+                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               ) : (
