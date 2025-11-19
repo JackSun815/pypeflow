@@ -3090,23 +3090,25 @@ export default function ManagerDashboard() {
                         <Calendar className="w-5 h-5 text-green-600" />
                         Meetings Set ({modalContent.setMeetings.length})
                       </h3>
-                      {modalContent.setMeetings.length > 0 ? (
-                        <div className="space-y-3">
-                          {modalContent.setMeetings.map((meeting: any) => (
-                            <div key={meeting.id}>
-                              <MeetingCard
-                                meeting={meeting}
-                                showSDR={false}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                          <p>No meetings set</p>
-                        </div>
-                      )}
+                      <div className="bg-green-50/50 rounded-lg p-4 border border-green-200">
+                        {modalContent.setMeetings.length > 0 ? (
+                          <div className="space-y-3">
+                            {modalContent.setMeetings.map((meeting: any) => (
+                              <div key={meeting.id}>
+                                <MeetingCard
+                                  meeting={meeting}
+                                  showSDR={false}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No meetings set</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Meetings Held Section - SECOND */}
@@ -3115,23 +3117,25 @@ export default function ManagerDashboard() {
                         <CheckCircle className="w-5 h-5 text-blue-600" />
                         Meetings Held ({modalContent.heldMeetings.length})
                       </h3>
-                      {modalContent.heldMeetings.length > 0 ? (
-                        <div className="space-y-3">
-                          {modalContent.heldMeetings.map((meeting: any) => (
-                            <div key={meeting.id}>
-                              <MeetingCard
-                                meeting={meeting}
-                                showSDR={false}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <CheckCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                          <p>No meetings held</p>
-                        </div>
-                      )}
+                      <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-200">
+                        {modalContent.heldMeetings.length > 0 ? (
+                          <div className="space-y-3">
+                            {modalContent.heldMeetings.map((meeting: any) => (
+                              <div key={meeting.id}>
+                                <MeetingCard
+                                  meeting={meeting}
+                                  showSDR={false}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <CheckCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No meetings held</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Pending Meetings Section - THIRD */}
@@ -3140,23 +3144,25 @@ export default function ManagerDashboard() {
                         <Clock className="w-5 h-5 text-yellow-600" />
                         Pending Meetings ({modalContent.pendingMeetings.length})
                       </h3>
-                      {modalContent.pendingMeetings.length > 0 ? (
-                        <div className="space-y-3">
-                          {modalContent.pendingMeetings.map((meeting: any) => (
-                            <div key={meeting.id}>
-                              <MeetingCard
-                                meeting={meeting}
-                                showSDR={false}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                          <p>No pending meetings</p>
-                        </div>
-                      )}
+                      <div className="bg-yellow-50/50 rounded-lg p-4 border border-yellow-200">
+                        {modalContent.pendingMeetings.length > 0 ? (
+                          <div className="space-y-3">
+                            {modalContent.pendingMeetings.map((meeting: any) => (
+                              <div key={meeting.id}>
+                                <MeetingCard
+                                  meeting={meeting}
+                                  showSDR={false}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No pending meetings</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Past Due Pending Meetings Section - FOURTH */}
@@ -3165,23 +3171,25 @@ export default function ManagerDashboard() {
                         <AlertCircle className="w-5 h-5 text-red-600" />
                         Past Due Pending Meetings ({modalContent.pastDuePendingMeetings?.length || 0})
                       </h3>
-                      {modalContent.pastDuePendingMeetings && modalContent.pastDuePendingMeetings.length > 0 ? (
-                        <div className="space-y-3">
-                          {modalContent.pastDuePendingMeetings.map((meeting: any) => (
-                            <div key={meeting.id}>
-                              <MeetingCard
-                                meeting={meeting}
-                                showSDR={false}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                          <p>No past due pending meetings</p>
-                        </div>
-                      )}
+                      <div className="bg-red-50/50 rounded-lg p-4 border border-red-200">
+                        {modalContent.pastDuePendingMeetings && modalContent.pastDuePendingMeetings.length > 0 ? (
+                          <div className="space-y-3">
+                            {modalContent.pastDuePendingMeetings.map((meeting: any) => (
+                              <div key={meeting.id}>
+                                <MeetingCard
+                                  meeting={meeting}
+                                  showSDR={false}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p>No past due pending meetings</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : modalMeetings.length > 0 ? (
