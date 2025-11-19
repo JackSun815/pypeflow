@@ -666,104 +666,104 @@ function SDRDashboardContent() {
     <>
     {showAddMeeting && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Add New Meeting</h2>
+        <div className={`p-8 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <h2 className={`text-xl font-bold mb-6 text-center ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Add New Meeting</h2>
           <form onSubmit={handleAddMeeting} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 Meeting Booked Date 
               </label>
               <input
                 type="date"
                 value={bookedDate}
                 onChange={(e) => setBookedDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Date</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Meeting Date</label>
               <input
                 type="date"
                 value={meetingDate}
                 onChange={(e) => setMeetingDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Time</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Meeting Time</label>
               <input
                 type="time"
                 value={meetingTime}
                 onChange={(e) => setMeetingTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Full Name</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Contact Full Name</label>
               <input
                 type="text"
                 value={contactFullName}
                 onChange={(e) => setContactFullName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Contact Email</label>
               <input
                 type="email"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Contact Phone</label>
               <input
                 type="tel"
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
             {/* New fields below Contact Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Company</label>
               <input
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn Page</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>LinkedIn Page</label>
               <input
                 type="text"
                 value={linkedinPage}
                 onChange={(e) => setLinkedinPage(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prospect's Timezone</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Prospect's Timezone</label>
               <select
                 value={prospectTimezone}
                 onChange={e => setProspectTimezone(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               >
                 <option value="America/New_York">EST (Eastern)</option>
                 <option value="America/Chicago">CST (Central)</option>
@@ -775,20 +775,20 @@ function SDRDashboardContent() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Notes</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 rows={3}
               />
             </div>
-            {addMeetingError && <p className="text-red-500 text-sm">{addMeetingError}</p>}
+            {addMeetingError && <p className={`text-sm ${darkTheme ? 'text-red-400' : 'text-red-500'}`}>{addMeetingError}</p>}
             <div className="flex justify-end gap-4 pt-2">
               <button
                 type="button"
                 onClick={() => setShowAddMeeting(false)}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition duration-150"
+                className={`px-4 py-2 rounded-md transition duration-150 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#353941] text-slate-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
               >
                 Cancel
               </button>
@@ -803,8 +803,8 @@ function SDRDashboardContent() {
         </div>
       </div>
     )}
-    <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900' : 'bg-gradient-to-br from-blue-50 via-white to-cyan-50'}`}>
-      <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-r from-slate-800/95 via-blue-900/95 to-slate-800/95 border-blue-800/50 backdrop-blur-sm' : 'bg-gradient-to-r from-white via-blue-50/30 to-white border-blue-100'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-[#16191f]' : 'bg-gradient-to-br from-blue-50 via-white to-cyan-50'}`}>
+      <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gradient-to-r from-white via-blue-50/30 to-white border-blue-100'}`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/20 to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-5">
@@ -927,26 +927,26 @@ function SDRDashboardContent() {
                 </div>
                 
                 {/* Dropdown menu */}
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0">
+                <div className={`absolute right-0 top-full mt-2 w-72 rounded-xl shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0 ${darkTheme ? 'bg-[#232529] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                   <div className="py-2">
                     {/* Theme Toggle */}
-                    <div className="px-4 py-3 border-b border-gray-200">
+                    <div className={`px-4 py-3 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700">Theme</span>
+                        <span className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Theme</span>
                         <button
                           type="button"
                           onClick={() => setDarkTheme(!darkTheme)}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${darkTheme ? 'bg-[#2d3139] hover:bg-[#353941] text-slate-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
                         >
                           {darkTheme ? (
                             <>
-                              <Moon className="w-4 h-4 text-gray-700" />
-                              <span className="text-sm text-gray-700">Dark</span>
+                              <Moon className="w-4 h-4" />
+                              <span className="text-sm">Dark</span>
                             </>
                           ) : (
                             <>
-                              <Sun className="w-4 h-4 text-gray-700" />
-                              <span className="text-sm text-gray-700">Light</span>
+                              <Sun className="w-4 h-4" />
+                              <span className="text-sm">Light</span>
                             </>
                           )}
                         </button>
@@ -954,60 +954,60 @@ function SDRDashboardContent() {
                     </div>
                     
                     {/* Chart Visibility Toggles */}
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Chart Visibility</div>
+                    <div className={`px-4 py-3 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                      <div className={`text-xs font-semibold uppercase mb-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Chart Visibility</div>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, clientPerformance: !prev.clientPerformance }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Client Performance</span>
                         {chartVisibility.clientPerformance ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, progressChart: !prev.progressChart }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Progress Chart</span>
                         {chartVisibility.progressChart ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, meetingsBreakdown: !prev.meetingsBreakdown }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Meetings Breakdown</span>
                         {chartVisibility.meetingsBreakdown ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                     </div>
                     
                     {/* Inactive Assignments Toggle */}
                     <div className="px-4 py-3">
-                      <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Display Options</div>
+                      <div className={`text-xs font-semibold uppercase mb-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Display Options</div>
                       
                       <button
                         onClick={() => setShowInactiveAssignments(!showInactiveAssignments)}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                         title="Show or hide clients that were removed from this month. Their meetings are still preserved."
                       >
                         <span>Show Inactive Clients</span>
                         {showInactiveAssignments ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                     </div>
@@ -1021,31 +1021,44 @@ function SDRDashboardContent() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
-        <div className="mb-6 border-b border-gray-200">
+        <div className={`mb-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <nav className="-mb-px flex space-x-8">
             <Link
               to=""
               className={`${
                 location.pathname === `/dashboard/sdr/${token}`
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Calendar className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}` ? '' : 'group-hover:text-indigo-500'}`} />
+                <Calendar className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}` ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-indigo-500'}`} />
                 Dashboard
+              </span>
+            </Link>
+            <Link
+              to="calendar"
+              className={`${
+                location.pathname === `/dashboard/sdr/${token}/calendar`
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Calendar className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/calendar` ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-purple-500'}`} />
+                Calendar
               </span>
             </Link>
             <Link
               to="history"
               className={`${
                 location.pathname === `/dashboard/sdr/${token}/history`
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <History className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/history` ? '' : 'group-hover:text-green-500'}`} />
+                <History className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/history` ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-green-500'}`} />
                 Meeting History
               </span>
             </Link>
@@ -1053,33 +1066,20 @@ function SDRDashboardContent() {
               to="commissions"
               className={`${
                 location.pathname === `/dashboard/sdr/${token}/commissions`
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <DollarSign className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/commissions` ? '' : 'group-hover:text-emerald-500'}`} />
+                <DollarSign className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/commissions` ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-emerald-500'}`} />
                 Commissions
-              </span>
-            </Link>
-            <Link
-              to="calendar"
-              className={`${
-                location.pathname === `/dashboard/sdr/${token}/calendar`
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
-              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-            >
-              <span className="flex items-center gap-2">
-                <Calendar className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/calendar` ? '' : 'group-hover:text-purple-500'}`} />
-                Calendar
               </span>
             </Link>
           </nav>
         </div>
       {(clientsError || meetingsError) && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center gap-2 text-red-700">
+        <div className={`mb-6 p-4 rounded-lg ${darkTheme ? 'bg-red-900/20 border border-red-800/50' : 'bg-red-50 border border-red-200'}`}>
+          <div className={`flex items-center gap-2 ${darkTheme ? 'text-red-300' : 'text-red-700'}`}>
             <AlertCircle className="w-5 h-5" />
             <p>{clientsError || meetingsError}</p>
           </div>
@@ -1162,6 +1162,7 @@ function SDRDashboardContent() {
                         totalPendingMeetings={metrics.totalPendingMeetings}
                         totalNoShowMeetings={metrics.totalNoShowMeetings}
                         meetings={meetings}
+                        darkTheme={darkTheme}
                       />
                     </div>
                   </>
@@ -1193,6 +1194,7 @@ function SDRDashboardContent() {
                           isInactive={false}
                           allMeetings={meetings}
                           clientId={client.id}
+                          darkTheme={darkTheme}
                           onAddMeeting={() => {
                             if (isDemoMode) {
                               alert('Creating meetings is disabled in demo mode.');
@@ -1226,6 +1228,7 @@ function SDRDashboardContent() {
                           heldMeetings={client.heldMeetings}
                           totalMeetingsSet={client.totalMeetingsSet}
                           todaysMeetings={client.todaysMeetings}
+                          darkTheme={darkTheme}
                           isInactive={true}
                           deactivatedAt={client.deactivated_at}
                           allMeetings={meetings}

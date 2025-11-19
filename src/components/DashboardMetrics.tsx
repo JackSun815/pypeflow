@@ -17,6 +17,7 @@ interface DashboardMetricsProps {
   totalPendingMeetings: number;
   totalNoShowMeetings: number;
   meetings: Meeting[];
+  darkTheme?: boolean;
 }
 
 export default function DashboardMetrics({ 
@@ -30,6 +31,7 @@ export default function DashboardMetrics({
   totalPendingMeetings,
   totalNoShowMeetings,
   meetings,
+  darkTheme = false,
 }: DashboardMetricsProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'setTarget' | 'heldTarget' | 'meetingsSet' | 'meetingsHeld' | 'pending' | 'noShows' | null>(null);
@@ -234,17 +236,17 @@ export default function DashboardMetrics({
     const uniqueClients = Array.from(new Set(meetings.map(m => (m as any).clients?.name).filter(Boolean))) as string[];
     
     return (
-      <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3">
+      <div className={`p-3 rounded-lg border mb-3 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Filter</label>
+            <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Filter</label>
             <select
               value={options.filter}
               onChange={(e) => setFilterOptions(prev => ({
                 ...prev,
                 [type]: { ...prev[type], filter: e.target.value }
               }))}
-              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className={`w-full px-2 py-1 text-xs border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
             >
               <option value="all">All</option>
               {uniqueClients.map(clientName => (
@@ -255,42 +257,42 @@ export default function DashboardMetrics({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Sort By</label>
+            <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Sort By</label>
             <select
               value={options.sortBy}
               onChange={(e) => setFilterOptions(prev => ({
                 ...prev,
                 [type]: { ...prev[type], sortBy: e.target.value as 'date' | 'client' }
               }))}
-              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className={`w-full px-2 py-1 text-xs border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
             >
               <option value="date">Date</option>
               <option value="client">Client</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Order</label>
+            <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Order</label>
             <select
               value={options.sortOrder}
               onChange={(e) => setFilterOptions(prev => ({
                 ...prev,
                 [type]: { ...prev[type], sortOrder: e.target.value as 'asc' | 'desc' }
               }))}
-              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className={`w-full px-2 py-1 text-xs border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
             >
               <option value="desc">Desc</option>
               <option value="asc">Asc</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Group By</label>
+            <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Group By</label>
             <select
               value={options.groupBy}
               onChange={(e) => setFilterOptions(prev => ({
                 ...prev,
                 [type]: { ...prev[type], groupBy: e.target.value as 'none' | 'client' }
               }))}
-              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className={`w-full px-2 py-1 text-xs border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
             >
               <option value="none">None</option>
               <option value="client">Client</option>
@@ -305,46 +307,46 @@ export default function DashboardMetrics({
     <>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
+          className={`rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-blue-500/50' : 'bg-white hover:border-blue-200'}`}
           onClick={() => handleCardClick('setTarget')}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Monthly Set Target</h3>
+            <h3 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Set Target</h3>
           </div>
           <div className="space-y-1 bg-blue-50 p-3 rounded-md">
             <div className="flex items-baseline space-x-2">
               <span className="text-3xl font-bold text-blue-700">{totalSetTarget.toLocaleString()}</span>
-              <span className="text-sm text-gray-600">set goal</span>
+              <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>set goal</span>
             </div>
-            <p className="text-xs text-gray-500">{(monthProgress ?? 0).toFixed(1)}% of month completed</p>
+            <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{(monthProgress ?? 0).toFixed(1)}% of month completed</p>
 
           </div>
         </div>
 
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
+          className={`rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-blue-500/50' : 'bg-white hover:border-blue-200'}`}
           onClick={() => handleCardClick('heldTarget')}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">Monthly Held Target <Target className="w-5 h-5 text-blue-500" /></h3>
+            <h3 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Held Target <Target className="w-5 h-5 text-blue-500" /></h3>
           </div>
-          <div className="space-y-1 bg-blue-50 p-3 rounded-md">
+          <div className={`space-y-1 p-3 rounded-md ${darkTheme ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-blue-700">{totalHeldTarget.toLocaleString()}</span>
-              <span className="text-sm text-gray-600">held goal</span>
+              <span className={`text-3xl font-bold ${darkTheme ? 'text-blue-400' : 'text-blue-700'}`}>{totalHeldTarget.toLocaleString()}</span>
+              <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>held goal</span>
             </div>
-            <p className="text-xs text-gray-500">{(monthProgress ?? 0).toFixed(1)}% of month completed</p>
+            <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{(monthProgress ?? 0).toFixed(1)}% of month completed</p>
 
           </div>
         </div>
 
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+          className={`rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-green-500/50' : 'bg-white hover:border-green-200'}`}
           onClick={() => handleCardClick('meetingsSet')}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 group relative">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-1">Meetings Set <HelpCircle className="w-4 h-4 text-gray-400" />
+              <h3 className={`text-lg font-semibold flex items-center gap-1 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meetings Set <HelpCircle className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                 <div className="absolute left-0 top-full mt-2 w-72 bg-gray-900 text-white text-sm rounded-lg p-3 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <p className="mb-2">Meetings successfully scheduled this month:</p>
                   <ul className="list-disc list-inside space-y-1">
@@ -356,14 +358,14 @@ export default function DashboardMetrics({
             </div>
             <Calendar className="w-6 h-6 text-green-500" />
           </div>
-          <div className="space-y-1 bg-green-50 p-3 rounded-md">
+          <div className={`space-y-1 p-3 rounded-md ${darkTheme ? 'bg-green-900/20' : 'bg-green-50'}`}>
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-green-700">{totalMeetingsSet.toLocaleString()}</span>
-              <span className="text-sm text-gray-600">meetings set</span>
+              <span className={`text-3xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-700'}`}>{totalMeetingsSet.toLocaleString()}</span>
+              <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>meetings set</span>
             </div>
-            <p className="text-sm text-gray-500">Set this month</p>
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set this month</p>
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className={`flex-1 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${
                     isOnTrack ? 'bg-green-600' : 'bg-yellow-600'
@@ -382,12 +384,12 @@ export default function DashboardMetrics({
         </div>
 
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+          className={`rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-green-500/50' : 'bg-white hover:border-green-200'}`}
           onClick={() => handleCardClick('meetingsHeld')}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 group relative">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-1">Meetings Held <HelpCircle className="w-4 h-4 text-gray-400" />
+              <h3 className={`text-lg font-semibold flex items-center gap-1 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meetings Held <HelpCircle className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                 <div className="absolute left-0 top-full mt-2 w-72 bg-gray-900 text-white text-sm rounded-lg p-3 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <p className="mb-2">Successfully held meetings this month:</p>
                   <ul className="list-disc list-inside space-y-1">
@@ -399,14 +401,14 @@ export default function DashboardMetrics({
             </div>
             <CheckCircle className="w-6 h-6 text-green-500" />
           </div>
-          <div className="space-y-1 bg-green-50 p-3 rounded-md">
+          <div className={`space-y-1 p-3 rounded-md ${darkTheme ? 'bg-green-900/20' : 'bg-green-50'}`}>
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-green-700">{totalHeldMeetings.toLocaleString()}</span>
-              <span className="text-sm text-gray-600">meetings held</span>
+              <span className={`text-3xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-700'}`}>{totalHeldMeetings.toLocaleString()}</span>
+              <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>meetings held</span>
             </div>
-            <p className="text-sm text-gray-500">Held this month</p>
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held this month</p>
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className={`flex-1 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${
                     totalHeldTarget > 0 && totalHeldMeetings / totalHeldTarget >= 1
@@ -433,12 +435,12 @@ export default function DashboardMetrics({
         </div>
 
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-yellow-200 transition-all duration-200 border-2 border-transparent"
+          className={`rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-yellow-500/50' : 'bg-white hover:border-yellow-200'}`}
           onClick={() => handleCardClick('pending')}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 group relative">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-1">Pending <HelpCircle className="w-4 h-4 text-gray-400" />
+              <h3 className={`text-lg font-semibold flex items-center gap-1 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Pending <HelpCircle className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                 <div className="absolute left-0 top-full mt-2 w-72 bg-gray-900 text-white text-sm rounded-lg p-3 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <p className="mb-2">Meetings that need confirmation:</p>
                   <ul className="list-disc list-inside space-y-1">
@@ -450,23 +452,23 @@ export default function DashboardMetrics({
             </div>
             <Clock className="w-6 h-6 text-yellow-500" />
           </div>
-          <div className="space-y-1 bg-yellow-50 p-3 rounded-md">
+          <div className={`space-y-1 p-3 rounded-md ${darkTheme ? 'bg-yellow-900/20' : 'bg-yellow-50'}`}>
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-yellow-700">{totalPendingMeetings.toLocaleString()}</span>
-              <span className="text-sm text-gray-600">pending meetings</span>
+              <span className={`text-3xl font-bold ${darkTheme ? 'text-yellow-400' : 'text-yellow-700'}`}>{totalPendingMeetings.toLocaleString()}</span>
+              <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>pending meetings</span>
             </div>
-            <p className="text-sm text-gray-500 pb-1">Pending confirmation</p>
+            <p className={`text-sm pb-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Pending confirmation</p>
 
           </div>
         </div>
 
         <div 
-          className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 hover:border-red-200 transition-all duration-200 border-2 border-transparent"
+          className={`rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-red-500/50' : 'bg-white hover:border-red-200'}`}
           onClick={() => handleCardClick('noShows')}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 group relative">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-1">No Shows <HelpCircle className="w-4 h-4 text-gray-400" />
+              <h3 className={`text-lg font-semibold flex items-center gap-1 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>No Shows <HelpCircle className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                 <div className="absolute left-0 top-full mt-2 w-72 bg-gray-900 text-white text-sm rounded-lg p-3 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <p className="mb-2">Meetings that were scheduled but not attended by the contact:</p>
                   <ul className="list-disc list-inside space-y-1">
@@ -477,12 +479,12 @@ export default function DashboardMetrics({
             </div>
             <Clock className="w-6 h-6 text-red-500" />
           </div>
-          <div className="space-y-1 bg-red-50 p-3 rounded-md">
+          <div className={`space-y-1 p-3 rounded-md ${darkTheme ? 'bg-red-900/20' : 'bg-red-50'}`}>
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-red-700">{(totalNoShowMeetings ?? 0).toLocaleString()}</span>
-              <span className="text-sm text-gray-600">no-show meetings</span>
+              <span className={`text-3xl font-bold ${darkTheme ? 'text-red-400' : 'text-red-700'}`}>{(totalNoShowMeetings ?? 0).toLocaleString()}</span>
+              <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>no-show meetings</span>
             </div>
-            <p className="text-sm text-gray-500 pb-1">Marked as no-shows</p>
+            <p className={`text-sm pb-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Marked as no-shows</p>
 
           </div>
         </div>
@@ -491,12 +493,12 @@ export default function DashboardMetrics({
       {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-semibold">{modalTitle}</h2>
+          <div className={`rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+            <div className={`flex items-center justify-between p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+              <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{modalTitle}</h2>
               <button
                 onClick={closeModal}
-                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 text-xl font-bold"
+                className={`h-8 w-8 p-0 text-xl font-bold ${darkTheme ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}`}
               >
                 <X className="w-6 h-6" />
               </button>
@@ -504,46 +506,46 @@ export default function DashboardMetrics({
             <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
               {modalContent?.type === 'setTarget' ? (
                 <div className="space-y-4">
-                  <div className="bg-indigo-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-indigo-900 mb-2">Total Set Target: {totalSetTarget}</h3>
-                    <p className="text-sm text-indigo-700">Breakdown by client:</p>
+                  <div className={`p-4 rounded-lg ${darkTheme ? 'bg-indigo-900/20' : 'bg-indigo-50'}`}>
+                    <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-indigo-300' : 'text-indigo-900'}`}>Total Set Target: {totalSetTarget}</h3>
+                    <p className={`text-sm ${darkTheme ? 'text-indigo-200' : 'text-indigo-700'}`}>Breakdown by client:</p>
                   </div>
                   {modalContent.data.map((client: any) => (
-                    <div key={client.name} className="bg-gray-50 p-4 rounded-md shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{client.name}</h3>
-                      <p className="text-sm text-gray-700">Set Target: {client.target}</p>
+                    <div key={client.name} className={`p-4 rounded-md shadow-sm ${darkTheme ? 'bg-[#1d1f24] border border-[#2d3139]' : 'bg-gray-50'}`}>
+                      <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{client.name}</h3>
+                      <p className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>Set Target: {client.target}</p>
                     </div>
                   ))}
                 </div>
               ) : modalContent?.type === 'heldTarget' ? (
                 <div className="space-y-4">
-                  <div className="bg-indigo-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-indigo-900 mb-2">Total Held Target: {totalHeldTarget}</h3>
-                    <p className="text-sm text-indigo-700">Breakdown by client:</p>
+                  <div className={`p-4 rounded-lg ${darkTheme ? 'bg-indigo-900/20' : 'bg-indigo-50'}`}>
+                    <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-indigo-300' : 'text-indigo-900'}`}>Total Held Target: {totalHeldTarget}</h3>
+                    <p className={`text-sm ${darkTheme ? 'text-indigo-200' : 'text-indigo-700'}`}>Breakdown by client:</p>
                   </div>
                   {modalContent.data.map((client: any) => (
-                    <div key={client.name} className="bg-gray-50 p-4 rounded-md shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{client.name}</h3>
-                      <p className="text-sm text-gray-700">Held Target: {client.target}</p>
+                    <div key={client.name} className={`p-4 rounded-md shadow-sm ${darkTheme ? 'bg-[#1d1f24] border border-[#2d3139]' : 'bg-gray-50'}`}>
+                      <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{client.name}</h3>
+                      <p className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>Held Target: {client.target}</p>
                     </div>
                   ))}
                 </div>
               ) : modalContent?.type === 'meetingsSet' ? (
                 <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-green-900 mb-2">Meetings Set This Month</h3>
+                  <div className={`p-4 rounded-lg ${darkTheme ? 'bg-green-900/20' : 'bg-green-50'}`}>
+                    <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-green-300' : 'text-green-900'}`}>Meetings Set This Month</h3>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <p className="text-2xl font-bold text-green-700">{modalContent.data.total}</p>
-                        <p className="text-sm text-green-600">Meetings Set</p>
+                        <p className={`text-2xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-700'}`}>{modalContent.data.total}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-green-300' : 'text-green-600'}`}>Meetings Set</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-indigo-700">{modalContent.data.target}</p>
-                        <p className="text-sm text-indigo-600">Target</p>
+                        <p className={`text-2xl font-bold ${darkTheme ? 'text-indigo-400' : 'text-indigo-700'}`}>{modalContent.data.target}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-indigo-300' : 'text-indigo-600'}`}>Target</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div className={`flex-1 h-3 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             modalContent.data.percentage >= monthProgress ? 'bg-green-600' : 'bg-yellow-600'

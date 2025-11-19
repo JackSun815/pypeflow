@@ -1049,9 +1049,9 @@ export default function ManagerDashboard() {
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-[#16191f]' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
       {isDemoMode && <DemoBanner />}
-      <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-gradient-to-r from-slate-800/95 via-indigo-900/95 to-slate-800/95 border-indigo-800/50 backdrop-blur-sm' : 'bg-gradient-to-r from-white via-indigo-50/30 to-white border-indigo-100'}`}>
+      <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gradient-to-r from-white via-indigo-50/30 to-white border-indigo-100'}`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-100/20 to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full opacity-5">
@@ -1181,25 +1181,25 @@ export default function ManagerDashboard() {
                 </div>
                 
                 {/* Dropdown menu */}
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0">
+                <div className={`absolute right-0 top-full mt-2 w-80 rounded-xl shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-0 ${darkTheme ? 'bg-[#232529] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                   <div className="py-2">
                     {/* Theme Toggle */}
-                    <div className="px-4 py-3 border-b border-gray-200">
+                    <div className={`px-4 py-3 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700">Theme</span>
+                        <span className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Theme</span>
                         <button
                           onClick={() => setDarkTheme(!darkTheme)}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${darkTheme ? 'bg-[#2d3139] hover:bg-[#353941] text-slate-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
                         >
                           {darkTheme ? (
                             <>
-                              <Moon className="w-4 h-4 text-gray-700" />
-                              <span className="text-sm text-gray-700">Dark</span>
+                              <Moon className="w-4 h-4" />
+                              <span className="text-sm">Dark</span>
                             </>
                           ) : (
                             <>
-                              <Sun className="w-4 h-4 text-gray-700" />
-                              <span className="text-sm text-gray-700">Light</span>
+                              <Sun className="w-4 h-4" />
+                              <span className="text-sm">Light</span>
                             </>
                           )}
                         </button>
@@ -1207,90 +1207,90 @@ export default function ManagerDashboard() {
                     </div>
                     
                     {/* Chart Visibility Toggles */}
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Chart Visibility</div>
+                    <div className={`px-4 py-3 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                      <div className={`text-xs font-semibold uppercase mb-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Chart Visibility</div>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, cumulativePerformance: !prev.cumulativePerformance }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Cumulative Performance</span>
                         {chartVisibility.cumulativePerformance ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, monthlyPerformance: !prev.monthlyPerformance }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Monthly Performance</span>
                         {chartVisibility.monthlyPerformance ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, meetingStatusDistribution: !prev.meetingStatusDistribution }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Meeting Status</span>
                         {chartVisibility.meetingStatusDistribution ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, sdrPerformance: !prev.sdrPerformance }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>SDR Performance</span>
                         {chartVisibility.sdrPerformance ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, clientsPerformance: !prev.clientsPerformance }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Clients Performance</span>
                         {chartVisibility.clientsPerformance ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, sdrPerformanceComparison: !prev.sdrPerformanceComparison }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors mb-1 ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>SDR Comparison</span>
                         {chartVisibility.sdrPerformanceComparison ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                       
                       <button
                         onClick={() => setChartVisibility((prev: any) => ({ ...prev, clientProgressVisualization: !prev.clientProgressVisualization }))}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <span>Client Progress</span>
                         {chartVisibility.clientProgressVisualization ? (
-                          <Eye className="w-4 h-4 text-green-600" />
+                          <Eye className={`w-4 h-4 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
+                          <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
                       </button>
                     </div>
@@ -1303,7 +1303,7 @@ export default function ManagerDashboard() {
                             setExportModalOpen(true);
                           }
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors mb-1"
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors mb-1 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/40' : 'text-indigo-700 hover:bg-indigo-50'}`}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1312,7 +1312,7 @@ export default function ManagerDashboard() {
                       </button>
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${darkTheme ? 'text-slate-200 hover:bg-[#2d3139]' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         <LogOut className="w-4 h-4" />
                         Logout
@@ -1328,8 +1328,8 @@ export default function ManagerDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {(sdrsError || clientsError) && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2 text-red-700">
+          <div className={`mb-6 p-4 rounded-lg ${darkTheme ? 'bg-red-900/20 border border-red-800/50' : 'bg-red-50 border border-red-200'}`}>
+            <div className={`flex items-center gap-2 ${darkTheme ? 'text-red-300' : 'text-red-700'}`}>
               <AlertCircle className="w-5 h-5" />
               <p>{sdrsError || clientsError}</p>
             </div>
@@ -1337,28 +1337,28 @@ export default function ManagerDashboard() {
         )}
 
         {/* Tab Navigation */}
-        <div className="mb-6 border-b border-gray-200">
+        <div className={`mb-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('overview')}
               className={`${
                 activeTab === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
-              <BarChart2 className={`w-4 h-4 transition-colors ${activeTab === 'overview' ? '' : 'group-hover:text-indigo-500'}`} />
+              <BarChart2 className={`w-4 h-4 transition-colors ${activeTab === 'overview' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-indigo-500'}`} />
               Overview
             </button>
             <button
               onClick={() => setActiveTab('meetings')}
               className={`${
                 activeTab === 'meetings'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
             >
-              <ListChecks className={`w-4 h-4 transition-colors ${activeTab === 'meetings' ? '' : 'group-hover:text-green-500'}`} />
+              <ListChecks className={`w-4 h-4 transition-colors ${activeTab === 'meetings' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-green-500'}`} />
               Team's Meetings
             </button>
             <button
@@ -1369,13 +1369,13 @@ export default function ManagerDashboard() {
               }}
               className={`${
                 activeTab === 'clients'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
               disabled={isDemoMode}
               title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
-              <Building className={`w-4 h-4 transition-colors ${activeTab === 'clients' ? '' : 'group-hover:text-purple-500'}`} />
+              <Building className={`w-4 h-4 transition-colors ${activeTab === 'clients' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-purple-500'}`} />
               Client Management
               {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
@@ -1387,13 +1387,13 @@ export default function ManagerDashboard() {
               }}
               className={`${
                 activeTab === 'users'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
               disabled={isDemoMode}
               title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
-              <Users className={`w-4 h-4 transition-colors ${activeTab === 'users' ? '' : 'group-hover:text-orange-500'}`} />
+              <Users className={`w-4 h-4 transition-colors ${activeTab === 'users' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-orange-500'}`} />
               User Management
               {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
@@ -1405,13 +1405,13 @@ export default function ManagerDashboard() {
               }}
               className={`${
                 activeTab === 'history'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
               disabled={isDemoMode}
               title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
-              <History className={`w-4 h-4 transition-colors ${activeTab === 'history' ? '' : 'group-hover:text-teal-500'}`} />
+              <History className={`w-4 h-4 transition-colors ${activeTab === 'history' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-teal-500'}`} />
               Meeting History
               {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
@@ -1423,13 +1423,13 @@ export default function ManagerDashboard() {
               }}
               className={`${
                 activeTab === 'icp'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
               disabled={isDemoMode}
               title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
             >
-              <Shield className={`w-4 h-4 transition-colors ${activeTab === 'icp' ? '' : 'group-hover:text-rose-500'}`} />
+              <Shield className={`w-4 h-4 transition-colors ${activeTab === 'icp' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-rose-500'}`} />
               ICP Check
               {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
@@ -1442,47 +1442,47 @@ export default function ManagerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {/* Total SDRs Card (clickable for modal) */}
               <div 
-                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-indigo-500/50' : 'bg-white hover:border-indigo-200'}`}
                 onClick={() => handleCardClick('sdrs')}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Active SDRs</h3>
+                  <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Active SDRs</h3>
                   <Users className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{sdrs.filter(sdr => sdr.active !== false).length}</p>
-                <p className="text-xs text-indigo-600 mt-2 font-medium">Click to view details →</p>
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdrs.filter(sdr => sdr.active !== false).length}</p>
+                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}>Click to view details →</p>
               </div>
 
               {/* Monthly Set Target Card (clickable for modal) */}
               <div 
-                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-indigo-500/50' : 'bg-white hover:border-indigo-200'}`}
                 onClick={() => handleCardClick('setTarget')}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Monthly Set Target</h3>
+                  <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Set Target</h3>
                   <Target className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{totalSetTarget}</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{totalSetTarget}</p>
+                <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {monthProgress.toFixed(1)}% of month completed
                 </p>
-                <p className="text-xs text-indigo-600 mt-2 font-medium">Click to view details →</p>
+                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}>Click to view details →</p>
               </div>
 
               {/* Monthly Held Target Card (clickable for modal) */}
               <div 
-                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-indigo-200 transition-all duration-200 border-2 border-transparent"
+                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-indigo-500/50' : 'bg-white hover:border-indigo-200'}`}
                 onClick={() => handleCardClick('heldTarget')}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Monthly Held Target</h3>
+                  <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Held Target</h3>
                   <Target className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{totalHeldTarget}</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{totalHeldTarget}</p>
+                <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {monthProgress.toFixed(1)}% of month completed
                 </p>
-                <p className="text-xs text-indigo-600 mt-2 font-medium">Click to view details →</p>
+                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}>Click to view details →</p>
               </div>
             </div>
 
@@ -1490,66 +1490,66 @@ export default function ManagerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {/* Meetings Set Card (clickable for modal) */}
               <div 
-                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-green-500/50' : 'bg-white hover:border-green-200'}`}
                 onClick={() => handleCardClick('set')}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Meetings Set</h3>
+                  <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meetings Set</h3>
                   <Calendar className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{monthlyMeetingsSetCount}</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{monthlyMeetingsSetCount}</p>
+                <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {totalSetTarget > 0 ? ((monthlyMeetingsSetCount / totalSetTarget) * 100).toFixed(1) : '0.0'}% of target
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                   Cumulative: {totalMeetingsSet}
                 </p>
-                <p className="text-xs text-green-600 mt-2 font-medium">Click to view meetings →</p>
+                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>Click to view meetings →</p>
               </div>
 
               {/* Meetings Held Card (clickable for modal) */}
               <div 
-                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-green-200 transition-all duration-200 border-2 border-transparent"
+                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-green-500/50' : 'bg-white hover:border-green-200'}`}
                 onClick={() => handleCardClick('held')}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Meetings Held</h3>
+                  <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meetings Held</h3>
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{monthlyHeldMeetingsCount}</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{monthlyHeldMeetingsCount}</p>
+                <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {totalHeldTarget > 0 ? ((monthlyHeldMeetingsCount / totalHeldTarget) * 100).toFixed(1) : '0.0'}% of target
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                   Cumulative: {totalHeldMeetings}
                 </p>
-                <p className="text-xs text-green-600 mt-2 font-medium">Click to view meetings →</p>
+                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>Click to view meetings →</p>
               </div>
 
               {/* Pending Card (clickable for modal) */}
               <div 
-                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 hover:border-yellow-200 transition-all duration-200 border-2 border-transparent"
+                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-yellow-500/50' : 'bg-white hover:border-yellow-200'}`}
                 onClick={() => handleCardClick('pending')}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Pending</h3>
+                  <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Pending</h3>
                   <Clock className="w-6 h-6 text-yellow-500" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{monthlyPendingMeetings}</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{monthlyPendingMeetings}</p>
+                <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   Pending confirmation
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                   Cumulative: {totalPendingMeetings}
                 </p>
-                <p className="text-xs text-yellow-600 mt-2 font-medium">Click to view meetings →</p>
+                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-yellow-400' : 'text-yellow-600'}`}>Click to view meetings →</p>
               </div>
             </div>
 
             {/* Cumulative Performance Section */}
             {chartVisibility.cumulativePerformance && (
-              <div className={`rounded-lg shadow-md p-6 mb-8 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
-                <h2 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Cumulative Performance (All Time)</h2>
+              <div className={`rounded-lg shadow-md p-6 mb-8 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+                <h2 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Cumulative Performance (All Time)</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <p className={`text-2xl font-bold transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>{totalMeetingsSet}</p>
@@ -1568,10 +1568,10 @@ export default function ManagerDashboard() {
                   <p className={`text-sm transition-colors ${darkTheme ? 'text-indigo-300' : 'text-gray-600'}`}>Total No-Shows</p>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className={`mt-4 pt-4 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Held Rate (All Time):</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Held Rate (All Time):</span>
+                  <span className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                     {(() => {
                       const heldAndNoShow = totalHeldMeetings + totalNoShowMeetings;
                       const heldRate = heldAndNoShow > 0 ? ((totalHeldMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
@@ -1580,8 +1580,8 @@ export default function ManagerDashboard() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-sm text-gray-600">No-Show Rate (All Time):</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>No-Show Rate (All Time):</span>
+                  <span className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                     {(() => {
                       const heldAndNoShow = totalHeldMeetings + totalNoShowMeetings;
                       const noShowRate = heldAndNoShow > 0 ? ((totalNoShowMeetings / heldAndNoShow) * 100).toFixed(1) : '0.0';
@@ -1597,8 +1597,8 @@ export default function ManagerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Monthly Performance Chart */}
               {chartVisibility.monthlyPerformance && (
-                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
-                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Monthly Performance</h3>
+                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Performance</h3>
                 <div className="h-64">
                   <Bar
                     data={{
@@ -1644,8 +1644,8 @@ export default function ManagerDashboard() {
 
               {/* Meeting Status Distribution */}
               {chartVisibility.meetingStatusDistribution && (
-                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
-                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Meeting Status Distribution</h3>
+                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meeting Status Distribution</h3>
                 <div className="h-64">
                   <Doughnut
                     data={{
@@ -1711,17 +1711,17 @@ export default function ManagerDashboard() {
               });
 
               return (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-              <div className="px-6 py-4 border-b border-gray-200">
+            <div className={`rounded-lg shadow-md overflow-hidden mb-8 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+              <div className={`px-6 py-4 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <h2 className="text-lg font-semibold text-gray-900">SDR Performance</h2>
+                    <h2 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>SDR Performance</h2>
                     <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-gray-700">Month:</label>
+                      <label className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Month:</label>
                       <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        className={`border rounded px-2 py-1 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         disabled={assignmentsLoading}
                       >
                         {monthOptions.map(option => (
@@ -1731,7 +1731,7 @@ export default function ManagerDashboard() {
                         ))}
                       </select>
                       {selectedMonth === currentMonthForSelector && (
-                        <span className="text-xs text-gray-500">(Current)</span>
+                        <span className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>(Current)</span>
                       )}
                       {assignmentsLoading && (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
@@ -1740,7 +1740,7 @@ export default function ManagerDashboard() {
                   </div>
                   <button
                     onClick={() => setSdrPerformanceExportModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors ${darkTheme ? 'text-green-300 bg-green-900/30 border border-green-700/50 hover:bg-green-900/40' : 'text-green-700 bg-green-50 border border-green-200 hover:bg-green-100'}`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1750,33 +1750,33 @@ export default function ManagerDashboard() {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className={`min-w-full divide-y ${darkTheme ? 'divide-[#2d3139]' : 'divide-gray-200'}`}>
+                  <thead className={darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}>
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         SDR Name
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Total Set Target
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Total Held Target
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Meetings Set
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Held
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Progress
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className={`divide-y ${darkTheme ? 'bg-[#232529] divide-[#2d3139]' : 'bg-white divide-gray-200'}`}>
                     {activeSDRsForMonth.map((sdr) => {
                       // Calculate separate set and held targets for this SDR from assignments for the selected month
                       const allSDRAssignments = assignments.filter(assignment => 
@@ -1824,29 +1824,31 @@ export default function ManagerDashboard() {
                       return (
                         <React.Fragment key={sdr.id}>
                           <tr
-                            className={`hover:bg-gray-50 cursor-pointer ${
-                              selectedSDR === sdr.id ? 'bg-indigo-50' : ''
+                            className={`cursor-pointer ${
+                              selectedSDR === sdr.id 
+                                ? darkTheme ? 'bg-indigo-900/30' : 'bg-indigo-50'
+                                : darkTheme ? 'hover:bg-[#1d1f24]' : 'hover:bg-gray-50'
                             }`}
                             onClick={() => toggleSDRExpansion(sdr.id)}
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-2">
                                 {isExpanded ? (
-                                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                                  <ChevronDown className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                                 ) : (
-                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  <ChevronRight className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                                 )}
                                 <div className="flex flex-col">
-                                  <div className="text-sm font-medium text-gray-900">
+                                  <div className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                     {sdr.full_name}
                                   </div>
                                   {sdr.active === false && (
                                     <div className="flex items-center gap-1 mt-1">
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-800'}`}>
                                         Deactivated
                                       </span>
                                       {sdr.updated_at && (
-                                        <span className="text-xs text-gray-500">
+                                        <span className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                           {new Date(sdr.updated_at).toLocaleDateString()}
                                         </span>
                                       )}
@@ -1856,20 +1858,20 @@ export default function ManagerDashboard() {
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{totalSetTarget}</div>
+                              <div className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{totalSetTarget}</div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{totalHeldTarget}</div>
+                              <div className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{totalHeldTarget}</div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
+                              <div className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                 {sdrMeetingsSet}
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-1">
                                 <CheckCircle className="w-4 h-4 text-green-500" />
-                                <span className="text-sm text-gray-900">
+                                <span className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                   {sdrHeldMeetings}
                                 </span>
                               </div>
@@ -1878,7 +1880,7 @@ export default function ManagerDashboard() {
                               <div className="flex flex-col items-start">
                                 {/* Meetings Set progress bar */}
                                 <div className="flex items-center w-full">
-                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                  <div className={`flex-1 h-2 rounded-full overflow-hidden mr-2 ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                                     <div
                                       className={`h-full rounded-full transition-all duration-300 ${getProgressColor(setProgress)}`}
                                       style={{ width: `${Math.min(setProgress, 100)}%` }}
@@ -1887,11 +1889,11 @@ export default function ManagerDashboard() {
                                   <span className={`text-sm font-medium ${getProgressTextColor(setProgress)}`}>
                                     {isNaN(setProgress) ? '0.0' : setProgress.toFixed(1)}%
                                   </span>
-                                  <div className="ml-2 text-sm text-gray-500">Set</div>
+                                  <div className={`ml-2 text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set</div>
                                 </div>
                                 {/* Held meetings progress bar */}
                                 <div className="flex items-center w-full mt-1">
-                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                  <div className={`flex-1 h-2 rounded-full overflow-hidden mr-2 ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                                     <div
                                       className={`h-full rounded-full transition-all duration-300 ${getProgressColor(heldProgress)}`}
                                       style={{ width: `${Math.min(heldProgress, 100)}%` }}
@@ -1900,7 +1902,7 @@ export default function ManagerDashboard() {
                                   <span className={`text-sm font-medium ${getProgressTextColor(heldProgress)}`}>
                                     {isNaN(heldProgress) ? '0.0' : heldProgress.toFixed(1)}%
                                   </span>
-                                  <div className="ml-2 text-sm text-gray-500">Held</div>
+                                  <div className={`ml-2 text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held</div>
                                 </div>
                               </div>
                             </td>
@@ -1910,7 +1912,7 @@ export default function ManagerDashboard() {
                                   e.stopPropagation();
                                   handleCopyUrl(sdr.id);
                                 }}
-                                className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/40' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
                               >
                                 {copiedId === sdr.id ? (
                                   <>
@@ -1928,9 +1930,9 @@ export default function ManagerDashboard() {
                           </tr>
                           {isExpanded && (
                             <tr>
-                              <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                              <td colSpan={8} className={`px-6 py-4 ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}>
                                 <div className="space-y-3">
-                                  <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                  <h4 className={`text-sm font-medium mb-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                     Client Assignments ({monthOptions.find(m => m.value === selectedMonth)?.label})
                                   </h4>
                                   {(() => {
@@ -1978,30 +1980,30 @@ export default function ManagerDashboard() {
                                         return (
                                           <div
                                             key={client.id}
-                                            className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                                            className={`flex items-center justify-between p-3 rounded-md shadow-sm cursor-pointer transition-colors ${darkTheme ? 'bg-[#232529] hover:bg-[#2d3139]' : 'bg-white hover:bg-gray-50'}`}
                                             onClick={() => handleSDRClientClickFromSDR(sdr.id!, client.id!, sdr.full_name || '', client.name || '')}
                                           >
                                             <div>
-                                              <p className="text-sm font-medium text-gray-900">
+                                              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                                 {client.name}
                                               </p>
                                               <div className="flex items-center gap-4 mt-1">
-                                                <span className="text-sm text-gray-500">
+                                                <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                                   Set Target: {assignment.monthly_set_target || 0}
                                                 </span>
-                                                <span className="text-sm text-gray-500">
+                                                <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                                   Held Target: {assignment.monthly_hold_target || 0}
                                                 </span>
-                                                <span className="text-sm text-gray-500">
+                                                <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                                   Set: {clientMeetingsSet}
                                                 </span>
-                                                <span className="text-sm text-gray-500">
+                                                <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                                   Held: {clientHeldMeetings}
                                                 </span>
                                               </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                              <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                              <div className={`w-24 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                                                 <div
                                                   className={`h-full rounded-full transition-all duration-300 ${getProgressColor(clientSetProgress)}`}
                                                   style={{ width: `${Math.min(clientSetProgress, 100)}%` }}
@@ -2017,7 +2019,7 @@ export default function ManagerDashboard() {
                                     });
                                   })()}
                                   {sdrAssignments.filter(a => a.clients && !a.clients.archived_at).length === 0 && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                       No active clients assigned for {monthOptions.find(m => m.value === selectedMonth)?.label}
                                     </p>
                                   )}
@@ -2067,17 +2069,17 @@ export default function ManagerDashboard() {
               });
 
               return (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-              <div className="px-6 py-4 border-b border-gray-200">
+            <div className={`rounded-lg shadow-md overflow-hidden mb-8 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+              <div className={`px-6 py-4 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Clients Performance</h2>
+                    <h2 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Clients Performance</h2>
                     <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-gray-700">Month:</label>
+                      <label className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Month:</label>
                       <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        className={`border rounded px-2 py-1 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         disabled={assignmentsLoading}
                       >
                         {monthOptions.map(option => (
@@ -2087,7 +2089,7 @@ export default function ManagerDashboard() {
                         ))}
                       </select>
                       {selectedMonth === currentMonthForSelector && (
-                        <span className="text-xs text-gray-500">(Current)</span>
+                        <span className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>(Current)</span>
                       )}
                       {assignmentsLoading && (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
@@ -2096,7 +2098,7 @@ export default function ManagerDashboard() {
                   </div>
                   <button
                     onClick={() => setClientPerformanceExportModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors ${darkTheme ? 'text-purple-300 bg-purple-900/30 border border-purple-700/50 hover:bg-purple-900/40' : 'text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100'}`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2106,30 +2108,30 @@ export default function ManagerDashboard() {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className={`min-w-full divide-y ${darkTheme ? 'divide-[#2d3139]' : 'divide-gray-200'}`}>
+                  <thead className={darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}>
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Client Name
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Set Target
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Held Target
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Meetings Set
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Held
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
                         Progress
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className={`divide-y ${darkTheme ? 'bg-[#232529] divide-[#2d3139]' : 'bg-white divide-gray-200'}`}>
                     {activeClientsForMonth.map((client) => {
                       // Calculate total targets from SDR assignments for this client for the selected month
                       const clientAssignments = assignments.filter(assignment => 
@@ -2197,26 +2199,26 @@ export default function ManagerDashboard() {
                       return (
                         <React.Fragment key={client.id}>
                           <tr
-                            className="hover:bg-gray-50 cursor-pointer"
+                            className={`cursor-pointer ${darkTheme ? 'hover:bg-[#1d1f24]' : 'hover:bg-gray-50'}`}
                             onClick={() => toggleClientExpansion(client.id)}
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-2">
                                 {isExpanded ? (
-                                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                                  <ChevronDown className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                                 ) : (
-                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  <ChevronRight className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
                                 )}
                                 <div className="flex flex-col">
-                                  <div className="text-sm font-medium text-gray-900">
+                                  <div className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                     {client.name}
                                   </div>
                                   {client.archived_at && (
                                     <div className="flex items-center gap-1 mt-1">
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-800'}`}>
                                         Archived
                                       </span>
-                                      <span className="text-xs text-gray-500">
+                                      <span className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                         {new Date(client.archived_at).toLocaleDateString()}
                                       </span>
                                     </div>
@@ -2225,20 +2227,20 @@ export default function ManagerDashboard() {
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{totalSetTargetFromAssignments}</div>
+                              <div className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{totalSetTargetFromAssignments}</div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{totalHeldTargetFromAssignments}</div>
+                              <div className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{totalHeldTargetFromAssignments}</div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
+                              <div className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                 {clientMeetingsSet}
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-1">
                                 <CheckCircle className="w-4 h-4 text-green-500" />
-                                <span className="text-sm text-gray-900">
+                                <span className={`text-sm ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                   {clientHeldMeetings}
                                 </span>
                               </div>
@@ -2247,7 +2249,7 @@ export default function ManagerDashboard() {
                               <div className="flex flex-col items-start">
                                 {/* Meetings Set progress bar */}
                                 <div className="flex items-center w-full">
-                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                  <div className={`flex-1 h-2 rounded-full overflow-hidden mr-2 ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                                     <div
                                       className={`h-full rounded-full transition-all duration-300 ${getProgressColor(setProgress)}`}
                                       style={{ width: `${Math.min(setProgress, 100)}%` }}
@@ -2256,11 +2258,11 @@ export default function ManagerDashboard() {
                                   <span className={`text-sm font-medium ${getProgressTextColor(setProgress)}`}>
                                     {isNaN(setProgress) ? '0.0' : setProgress.toFixed(1)}%
                                   </span>
-                                  <div className="ml-2 text-sm text-gray-500">Set</div>
+                                  <div className={`ml-2 text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set</div>
                                 </div>
                                 {/* Held meetings progress bar */}
                                 <div className="flex items-center w-full mt-1">
-                                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                  <div className={`flex-1 h-2 rounded-full overflow-hidden mr-2 ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                                     <div
                                       className={`h-full rounded-full transition-all duration-300 ${getProgressColor(heldProgress)}`}
                                       style={{ width: `${Math.min(heldProgress, 100)}%` }}
@@ -2269,16 +2271,16 @@ export default function ManagerDashboard() {
                                   <span className={`text-sm font-medium ${getProgressTextColor(heldProgress)}`}>
                                     {isNaN(heldProgress) ? '0.0' : heldProgress.toFixed(1)}%
                                   </span>
-                                  <div className="ml-2 text-sm text-gray-500">Held</div>
+                                  <div className={`ml-2 text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held</div>
                                 </div>
                               </div>
                             </td>
                           </tr>
                           {isExpanded && (
                             <tr>
-                              <td colSpan={6} className="px-6 py-4 bg-gray-50">
+                              <td colSpan={6} className={`px-6 py-4 ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}>
                                 <div className="space-y-3">
-                                  <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                  <h4 className={`text-sm font-medium mb-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                     SDR Assignments
                                   </h4>
                                   {assignedSDRs.map((sdr) => {
@@ -2317,30 +2319,30 @@ export default function ManagerDashboard() {
                                     return (
                                       <div
                                         key={sdr.id}
-                                        className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                                        className={`flex items-center justify-between p-3 rounded-md shadow-sm cursor-pointer transition-colors ${darkTheme ? 'bg-[#232529] hover:bg-[#2d3139]' : 'bg-white hover:bg-gray-50'}`}
                                         onClick={() => handleSDRClientClick(sdr.id!, client.id!, sdr.full_name || '', client.name || '')}
                                       >
                                         <div>
-                                          <p className="text-sm font-medium text-gray-900">
+                                          <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                             {sdr.full_name}
                                           </p>
                                           <div className="flex items-center gap-4 mt-1">
-                                            <span className="text-sm text-gray-500">
+                                            <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                               Set Target: {sdr.monthly_set_target || 0}
                                             </span>
-                                            <span className="text-sm text-gray-500">
+                                            <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                               Held Target: {sdr.monthly_hold_target || 0}
                                             </span>
-                                            <span className="text-sm text-gray-500">
+                                            <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                               Set: {sdrClientMeetingsSet}
                                             </span>
-                                            <span className="text-sm text-gray-500">
+                                            <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                               Held: {sdrClientHeldMeetings}
                                             </span>
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                          <div className={`w-24 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                                             <div
                                               className={`h-full rounded-full transition-all duration-300 ${getProgressColor(sdrClientSetProgress)}`}
                                               style={{ width: `${Math.min(sdrClientSetProgress, 100)}%` }}
@@ -2354,7 +2356,7 @@ export default function ManagerDashboard() {
                                     );
                                   })}
                                   {assignedSDRs.length === 0 && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                       No SDRs assigned to this client for {monthOptions.find(m => m.value === selectedMonth)?.label}
                                     </p>
                                   )}
@@ -2367,7 +2369,7 @@ export default function ManagerDashboard() {
                     })}
                     {activeClientsForMonth.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        <td colSpan={6} className={`px-6 py-8 text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                           No clients with assignments found for {monthOptions.find(m => m.value === selectedMonth)?.label}
                         </td>
                       </tr>
@@ -2397,18 +2399,18 @@ export default function ManagerDashboard() {
                         <p className="text-sm font-medium text-gray-900">
                           {(meeting as any).clients?.name}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                           {new Date(meeting.scheduled_date).toLocaleDateString()}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className={`text-xs ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`}>
                           Booked by {meeting.sdr_name}
                         </p>
                       </div>
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded-full ${
                           meeting.status === 'confirmed'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
+                            ? darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
+                            : darkTheme ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
                         }`}
                       >
                         {meeting.status}
@@ -2416,39 +2418,39 @@ export default function ManagerDashboard() {
                     </div>
                   ))}
                   {todayMeetings.length === 0 && (
-                    <p className="text-sm text-gray-500">No meetings booked today</p>
+                    <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings booked today</p>
                   )}
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+                <h3 className={`text-lg font-semibold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                   Meetings Confirmed Today ({confirmedToday.length})
                 </h3>
                 <div className="space-y-3">
                   {confirmedToday.map((meeting) => (
                     <div
                       key={meeting.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className={`flex items-center justify-between p-3 rounded-lg ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                           {(meeting as any).clients?.name}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                           {new Date(meeting.scheduled_date).toLocaleDateString()}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className={`text-xs ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`}>
                           Booked by {meeting.sdr_name}
                         </p>
                       </div>
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}>
                         confirmed
                       </span>
                     </div>
                   ))}
                   {confirmedToday.length === 0 && (
-                    <p className="text-sm text-gray-500">No meetings confirmed today</p>
+                    <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings confirmed today</p>
                   )}
                 </div>
               </div>
@@ -2458,8 +2460,8 @@ export default function ManagerDashboard() {
             {chartVisibility.sdrPerformanceComparison && (() => {
               const activeSDRs = sdrs.filter(sdr => sdr.active !== false);
               return (
-              <div className={`rounded-lg shadow-md p-6 mt-8 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-indigo-800/30' : 'bg-white'}`}>
-                <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-indigo-100' : 'text-gray-900'}`}>Active SDR Performance Comparison</h3>
+              <div className={`rounded-lg shadow-md p-6 mt-8 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+                <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Active SDR Performance Comparison</h3>
               <div className="h-80">
                 <Bar
                   data={{
@@ -2977,12 +2979,12 @@ export default function ManagerDashboard() {
         {/* Modal */}
         {modalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b">
-                <h2 className="text-xl font-semibold">{modalTitle}</h2>
+            <div className={`rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+              <div className={`flex items-center justify-between p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{modalTitle}</h2>
                 <button
                   onClick={closeModal}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 text-xl font-bold"
+                  className={`h-8 w-8 p-0 text-xl font-bold ${darkTheme ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   ×
                 </button>
@@ -2991,23 +2993,23 @@ export default function ManagerDashboard() {
                 {modalContent?.type === 'sdrs' ? (
                   <div className="space-y-4">
                     {modalContent.data.map((sdr: any) => (
-                      <div key={sdr.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-indigo-500">
+                      <div key={sdr.id} className={`rounded-lg shadow-md p-6 border-l-4 border-indigo-500 ${darkTheme ? 'bg-[#1d1f24]' : 'bg-white'}`}>
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-xl font-bold text-gray-900">{sdr.full_name}</h3>
-                          <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                          <h3 className={`text-xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdr.full_name}</h3>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${darkTheme ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-700'}`}>
                             {sdr.clients.length} {sdr.clients.length === 1 ? 'Client' : 'Clients'}
                           </span>
                         </div>
                         <div className="mt-3">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <h4 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                             <Users className="w-4 h-4 text-indigo-600" />
                             Assigned Clients:
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {sdr.clients.map((client: any) => (
-                              <div key={client.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-md">
+                              <div key={client.id} className={`flex items-center gap-2 px-3 py-2 rounded-md ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
                                 <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                                <span className="text-sm text-gray-700">{client.name}</span>
+                                <span className={`text-sm ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>{client.name}</span>
                               </div>
                             ))}
                           </div>
@@ -3018,24 +3020,24 @@ export default function ManagerDashboard() {
                 ) : modalContent?.type === 'setTarget' ? (
                   <div className="space-y-4">
                     {modalContent.data.map((sdr: any) => (
-                      <div key={sdr.name} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                      <div key={sdr.name} className={`rounded-lg shadow-md p-6 border-l-4 border-green-500 ${darkTheme ? 'bg-[#1d1f24]' : 'bg-white'}`}>
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-xl font-bold text-gray-900">{sdr.name}</h3>
+                          <h3 className={`text-xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdr.name}</h3>
                           <div className="text-right">
-                            <p className="text-3xl font-bold text-green-600">{sdr.totalTarget}</p>
-                            <p className="text-sm text-gray-500">Total Set Target</p>
+                            <p className={`text-3xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{sdr.totalTarget}</p>
+                            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Set Target</p>
                           </div>
                         </div>
                         <div className="mt-3">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <h4 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                             <Target className="w-4 h-4 text-green-600" />
                             Client Targets:
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {sdr.clients.map((client: any) => (
-                              <div key={client.name} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md">
-                                <span className="text-sm text-gray-700">{client.name}</span>
-                                <span className="text-sm font-bold text-green-600">{client.target}</span>
+                              <div key={client.name} className={`flex items-center justify-between px-3 py-2 rounded-md ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
+                                <span className={`text-sm ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>{client.name}</span>
+                                <span className={`text-sm font-bold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{client.target}</span>
                               </div>
                             ))}
                           </div>
@@ -3046,24 +3048,24 @@ export default function ManagerDashboard() {
                 ) : modalContent?.type === 'heldTarget' ? (
                   <div className="space-y-4">
                     {modalContent.data.map((sdr: any) => (
-                      <div key={sdr.name} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                      <div key={sdr.name} className={`rounded-lg shadow-md p-6 border-l-4 border-blue-500 ${darkTheme ? 'bg-[#1d1f24]' : 'bg-white'}`}>
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-xl font-bold text-gray-900">{sdr.name}</h3>
+                          <h3 className={`text-xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdr.name}</h3>
                           <div className="text-right">
-                            <p className="text-3xl font-bold text-blue-600">{sdr.totalTarget}</p>
-                            <p className="text-sm text-gray-500">Total Held Target</p>
+                            <p className={`text-3xl font-bold ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`}>{sdr.totalTarget}</p>
+                            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Held Target</p>
                           </div>
                         </div>
                         <div className="mt-3">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <h4 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                             <CheckCircle className="w-4 h-4 text-blue-600" />
                             Client Targets:
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {sdr.clients.map((client: any) => (
-                              <div key={client.name} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md">
-                                <span className="text-sm text-gray-700">{client.name}</span>
-                                <span className="text-sm font-bold text-blue-600">{client.target}</span>
+                              <div key={client.name} className={`flex items-center justify-between px-3 py-2 rounded-md ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
+                                <span className={`text-sm ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>{client.name}</span>
+                                <span className={`text-sm font-bold ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`}>{client.target}</span>
                               </div>
                             ))}
                           </div>
@@ -3075,33 +3077,33 @@ export default function ManagerDashboard() {
                   <div className="space-y-6">
                     {/* Summary Section - Matching SDR Dashboard */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <p className="text-3xl font-bold text-green-700">{modalContent.setMeetings.length}</p>
-                        <p className="text-sm text-green-600">Meetings Set</p>
-                        <p className="text-xs text-gray-500 mt-1">Target: {modalContent.setTarget}</p>
+                      <div className={`p-4 rounded-lg ${darkTheme ? 'bg-green-900/20' : 'bg-green-50'}`}>
+                        <p className={`text-3xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-700'}`}>{modalContent.setMeetings.length}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-green-300' : 'text-green-600'}`}>Meetings Set</p>
+                        <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Target: {modalContent.setTarget}</p>
                       </div>
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-3xl font-bold text-blue-700">{modalContent.heldMeetings.length}</p>
-                        <p className="text-sm text-blue-600">Meetings Held</p>
-                        <p className="text-xs text-gray-500 mt-1">Target: {modalContent.heldTarget}</p>
+                      <div className={`p-4 rounded-lg ${darkTheme ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                        <p className={`text-3xl font-bold ${darkTheme ? 'text-blue-400' : 'text-blue-700'}`}>{modalContent.heldMeetings.length}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-blue-300' : 'text-blue-600'}`}>Meetings Held</p>
+                        <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Target: {modalContent.heldTarget}</p>
                       </div>
-                      <div className="bg-yellow-50 p-4 rounded-lg">
-                        <p className="text-3xl font-bold text-yellow-700">{modalContent.pendingMeetings.length}</p>
-                        <p className="text-sm text-yellow-600">Pending</p>
+                      <div className={`p-4 rounded-lg ${darkTheme ? 'bg-yellow-900/20' : 'bg-yellow-50'}`}>
+                        <p className={`text-3xl font-bold ${darkTheme ? 'text-yellow-400' : 'text-yellow-700'}`}>{modalContent.pendingMeetings.length}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-yellow-300' : 'text-yellow-600'}`}>Pending</p>
                       </div>
-                      <div className="bg-red-50 p-4 rounded-lg">
-                        <p className="text-3xl font-bold text-red-700">{modalContent.pastDuePendingMeetings?.length || 0}</p>
-                        <p className="text-sm text-red-600">Past Due Pending</p>
+                      <div className={`p-4 rounded-lg ${darkTheme ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                        <p className={`text-3xl font-bold ${darkTheme ? 'text-red-400' : 'text-red-700'}`}>{modalContent.pastDuePendingMeetings?.length || 0}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-red-300' : 'text-red-600'}`}>Past Due Pending</p>
                       </div>
                     </div>
                     
                     {/* Meetings Set Section - FIRST */}
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h3 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                         <Calendar className="w-5 h-5 text-green-600" />
                         Meetings Set ({modalContent.setMeetings.length})
                       </h3>
-                      <div className="bg-green-50/50 rounded-lg p-4 border border-green-200">
+                      <div className={`rounded-lg p-4 border ${darkTheme ? 'bg-green-900/10 border-green-800/30' : 'bg-green-50/50 border-green-200'}`}>
                         {modalContent.setMeetings.length > 0 ? (
                           <div className="space-y-3">
                             {modalContent.setMeetings.map((meeting: any) => (
@@ -3114,8 +3116,8 @@ export default function ManagerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <Calendar className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                             <p>No meetings set</p>
                           </div>
                         )}
@@ -3124,11 +3126,11 @@ export default function ManagerDashboard() {
 
                     {/* Meetings Held Section - SECOND */}
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h3 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                         <CheckCircle className="w-5 h-5 text-blue-600" />
                         Meetings Held ({modalContent.heldMeetings.length})
                       </h3>
-                      <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-200">
+                      <div className={`rounded-lg p-4 border ${darkTheme ? 'bg-blue-900/10 border-blue-800/30' : 'bg-blue-50/50 border-blue-200'}`}>
                         {modalContent.heldMeetings.length > 0 ? (
                           <div className="space-y-3">
                             {modalContent.heldMeetings.map((meeting: any) => (
@@ -3141,8 +3143,8 @@ export default function ManagerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <CheckCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <CheckCircle className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                             <p>No meetings held</p>
                           </div>
                         )}
@@ -3151,11 +3153,11 @@ export default function ManagerDashboard() {
 
                     {/* Pending Meetings Section - THIRD */}
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h3 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                         <Clock className="w-5 h-5 text-yellow-600" />
                         Pending Meetings ({modalContent.pendingMeetings.length})
                       </h3>
-                      <div className="bg-yellow-50/50 rounded-lg p-4 border border-yellow-200">
+                      <div className={`rounded-lg p-4 border ${darkTheme ? 'bg-yellow-900/10 border-yellow-800/30' : 'bg-yellow-50/50 border-yellow-200'}`}>
                         {modalContent.pendingMeetings.length > 0 ? (
                           <div className="space-y-3">
                             {modalContent.pendingMeetings.map((meeting: any) => (
@@ -3168,8 +3170,8 @@ export default function ManagerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <Clock className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                             <p>No pending meetings</p>
                           </div>
                         )}
@@ -3178,11 +3180,11 @@ export default function ManagerDashboard() {
 
                     {/* Past Due Pending Meetings Section - FOURTH */}
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h3 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                         <AlertCircle className="w-5 h-5 text-red-600" />
                         Past Due Pending Meetings ({modalContent.pastDuePendingMeetings?.length || 0})
                       </h3>
-                      <div className="bg-red-50/50 rounded-lg p-4 border border-red-200">
+                      <div className={`rounded-lg p-4 border ${darkTheme ? 'bg-red-900/10 border-red-800/30' : 'bg-red-50/50 border-red-200'}`}>
                         {modalContent.pastDuePendingMeetings && modalContent.pastDuePendingMeetings.length > 0 ? (
                           <div className="space-y-3">
                             {modalContent.pastDuePendingMeetings.map((meeting: any) => (
@@ -3195,8 +3197,8 @@ export default function ManagerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <AlertCircle className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                             <p>No past due pending meetings</p>
                           </div>
                         )}
@@ -3273,17 +3275,17 @@ export default function ManagerDashboard() {
                       return (
                         <div className="space-y-6">
                           {/* Filter and Sort Controls */}
-                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                               {/* Filter by Client/SDR */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Filter
                                 </label>
                                 <select
                                   value={meetingFilter}
                                   onChange={(e) => setMeetingFilter(e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="all">All Meetings</option>
                                   {uniqueClients.length > 0 && (
@@ -3309,13 +3311,13 @@ export default function ManagerDashboard() {
 
                               {/* Sort By */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Sort By
                                 </label>
                                 <select
                                   value={meetingSortBy}
                                   onChange={(e) => setMeetingSortBy(e.target.value as 'date' | 'client' | 'sdr')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="date">Date</option>
                                   <option value="client">Client</option>
@@ -3325,13 +3327,13 @@ export default function ManagerDashboard() {
 
                               {/* Sort Order */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Order
                                 </label>
                                 <select
                                   value={meetingSortOrder}
                                   onChange={(e) => setMeetingSortOrder(e.target.value as 'asc' | 'desc')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="desc">Descending</option>
                                   <option value="asc">Ascending</option>
@@ -3340,13 +3342,13 @@ export default function ManagerDashboard() {
 
                               {/* Group By */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Group By
                                 </label>
                                 <select
                                   value={meetingGroupBy}
                                   onChange={(e) => setMeetingGroupBy(e.target.value as 'none' | 'client' | 'sdr')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="none">None</option>
                                   <option value="client">Client</option>
@@ -3354,7 +3356,7 @@ export default function ManagerDashboard() {
                                 </select>
                               </div>
                             </div>
-                            <div className="mt-2 text-xs text-gray-500">
+                            <div className={`mt-2 text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                               Showing {sortedMeetings.length} of {modalMeetings.length} meetings
                             </div>
                           </div>
@@ -3364,7 +3366,7 @@ export default function ManagerDashboard() {
                             .sort(([idA, groupA], [idB, groupB]) => groupA.name.localeCompare(groupB.name))
                             .map(([clientId, group]) => (
                               <div key={clientId} className="space-y-3">
-                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 pb-2 border-b border-gray-200">
+                                <h3 className={`text-lg font-semibold flex items-center gap-2 pb-2 border-b ${darkTheme ? 'text-slate-100 border-[#2d3139]' : 'text-gray-900 border-gray-200'}`}>
                                   <Building className="w-5 h-5 text-indigo-600" />
                                   {group.name} ({group.meetings.length})
                                 </h3>
@@ -3395,17 +3397,17 @@ export default function ManagerDashboard() {
                       return (
                         <div className="space-y-6">
                           {/* Filter and Sort Controls */}
-                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                               {/* Filter by Client/SDR */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Filter
                                 </label>
                                 <select
                                   value={meetingFilter}
                                   onChange={(e) => setMeetingFilter(e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="all">All Meetings</option>
                                   {uniqueClients.length > 0 && (
@@ -3431,13 +3433,13 @@ export default function ManagerDashboard() {
 
                               {/* Sort By */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Sort By
                                 </label>
                                 <select
                                   value={meetingSortBy}
                                   onChange={(e) => setMeetingSortBy(e.target.value as 'date' | 'client' | 'sdr')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="date">Date</option>
                                   <option value="client">Client</option>
@@ -3447,13 +3449,13 @@ export default function ManagerDashboard() {
 
                               {/* Sort Order */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Order
                                 </label>
                                 <select
                                   value={meetingSortOrder}
                                   onChange={(e) => setMeetingSortOrder(e.target.value as 'asc' | 'desc')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="desc">Descending</option>
                                   <option value="asc">Ascending</option>
@@ -3462,13 +3464,13 @@ export default function ManagerDashboard() {
 
                               {/* Group By */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Group By
                                 </label>
                                 <select
                                   value={meetingGroupBy}
                                   onChange={(e) => setMeetingGroupBy(e.target.value as 'none' | 'client' | 'sdr')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="none">None</option>
                                   <option value="client">Client</option>
@@ -3476,7 +3478,7 @@ export default function ManagerDashboard() {
                                 </select>
                               </div>
                             </div>
-                            <div className="mt-2 text-xs text-gray-500">
+                            <div className={`mt-2 text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                               Showing {sortedMeetings.length} of {modalMeetings.length} meetings
                             </div>
                           </div>
@@ -3486,7 +3488,7 @@ export default function ManagerDashboard() {
                             .sort(([idA, groupA], [idB, groupB]) => groupA.name.localeCompare(groupB.name))
                             .map(([sdrId, group]) => (
                               <div key={sdrId} className="space-y-3">
-                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 pb-2 border-b border-gray-200">
+                                <h3 className={`text-lg font-semibold flex items-center gap-2 pb-2 border-b ${darkTheme ? 'text-slate-100 border-[#2d3139]' : 'text-gray-900 border-gray-200'}`}>
                                   <Users className="w-5 h-5 text-indigo-600" />
                                   {group.name} ({group.meetings.length})
                                 </h3>
@@ -3508,17 +3510,17 @@ export default function ManagerDashboard() {
                       return (
                         <div className="space-y-4">
                           {/* Filter and Sort Controls */}
-                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                               {/* Filter by Client/SDR */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Filter
                                 </label>
                                 <select
                                   value={meetingFilter}
                                   onChange={(e) => setMeetingFilter(e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="all">All Meetings</option>
                                   {uniqueClients.length > 0 && (
@@ -3544,13 +3546,13 @@ export default function ManagerDashboard() {
 
                               {/* Sort By */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Sort By
                                 </label>
                                 <select
                                   value={meetingSortBy}
                                   onChange={(e) => setMeetingSortBy(e.target.value as 'date' | 'client' | 'sdr')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="date">Date</option>
                                   <option value="client">Client</option>
@@ -3560,13 +3562,13 @@ export default function ManagerDashboard() {
 
                               {/* Sort Order */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Order
                                 </label>
                                 <select
                                   value={meetingSortOrder}
                                   onChange={(e) => setMeetingSortOrder(e.target.value as 'asc' | 'desc')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="desc">Descending</option>
                                   <option value="asc">Ascending</option>
@@ -3575,13 +3577,13 @@ export default function ManagerDashboard() {
 
                               {/* Group By */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                                   Group By
                                 </label>
                                 <select
                                   value={meetingGroupBy}
                                   onChange={(e) => setMeetingGroupBy(e.target.value as 'none' | 'client' | 'sdr')}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                                 >
                                   <option value="none">None</option>
                                   <option value="client">Client</option>
@@ -3589,7 +3591,7 @@ export default function ManagerDashboard() {
                                 </select>
                               </div>
                             </div>
-                            <div className="mt-2 text-xs text-gray-500">
+                            <div className={`mt-2 text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                               Showing {sortedMeetings.length} of {modalMeetings.length} meetings
                             </div>
                           </div>
@@ -3609,7 +3611,7 @@ export default function ManagerDashboard() {
                     }
                   })()
                 ) : (
-                  <div className="text-center text-gray-500 py-8">
+                  <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     No information available for this category.
                   </div>
                 )}
@@ -3621,12 +3623,12 @@ export default function ManagerDashboard() {
         {/* Export Modal */}
         {exportModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b">
-                <h2 className="text-xl font-semibold">Export Meetings Data</h2>
+            <div className={`rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+              <div className={`flex items-center justify-between p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Export Meetings Data</h2>
                 <button
                   onClick={() => setExportModalOpen(false)}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 text-xl font-bold"
+                  className={`h-8 w-8 p-0 text-xl font-bold ${darkTheme ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   ×
                 </button>
@@ -3635,9 +3637,9 @@ export default function ManagerDashboard() {
                 
                 {/* Date Range Filter */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Date Range</h3>
+                  <h3 className={`text-lg font-medium mb-3 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Date Range</h3>
                   <div className="space-y-3">
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="radio"
                         name="dateRange"
@@ -3648,7 +3650,7 @@ export default function ManagerDashboard() {
                       />
                       All time
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="radio"
                         name="dateRange"
@@ -3659,7 +3661,7 @@ export default function ManagerDashboard() {
                       />
                       Current month only
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="radio"
                         name="dateRange"
@@ -3673,21 +3675,21 @@ export default function ManagerDashboard() {
                     {exportFilters.dateRange === 'custom' && (
                       <div className="ml-6 space-y-2">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                          <label className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Start Date</label>
                           <input
                             type="date"
                             value={exportFilters.startDate}
                             onChange={(e) => setExportFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                            className={`mt-1 block w-full border rounded-md px-3 py-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">End Date</label>
+                          <label className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>End Date</label>
                           <input
                             type="date"
                             value={exportFilters.endDate}
                             onChange={(e) => setExportFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                            className={`mt-1 block w-full border rounded-md px-3 py-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                           />
                         </div>
                       </div>
@@ -3697,11 +3699,11 @@ export default function ManagerDashboard() {
 
                 {/* Status Filter */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Meeting Status</h3>
+                  <h3 className={`text-lg font-medium mb-3 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meeting Status</h3>
                   <select
                     value={exportFilters.status}
                     onChange={(e) => setExportFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className={`w-full border rounded-md px-3 py-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                   >
                     <option value="all">All statuses</option>
                     <option value="confirmed">Confirmed only</option>
@@ -3712,10 +3714,10 @@ export default function ManagerDashboard() {
 
                 {/* Client Filter */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Clients</h3>
-                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                  <h3 className={`text-lg font-medium mb-3 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Clients</h3>
+                  <div className={`max-h-32 overflow-y-auto border rounded-md p-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'border-gray-300'}`}>
                     {clients.map(client => (
-                      <label key={client.id} className="flex items-center mb-2">
+                      <label key={client.id} className={`flex items-center mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                         <input
                           type="checkbox"
                           checked={exportFilters.clientIds.includes(client.id)}
@@ -3738,17 +3740,17 @@ export default function ManagerDashboard() {
                       </label>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     {exportFilters.clientIds.length === 0 ? 'All clients' : `${exportFilters.clientIds.length} client(s) selected`}
                   </p>
                 </div>
 
                 {/* SDR Filter */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">SDRs</h3>
-                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                  <h3 className={`text-lg font-medium mb-3 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>SDRs</h3>
+                  <div className={`max-h-32 overflow-y-auto border rounded-md p-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'border-gray-300'}`}>
                     {sdrs.map(sdr => (
-                      <label key={sdr.id} className="flex items-center mb-2">
+                      <label key={sdr.id} className={`flex items-center mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                         <input
                           type="checkbox"
                           checked={exportFilters.sdrIds.includes(sdr.id)}
@@ -3771,16 +3773,16 @@ export default function ManagerDashboard() {
                       </label>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     {exportFilters.sdrIds.length === 0 ? 'All SDRs' : `${exportFilters.sdrIds.length} SDR(s) selected`}
                   </p>
                 </div>
 
                 {/* Fields to Include */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Fields to Include</h3>
+                  <h3 className={`text-lg font-medium mb-3 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Fields to Include</h3>
                   <div className="space-y-2">
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.meetingDetails}
@@ -3792,7 +3794,7 @@ export default function ManagerDashboard() {
                       />
                       Meeting details (ID, status, scheduled date, no-show, notes)
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.clientInfo}
@@ -3804,7 +3806,7 @@ export default function ManagerDashboard() {
                       />
                       Client information (name, ID)
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.sdrInfo}
@@ -3816,7 +3818,7 @@ export default function ManagerDashboard() {
                       />
                       SDR information (name, ID)
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.targets}
@@ -3828,7 +3830,7 @@ export default function ManagerDashboard() {
                       />
                       Target information (monthly set/hold targets)
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.timestamps}
@@ -3844,10 +3846,10 @@ export default function ManagerDashboard() {
                 </div>
 
                 {/* Export Button */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
+                <div className={`flex justify-end gap-3 pt-4 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                   <button
                     onClick={() => setExportModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                    className={`px-4 py-2 text-sm font-medium rounded-md ${darkTheme ? 'text-slate-200 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
                   >
                     Cancel
                   </button>
