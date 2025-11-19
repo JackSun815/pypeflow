@@ -6,7 +6,7 @@ import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { useAgency } from '../contexts/AgencyContext';
 import { useDemo } from '../contexts/DemoContext';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock, Filter, ArrowUpDown, Layers } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
@@ -220,6 +220,12 @@ export default function ManagerDashboard() {
   const [modalMeetings, setModalMeetings] = useState<any[]>([]);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<any>(null);
+  
+  // Filter and sort/group state for meetings modal
+  const [meetingFilter, setMeetingFilter] = useState<'all' | string>('all'); // 'all' or client_id or sdr_id
+  const [meetingSortBy, setMeetingSortBy] = useState<'date' | 'client' | 'sdr'>('date');
+  const [meetingSortOrder, setMeetingSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [meetingGroupBy, setMeetingGroupBy] = useState<'none' | 'client' | 'sdr'>('none');
   
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -939,6 +945,11 @@ export default function ManagerDashboard() {
     setModalMeetings([]);
     setModalContent(null);
     setModalTitle('');
+    // Reset filters when closing modal
+    setMeetingFilter('all');
+    setMeetingSortBy('date');
+    setMeetingSortOrder('desc');
+    setMeetingGroupBy('none');
   };
 
   if (sdrsLoading || meetingsLoading || clientsLoading) {
@@ -3193,15 +3204,410 @@ export default function ManagerDashboard() {
                     </div>
                   </div>
                 ) : modalMeetings.length > 0 ? (
-                  <div className="space-y-4">
-                    {modalMeetings.map((meeting) => (
-                      <MeetingCard
-                        key={meeting.id}
-                        meeting={meeting}
-                        showSDR={true}
-                      />
-                    ))}
-                  </div>
+                  (() => {
+                    // Get unique clients and SDRs for filter options
+                    const uniqueClients = Array.from(new Set(modalMeetings.map(m => m.client_id)))
+                      .map(clientId => {
+                        const client = clients.find(c => c.id === clientId);
+                        return { id: clientId, name: client?.name || 'Unknown Client' };
+                      })
+                      .sort((a, b) => a.name.localeCompare(b.name));
+                    
+                    const uniqueSDRs = Array.from(new Set(modalMeetings.map(m => m.sdr_id).filter(Boolean)))
+                      .map(sdrId => {
+                        const sdr = sdrs.find(s => s.id === sdrId);
+                        return { id: sdrId, name: sdr?.full_name || 'Unknown SDR' };
+                      })
+                      .sort((a, b) => a.name.localeCompare(b.name));
+
+                    // Apply filter
+                    let filteredMeetings = modalMeetings;
+                    if (meetingFilter !== 'all') {
+                      if (meetingFilter.startsWith('client_')) {
+                        const clientId = meetingFilter.replace('client_', '');
+                        filteredMeetings = filteredMeetings.filter(m => m.client_id === clientId);
+                      } else if (meetingFilter.startsWith('sdr_')) {
+                        const sdrId = meetingFilter.replace('sdr_', '');
+                        filteredMeetings = filteredMeetings.filter(m => m.sdr_id === sdrId);
+                      }
+                    }
+
+                    // Apply sorting
+                    let sortedMeetings = [...filteredMeetings];
+                    if (meetingSortBy === 'date') {
+                      sortedMeetings.sort((a, b) => {
+                        const dateA = new Date(a.scheduled_date || a.created_at).getTime();
+                        const dateB = new Date(b.scheduled_date || b.created_at).getTime();
+                        return meetingSortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+                      });
+                    } else if (meetingSortBy === 'client') {
+                      sortedMeetings.sort((a, b) => {
+                        const clientA = clients.find(c => c.id === a.client_id)?.name || '';
+                        const clientB = clients.find(c => c.id === b.client_id)?.name || '';
+                        return meetingSortOrder === 'asc' 
+                          ? clientA.localeCompare(clientB)
+                          : clientB.localeCompare(clientA);
+                      });
+                    } else if (meetingSortBy === 'sdr') {
+                      sortedMeetings.sort((a, b) => {
+                        const sdrA = sdrs.find(s => s.id === a.sdr_id)?.full_name || '';
+                        const sdrB = sdrs.find(s => s.id === b.sdr_id)?.full_name || '';
+                        return meetingSortOrder === 'asc'
+                          ? sdrA.localeCompare(sdrB)
+                          : sdrB.localeCompare(sdrA);
+                      });
+                    }
+
+                    // Group meetings if needed
+                    if (meetingGroupBy === 'client') {
+                      const grouped = sortedMeetings.reduce((acc, meeting) => {
+                        const clientId = meeting.client_id;
+                        const clientName = clients.find(c => c.id === clientId)?.name || 'Unknown Client';
+                        if (!acc[clientId]) {
+                          acc[clientId] = { name: clientName, meetings: [] };
+                        }
+                        acc[clientId].meetings.push(meeting);
+                        return acc;
+                      }, {} as Record<string, { name: string; meetings: any[] }>);
+
+                      return (
+                        <div className="space-y-6">
+                          {/* Filter and Sort Controls */}
+                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              {/* Filter by Client/SDR */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Filter
+                                </label>
+                                <select
+                                  value={meetingFilter}
+                                  onChange={(e) => setMeetingFilter(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="all">All Meetings</option>
+                                  {uniqueClients.length > 0 && (
+                                    <optgroup label="By Client">
+                                      {uniqueClients.map(client => (
+                                        <option key={client.id} value={`client_${client.id}`}>
+                                          {client.name}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                  {uniqueSDRs.length > 0 && (
+                                    <optgroup label="By SDR">
+                                      {uniqueSDRs.map(sdr => (
+                                        <option key={sdr.id} value={`sdr_${sdr.id}`}>
+                                          {sdr.name}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                </select>
+                              </div>
+
+                              {/* Sort By */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Sort By
+                                </label>
+                                <select
+                                  value={meetingSortBy}
+                                  onChange={(e) => setMeetingSortBy(e.target.value as 'date' | 'client' | 'sdr')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="date">Date</option>
+                                  <option value="client">Client</option>
+                                  <option value="sdr">SDR</option>
+                                </select>
+                              </div>
+
+                              {/* Sort Order */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Order
+                                </label>
+                                <select
+                                  value={meetingSortOrder}
+                                  onChange={(e) => setMeetingSortOrder(e.target.value as 'asc' | 'desc')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="desc">Descending</option>
+                                  <option value="asc">Ascending</option>
+                                </select>
+                              </div>
+
+                              {/* Group By */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Group By
+                                </label>
+                                <select
+                                  value={meetingGroupBy}
+                                  onChange={(e) => setMeetingGroupBy(e.target.value as 'none' | 'client' | 'sdr')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="none">None</option>
+                                  <option value="client">Client</option>
+                                  <option value="sdr">SDR</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-gray-500">
+                              Showing {sortedMeetings.length} of {modalMeetings.length} meetings
+                            </div>
+                          </div>
+
+                          {/* Grouped Meetings */}
+                          {Object.entries(grouped)
+                            .sort(([idA, groupA], [idB, groupB]) => groupA.name.localeCompare(groupB.name))
+                            .map(([clientId, group]) => (
+                              <div key={clientId} className="space-y-3">
+                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 pb-2 border-b border-gray-200">
+                                  <Building className="w-5 h-5 text-indigo-600" />
+                                  {group.name} ({group.meetings.length})
+                                </h3>
+                                <div className="space-y-3 pl-4">
+                                  {group.meetings.map((meeting) => (
+                                    <MeetingCard
+                                      key={meeting.id}
+                                      meeting={meeting}
+                                      showSDR={true}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      );
+                    } else if (meetingGroupBy === 'sdr') {
+                      const grouped = sortedMeetings.reduce((acc, meeting) => {
+                        const sdrId = meeting.sdr_id || 'no-sdr';
+                        const sdrName = sdrs.find(s => s.id === meeting.sdr_id)?.full_name || 'Unassigned';
+                        if (!acc[sdrId]) {
+                          acc[sdrId] = { name: sdrName, meetings: [] };
+                        }
+                        acc[sdrId].meetings.push(meeting);
+                        return acc;
+                      }, {} as Record<string, { name: string; meetings: any[] }>);
+
+                      return (
+                        <div className="space-y-6">
+                          {/* Filter and Sort Controls */}
+                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              {/* Filter by Client/SDR */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Filter
+                                </label>
+                                <select
+                                  value={meetingFilter}
+                                  onChange={(e) => setMeetingFilter(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="all">All Meetings</option>
+                                  {uniqueClients.length > 0 && (
+                                    <optgroup label="By Client">
+                                      {uniqueClients.map(client => (
+                                        <option key={client.id} value={`client_${client.id}`}>
+                                          {client.name}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                  {uniqueSDRs.length > 0 && (
+                                    <optgroup label="By SDR">
+                                      {uniqueSDRs.map(sdr => (
+                                        <option key={sdr.id} value={`sdr_${sdr.id}`}>
+                                          {sdr.name}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                </select>
+                              </div>
+
+                              {/* Sort By */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Sort By
+                                </label>
+                                <select
+                                  value={meetingSortBy}
+                                  onChange={(e) => setMeetingSortBy(e.target.value as 'date' | 'client' | 'sdr')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="date">Date</option>
+                                  <option value="client">Client</option>
+                                  <option value="sdr">SDR</option>
+                                </select>
+                              </div>
+
+                              {/* Sort Order */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Order
+                                </label>
+                                <select
+                                  value={meetingSortOrder}
+                                  onChange={(e) => setMeetingSortOrder(e.target.value as 'asc' | 'desc')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="desc">Descending</option>
+                                  <option value="asc">Ascending</option>
+                                </select>
+                              </div>
+
+                              {/* Group By */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Group By
+                                </label>
+                                <select
+                                  value={meetingGroupBy}
+                                  onChange={(e) => setMeetingGroupBy(e.target.value as 'none' | 'client' | 'sdr')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="none">None</option>
+                                  <option value="client">Client</option>
+                                  <option value="sdr">SDR</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-gray-500">
+                              Showing {sortedMeetings.length} of {modalMeetings.length} meetings
+                            </div>
+                          </div>
+
+                          {/* Grouped Meetings */}
+                          {Object.entries(grouped)
+                            .sort(([idA, groupA], [idB, groupB]) => groupA.name.localeCompare(groupB.name))
+                            .map(([sdrId, group]) => (
+                              <div key={sdrId} className="space-y-3">
+                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 pb-2 border-b border-gray-200">
+                                  <Users className="w-5 h-5 text-indigo-600" />
+                                  {group.name} ({group.meetings.length})
+                                </h3>
+                                <div className="space-y-3 pl-4">
+                                  {group.meetings.map((meeting) => (
+                                    <MeetingCard
+                                      key={meeting.id}
+                                      meeting={meeting}
+                                      showSDR={true}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      );
+                    } else {
+                      // No grouping - just show sorted list
+                      return (
+                        <div className="space-y-4">
+                          {/* Filter and Sort Controls */}
+                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              {/* Filter by Client/SDR */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Filter
+                                </label>
+                                <select
+                                  value={meetingFilter}
+                                  onChange={(e) => setMeetingFilter(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="all">All Meetings</option>
+                                  {uniqueClients.length > 0 && (
+                                    <optgroup label="By Client">
+                                      {uniqueClients.map(client => (
+                                        <option key={client.id} value={`client_${client.id}`}>
+                                          {client.name}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                  {uniqueSDRs.length > 0 && (
+                                    <optgroup label="By SDR">
+                                      {uniqueSDRs.map(sdr => (
+                                        <option key={sdr.id} value={`sdr_${sdr.id}`}>
+                                          {sdr.name}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                </select>
+                              </div>
+
+                              {/* Sort By */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Sort By
+                                </label>
+                                <select
+                                  value={meetingSortBy}
+                                  onChange={(e) => setMeetingSortBy(e.target.value as 'date' | 'client' | 'sdr')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="date">Date</option>
+                                  <option value="client">Client</option>
+                                  <option value="sdr">SDR</option>
+                                </select>
+                              </div>
+
+                              {/* Sort Order */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Order
+                                </label>
+                                <select
+                                  value={meetingSortOrder}
+                                  onChange={(e) => setMeetingSortOrder(e.target.value as 'asc' | 'desc')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="desc">Descending</option>
+                                  <option value="asc">Ascending</option>
+                                </select>
+                              </div>
+
+                              {/* Group By */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Group By
+                                </label>
+                                <select
+                                  value={meetingGroupBy}
+                                  onChange={(e) => setMeetingGroupBy(e.target.value as 'none' | 'client' | 'sdr')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="none">None</option>
+                                  <option value="client">Client</option>
+                                  <option value="sdr">SDR</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-gray-500">
+                              Showing {sortedMeetings.length} of {modalMeetings.length} meetings
+                            </div>
+                          </div>
+
+                          {/* Meetings List */}
+                          <div className="space-y-3">
+                            {sortedMeetings.map((meeting) => (
+                              <MeetingCard
+                                key={meeting.id}
+                                meeting={meeting}
+                                showSDR={true}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                  })()
                 ) : (
                   <div className="text-center text-gray-500 py-8">
                     No information available for this category.
