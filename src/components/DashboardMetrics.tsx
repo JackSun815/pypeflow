@@ -41,18 +41,41 @@ export default function DashboardMetrics({
 
   // Filter meetings for current month
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const monthlyMeetings = meetings.filter(meeting => {
+  const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+  
+  // Meetings SET: Filter by created_at (when SDR booked it) - matches SDRDashboard logic
+  const monthlyMeetingsSet = meetings.filter(meeting => {
     const createdDate = new Date(meeting.created_at);
-    return createdDate >= monthStart && createdDate <= monthEnd;
+    const isInMonth = createdDate >= monthStart && createdDate < nextMonthStart;
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (meeting as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && !isICPDisqualified;
+  });
+
+  // Meetings HELD: Filter by scheduled_date (month it was scheduled for) - matches SDRDashboard logic
+  const monthlyMeetingsHeld = meetings.filter(meeting => {
+    const scheduledDate = new Date(meeting.scheduled_date);
+    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+    
+    // Must be actually held
+    const isHeld = meeting.held_at !== null && !meeting.no_show;
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (meeting as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && isHeld && !isICPDisqualified;
   });
 
   // Filter meetings by category
-  const meetingsSet = monthlyMeetings;
-  const meetingsHeld = monthlyMeetings.filter(m => m.held_at !== null && !m.no_show);
-  const pendingMeetings = monthlyMeetings.filter(m => m.status === 'pending' && !m.no_show);
-  const noShowMeetings = monthlyMeetings.filter(m => m.no_show);
+  const meetingsSet = monthlyMeetingsSet;
+  const meetingsHeld = monthlyMeetingsHeld;
+  const pendingMeetings = monthlyMeetingsSet.filter(m => m.status === 'pending' && !m.no_show);
+  const noShowMeetings = monthlyMeetingsSet.filter(m => m.no_show);
 
   const handleCardClick = (type: 'setTarget' | 'heldTarget' | 'meetingsSet' | 'meetingsHeld' | 'pending' | 'noShows') => {
     let title = '';
