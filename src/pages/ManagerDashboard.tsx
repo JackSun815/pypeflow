@@ -876,10 +876,20 @@ export default function ManagerDashboard() {
     );
     console.log('Held meetings:', heldMeetings.length);
     
-    // PENDING meetings: from setMeetings that are not held yet
+    // PENDING meetings: from setMeetings that are not held yet and scheduled in the future
     const nowDate = new Date();
     const pendingMeetings = setMeetings.filter(m => 
       m.status === 'pending' && !m.no_show && !m.held_at && new Date(m.scheduled_date) >= nowDate
+    );
+
+    // PAST DUE PENDING meetings: from setMeetings that are pending or confirmed, not held, not no_show, not no_longer_interested, not denied ICP, and scheduled date is in the past
+    const pastDuePendingMeetings = setMeetings.filter(m => 
+      (m.status === 'pending' || m.status === 'confirmed') && 
+      !m.no_show && 
+      !m.held_at && 
+      !(m as any).no_longer_interested &&
+      ((m as any).icp_status || 'pending') !== 'denied' &&
+      new Date(m.scheduled_date) < nowDate
     );
 
     // Get assignment targets
@@ -906,6 +916,7 @@ export default function ManagerDashboard() {
       setMeetings,
       heldMeetings,
       pendingMeetings,
+      pastDuePendingMeetings,
       setTarget,
       heldTarget
     });
@@ -3052,7 +3063,7 @@ export default function ManagerDashboard() {
                 ) : modalContent?.type === 'sdrClientMeetings' ? (
                   <div className="space-y-6">
                     {/* Summary Section - Matching SDR Dashboard */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-green-50 p-4 rounded-lg">
                         <p className="text-3xl font-bold text-green-700">{modalContent.setMeetings.length}</p>
                         <p className="text-sm text-green-600">Meetings Set</p>
@@ -3066,6 +3077,10 @@ export default function ManagerDashboard() {
                       <div className="bg-yellow-50 p-4 rounded-lg">
                         <p className="text-3xl font-bold text-yellow-700">{modalContent.pendingMeetings.length}</p>
                         <p className="text-sm text-yellow-600">Pending</p>
+                      </div>
+                      <div className="bg-red-50 p-4 rounded-lg">
+                        <p className="text-3xl font-bold text-red-700">{modalContent.pastDuePendingMeetings?.length || 0}</p>
+                        <p className="text-sm text-red-600">Past Due Pending</p>
                       </div>
                     </div>
                     
@@ -3140,6 +3155,31 @@ export default function ManagerDashboard() {
                         <div className="text-center py-8 text-gray-500">
                           <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                           <p>No pending meetings</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Past Due Pending Meetings Section - FOURTH */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        Past Due Pending Meetings ({modalContent.pastDuePendingMeetings?.length || 0})
+                      </h3>
+                      {modalContent.pastDuePendingMeetings && modalContent.pastDuePendingMeetings.length > 0 ? (
+                        <div className="space-y-3">
+                          {modalContent.pastDuePendingMeetings.map((meeting: any) => (
+                            <div key={meeting.id}>
+                              <MeetingCard
+                                meeting={meeting}
+                                showSDR={false}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <p>No past due pending meetings</p>
                         </div>
                       )}
                     </div>
