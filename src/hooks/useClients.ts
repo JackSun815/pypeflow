@@ -137,7 +137,7 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
           }
         );
 
-        // Meetings HELD: by held_at timestamp in current month
+        // Meetings HELD: by scheduled_date (month it was scheduled for) - matches SDRDashboard logic
         const clientMeetingsHeld = safeMeetings.filter(
           (meeting) => {
             const isForThisClient = meeting.client_id === assignment.clients.id;
@@ -145,8 +145,8 @@ export function useClients(sdrId?: string | null, supabaseClient?: any) {
             
             if (!isHeld) return false;
             
-            const heldDate = new Date(meeting.held_at);
-            const isInMonth = heldDate >= monthStart && heldDate < nextMonthStart;
+            const scheduledDate = new Date(meeting.scheduled_date);
+            const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
             const icpStatus = (meeting as any).icp_status;
             const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
             

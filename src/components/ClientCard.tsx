@@ -77,13 +77,13 @@ export default function ClientCard({
     return meeting.client_id === clientId && isInMonth && !isICPDisqualified;
   });
   
-  // Meetings HELD: filter by held_at timestamp (when meeting was actually held)
+  // Meetings HELD: filter by scheduled_date (month it was scheduled for) - matches SDRDashboard logic
   const meetingsHeld = allMeetings.filter(meeting => {
     if (meeting.client_id !== clientId) return false;
     if (!meeting.held_at || meeting.no_show) return false;
     
-    const heldDate = new Date(meeting.held_at);
-    const isInMonth = heldDate >= monthStart && heldDate < nextMonthStart;
+    const scheduledDate = new Date(meeting.scheduled_date);
+    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
     const icpStatus = (meeting as any).icp_status;
     const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
     
