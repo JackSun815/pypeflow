@@ -2489,11 +2489,11 @@ export default function ClientDashboard() {
                         <span className={`text-sm font-medium ${textSecondary}`}>Include:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {jobTitles.map((title, index) => (
-                            <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-blue-100">
+                            <span key={index} className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 border ${isDarkMode ? 'bg-blue-900/30 text-blue-300 border-blue-800/50' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                               {title}
                               <button
                                 onClick={() => removeItem(jobTitles, setJobTitles, index)}
-                                className="hover:bg-blue-100 rounded-full p-0.5"
+                                className={isDarkMode ? 'hover:bg-blue-900/50 rounded-full p-0.5' : 'hover:bg-blue-100 rounded-full p-0.5'}
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -2511,11 +2511,11 @@ export default function ClientDashboard() {
                     <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Company</h3>
                     <div className="flex flex-wrap gap-2">
                       {companyTypes.map((type, index) => (
-                        <span key={index} className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-gray-100">
+                        <span key={index} className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 border ${isDarkMode ? 'bg-[#2d3139] text-slate-300 border-[#3a3f47]' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
                           {type}
                           <button
                             onClick={() => removeItem(companyTypes, setCompanyTypes, index)}
-                            className="hover:bg-gray-100 rounded-full p-0.5"
+                            className={isDarkMode ? 'hover:bg-[#353941] rounded-full p-0.5' : 'hover:bg-gray-100 rounded-full p-0.5'}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -2534,11 +2534,11 @@ export default function ClientDashboard() {
                         <span className={`text-sm font-medium ${textSecondary}`}>Company Locations:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {locations.map((location, index) => (
-                            <span key={index} className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-green-100">
+                            <span key={index} className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 border ${isDarkMode ? 'bg-green-900/30 text-green-300 border-green-800/50' : 'bg-green-50 text-green-700 border-green-100'}`}>
                               {location}
                               <button
                                 onClick={() => removeItem(locations, setLocations, index)}
-                                className="hover:bg-green-100 rounded-full p-0.5"
+                                className={isDarkMode ? 'hover:bg-green-900/50 rounded-full p-0.5' : 'hover:bg-green-100 rounded-full p-0.5'}
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -2559,11 +2559,11 @@ export default function ClientDashboard() {
                         <span className={`text-sm font-medium ${textSecondary}`}>Industry:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {industries.map((industry, index) => (
-                            <span key={index} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-100">
+                            <span key={index} className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 border ${isDarkMode ? 'bg-purple-900/30 text-purple-300 border-purple-800/50' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
                               {industry}
                               <button
                                 onClick={() => removeItem(industries, setIndustries, index)}
-                                className="hover:bg-purple-100 rounded-full p-0.5"
+                                className={isDarkMode ? 'hover:bg-purple-900/50 rounded-full p-0.5' : 'hover:bg-purple-100 rounded-full p-0.5'}
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -2578,14 +2578,14 @@ export default function ClientDashboard() {
                 {/* Revenue */}
                 {revenue.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Revenue</h3>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Revenue</h3>
                     <div className="flex flex-wrap gap-2">
                       {revenue.map((rev, index) => (
-                        <span key={index} className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-yellow-100">
+                        <span key={index} className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 border ${isDarkMode ? 'bg-yellow-900/30 text-yellow-300 border-yellow-800/50' : 'bg-yellow-50 text-yellow-700 border-yellow-100'}`}>
                           {rev}
                           <button
                             onClick={() => removeItem(revenue, setRevenue, index)}
-                            className="hover:bg-yellow-100 rounded-full p-0.5"
+                            className={isDarkMode ? 'hover:bg-yellow-900/50 rounded-full p-0.5' : 'hover:bg-yellow-100 rounded-full p-0.5'}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -2598,14 +2598,14 @@ export default function ClientDashboard() {
                 {/* Employee Counts */}
                 {employeeCounts.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Number of Employees</h3>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Number of Employees</h3>
                     <div className="flex flex-wrap gap-2">
                       {employeeCounts.map((count, index) => (
-                        <span key={index} className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-orange-100">
+                        <span key={index} className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 border ${isDarkMode ? 'bg-orange-900/30 text-orange-300 border-orange-800/50' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
                           {count}
                           <button
                             onClick={() => removeItem(employeeCounts, setEmployeeCounts, index)}
-                            className="hover:bg-orange-100 rounded-full p-0.5"
+                            className={isDarkMode ? 'hover:bg-orange-900/50 rounded-full p-0.5' : 'hover:bg-orange-100 rounded-full p-0.5'}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -2620,10 +2620,10 @@ export default function ClientDashboard() {
             {/* ICP Notes Section */}
             <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center gap-2 mb-4">
-                <MessageSquare className="w-5 h-5 text-indigo-600" />
-                <h2 className="text-2xl font-bold text-gray-900">ICP Notes</h2>
+                <MessageSquare className={`w-5 h-5 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                <h2 className={`text-2xl font-bold ${textPrimary}`}>ICP Notes</h2>
               </div>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className={`text-sm ${textSecondary} mb-4`}>
                 Add notes about your ideal customer profile, targeting strategy, or any specific requirements for your SDR team.
               </p>
               <textarea
@@ -2631,13 +2631,13 @@ export default function ClientDashboard() {
                 onChange={(e) => setIcpNotes(e.target.value)}
                 placeholder="Enter your ICP notes here... (e.g., key decision maker personas, pain points to focus on, industries to avoid, etc.)"
                 rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100 placeholder:text-slate-500' : 'border-gray-300'}`}
               />
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-gray-500">
+                <p className={`text-xs ${textTertiary}`}>
                   {icpNotes.length} characters
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className={`text-xs ${textTertiary}`}>
                   Changes are saved automatically
                 </p>
               </div>
@@ -2647,7 +2647,7 @@ export default function ClientDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Job Titles Input */}
               <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Titles</h3>
+                <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Job Titles</h3>
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -2658,14 +2658,14 @@ export default function ClientDashboard() {
                       setNewJobTitle('');
                     })}
                     placeholder="Add job title..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100 placeholder:text-slate-500' : 'border-gray-300'}`}
                   />
                   <button
                     onClick={() => {
                       addItem(jobTitles, setJobTitles, newJobTitle);
                       setNewJobTitle('');
                     }}
-                    className="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center gap-2 border border-blue-200"
+                    className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 border ${isDarkMode ? 'bg-blue-900/30 text-blue-300 hover:bg-blue-900/50 border-blue-800/50' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200'}`}
                   >
                     <Plus className="w-4 h-4" />
                     Add Job Title
@@ -2675,7 +2675,7 @@ export default function ClientDashboard() {
 
               {/* Company Input */}
               <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Company</h3>
+                <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Company</h3>
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -2686,14 +2686,14 @@ export default function ClientDashboard() {
                       setNewCompanyType('');
                     })}
                     placeholder="Add company type..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100 placeholder:text-slate-500' : 'border-gray-300'}`}
                   />
                   <button
                     onClick={() => {
                       addItem(companyTypes, setCompanyTypes, newCompanyType);
                       setNewCompanyType('');
                     }}
-                    className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 border border-gray-200"
+                    className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 border ${isDarkMode ? 'bg-[#2d3139] text-slate-300 hover:bg-[#353941] border-[#3a3f47]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'}`}
                   >
                     <Plus className="w-4 h-4" />
                     Add Company Type
@@ -2703,7 +2703,7 @@ export default function ClientDashboard() {
 
               {/* Location Input */}
               <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Location</h3>
+                <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Location</h3>
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -2714,14 +2714,14 @@ export default function ClientDashboard() {
                       setNewLocation('');
                     })}
                     placeholder="Add location..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100 placeholder:text-slate-500' : 'border-gray-300'}`}
                   />
                   <button
                     onClick={() => {
                       addItem(locations, setLocations, newLocation);
                       setNewLocation('');
                     }}
-                    className="w-full px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors flex items-center justify-center gap-2 border border-green-200"
+                    className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 border ${isDarkMode ? 'bg-green-900/30 text-green-300 hover:bg-green-900/50 border-green-800/50' : 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200'}`}
                   >
                     <Plus className="w-4 h-4" />
                     Add Location
@@ -2731,7 +2731,7 @@ export default function ClientDashboard() {
 
               {/* Number of Employees Input */}
               <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Number of Employees</h3>
+                <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Number of Employees</h3>
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -2742,14 +2742,14 @@ export default function ClientDashboard() {
                       setNewEmployeeCount('');
                     })}
                     placeholder="Add employee count..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100 placeholder:text-slate-500' : 'border-gray-300'}`}
                   />
                   <button
                     onClick={() => {
                       addItem(employeeCounts, setEmployeeCounts, newEmployeeCount);
                       setNewEmployeeCount('');
                     }}
-                    className="w-full px-3 py-2 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors flex items-center justify-center gap-2 border border-orange-200"
+                    className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 border ${isDarkMode ? 'bg-orange-900/30 text-orange-300 hover:bg-orange-900/50 border-orange-800/50' : 'bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200'}`}
                   >
                     <Plus className="w-4 h-4" />
                     Add Employee Count
@@ -2759,7 +2759,7 @@ export default function ClientDashboard() {
 
               {/* Revenue Input */}
               <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue</h3>
+                <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Revenue</h3>
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -2770,14 +2770,14 @@ export default function ClientDashboard() {
                       setNewRevenue('');
                     })}
                     placeholder="Add revenue range..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100 placeholder:text-slate-500' : 'border-gray-300'}`}
                   />
                   <button
                     onClick={() => {
                       addItem(revenue, setRevenue, newRevenue);
                       setNewRevenue('');
                     }}
-                    className="w-full px-3 py-2 bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-colors flex items-center justify-center gap-2 border border-yellow-200"
+                    className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 border ${isDarkMode ? 'bg-yellow-900/30 text-yellow-300 hover:bg-yellow-900/50 border-yellow-800/50' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200'}`}
                   >
                     <Plus className="w-4 h-4" />
                     Add Revenue
@@ -2787,7 +2787,7 @@ export default function ClientDashboard() {
 
               {/* Industry Input */}
               <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Industry</h3>
+                <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Industry</h3>
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -2798,14 +2798,14 @@ export default function ClientDashboard() {
                       setNewIndustry('');
                     })}
                     placeholder="Add industry..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100 placeholder:text-slate-500' : 'border-gray-300'}`}
                   />
                   <button
                     onClick={() => {
                       addItem(industries, setIndustries, newIndustry);
                       setNewIndustry('');
                     }}
-                    className="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors flex items-center justify-center gap-2 border border-purple-200"
+                    className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 border ${isDarkMode ? 'bg-purple-900/30 text-purple-300 hover:bg-purple-900/50 border-purple-800/50' : 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'}`}
                   >
                     <Plus className="w-4 h-4" />
                     Add Industry
