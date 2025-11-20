@@ -1588,7 +1588,7 @@ function SDRDashboardContent() {
           } 
         />
         <Route path="commissions" element={<Commissions sdrId={sdrId || ''} darkTheme={darkTheme} />} />
-        <Route path="calendar" element={<CalendarView meetings={meetingsWithSDR} colorByStatus={true} />} />
+        <Route path="calendar" element={<CalendarView meetings={meetingsWithSDR} colorByStatus={true} darkTheme={darkTheme} />} />
       </Routes>
     </main>
   </div>

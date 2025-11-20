@@ -1399,7 +1399,7 @@ export default function ClientDashboard() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading client dashboard...</p>
+          <p className={isDarkMode ? 'text-slate-300' : 'text-gray-600'}>Loading client dashboard...</p>
         </div>
       </div>
     );
@@ -1407,12 +1407,12 @@ export default function ClientDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+      <div className={`min-h-screen flex items-center justify-center p-4 ${isDarkMode ? 'bg-[#16191f]' : 'bg-gray-100'}`}>
+        <div className={`p-8 rounded-lg shadow-md max-w-md w-full text-center ${isDarkMode ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <p className="text-sm text-gray-500">
+          <h1 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>Access Denied</h1>
+          <p className={isDarkMode ? 'text-slate-300 mb-4' : 'text-gray-600 mb-4'}>{error}</p>
+          <p className={isDarkMode ? 'text-sm text-slate-400' : 'text-sm text-gray-500'}>
             Please contact your account manager for access to the client dashboard.
           </p>
         </div>
@@ -1471,11 +1471,11 @@ export default function ClientDashboard() {
   const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   // Dark mode helper classes
-  const cardBg = isDarkMode ? 'bg-gray-800' : 'bg-white';
-  const cardBorder = isDarkMode ? 'border-gray-700' : 'border-gray-200';
-  const textPrimary = isDarkMode ? 'text-gray-100' : 'text-gray-900';
-  const textSecondary = isDarkMode ? 'text-gray-400' : 'text-gray-600';
-  const textTertiary = isDarkMode ? 'text-gray-500' : 'text-gray-500';
+  const cardBg = isDarkMode ? 'bg-[#232529]' : 'bg-white';
+  const cardBorder = isDarkMode ? 'border-[#2d3139]' : 'border-gray-200';
+  const textPrimary = isDarkMode ? 'text-slate-100' : 'text-gray-900';
+  const textSecondary = isDarkMode ? 'text-slate-300' : 'text-gray-600';
+  const textTertiary = isDarkMode ? 'text-slate-400' : 'text-gray-500';
 
   const outcomeStyles: Record<
     'held' | 'no-show' | 'cancelled',
@@ -1497,9 +1497,9 @@ export default function ClientDashboard() {
   > = {
     held: {
       cardLight: 'bg-gradient-to-r from-green-50/40 to-white hover:border-green-300',
-      cardDark: 'bg-gray-700/50 hover:border-green-400',
+      cardDark: 'bg-[#1d1f24] hover:border-green-400',
       iconBgLight: 'bg-green-100',
-      iconBgDark: 'bg-green-900/50',
+      iconBgDark: 'bg-green-900/30',
       iconColor: 'text-green-600',
       badgeClass: 'bg-green-100 text-green-800 border border-green-200',
       badgeIcon: CheckCircle,
@@ -1512,9 +1512,9 @@ export default function ClientDashboard() {
     },
     'no-show': {
       cardLight: 'bg-gradient-to-r from-yellow-50/40 to-white hover:border-yellow-300',
-      cardDark: 'bg-gray-700/50 hover:border-yellow-400',
+      cardDark: 'bg-[#1d1f24] hover:border-yellow-400',
       iconBgLight: 'bg-yellow-100',
-      iconBgDark: 'bg-yellow-900/40',
+      iconBgDark: 'bg-yellow-900/30',
       iconColor: 'text-yellow-600',
       badgeClass: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
       badgeIcon: AlertTriangle,
@@ -1527,9 +1527,9 @@ export default function ClientDashboard() {
     },
     cancelled: {
       cardLight: 'bg-gradient-to-r from-red-50/40 to-white hover:border-red-300',
-      cardDark: 'bg-gray-700/50 hover:border-red-400',
+      cardDark: 'bg-[#1d1f24] hover:border-red-400',
       iconBgLight: 'bg-red-100',
-      iconBgDark: 'bg-red-900/40',
+      iconBgDark: 'bg-red-900/30',
       iconColor: 'text-red-600',
       badgeClass: 'bg-red-100 text-red-800 border border-red-200',
       badgeIcon: X,
@@ -1616,7 +1616,7 @@ export default function ClientDashboard() {
                     : variant === 'no-show'
                     ? 'border-yellow-400'
                     : 'border-red-400'
-                } ${isDarkMode ? 'bg-gray-600/50' : 'bg-gray-50'}`}
+                } ${isDarkMode ? 'bg-[#2d3139]' : 'bg-gray-50'}`}
               >
                 <p className={`text-sm ${textSecondary} leading-relaxed`}>
                   <span className={`font-medium ${textPrimary}`}>Notes:</span> {meeting.notes}
@@ -1661,13 +1661,13 @@ export default function ClientDashboard() {
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       isDarkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        ? 'bg-[#16191f]' 
         : 'bg-gradient-to-br from-purple-50 via-white to-blue-50'
     }`}>
       {/* Header */}
       <header className={`shadow-lg border-b relative overflow-hidden transition-colors duration-200 ${
         isDarkMode
-          ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 border-gray-600'
+          ? 'bg-[#1d1f24] border-[#2d3139]'
           : 'bg-gradient-to-r from-white via-purple-50/30 to-white border-purple-100'
       }`}>
         {/* Background Pattern */}
@@ -1758,15 +1758,15 @@ export default function ClientDashboard() {
                 <div className="flex items-center gap-3">
                   <div className={`h-8 w-px ${
                     isDarkMode
-                      ? 'bg-gradient-to-b from-gray-500 to-gray-400'
+                      ? 'bg-[#2d3139]'
                       : 'bg-gradient-to-b from-purple-300 to-purple-500'
                   }`}></div>
                   <div className="flex flex-col">
                     <p className={`text-lg font-semibold ${
-                      isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                      isDarkMode ? 'text-slate-100' : 'text-gray-800'
                     }`}>Client Dashboard</p>
                     <p className={`text-sm font-medium ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                      isDarkMode ? 'text-slate-400' : 'text-gray-500'
                     }`}>{currentMonth}</p>
                   </div>
                 </div>
@@ -1778,7 +1778,7 @@ export default function ClientDashboard() {
                 onClick={toggleTheme}
                 className={`p-2 rounded-lg transition-all duration-200 ${
                   isDarkMode
-                    ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600'
+                    ? 'bg-[#2d3139] text-yellow-400 hover:bg-[#353941]'
                     : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                 }`}
                 title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -1788,7 +1788,7 @@ export default function ClientDashboard() {
               <div 
                 className={`flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 group px-4 py-2 rounded-xl border ${
                   isDarkMode
-                    ? 'bg-gradient-to-r from-gray-700 to-gray-600 border-gray-500'
+                    ? 'bg-[#232529] border-[#2d3139]'
                     : 'bg-gradient-to-r from-purple-100 to-blue-100 border-purple-200'
                 }`}
                 onClick={() => {
@@ -1812,12 +1812,12 @@ export default function ClientDashboard() {
               >
                 <span className={`text-sm font-semibold transition-colors ${
                   isDarkMode 
-                    ? 'text-gray-200 group-hover:text-white' 
+                    ? 'text-slate-200 group-hover:text-slate-100' 
                     : 'text-purple-700 group-hover:text-purple-800'
                 }`}>{clientInfo?.name}</span>
                 <Rocket className={`w-4 h-4 transition-colors rocket-easter-egg-client ${
                   isDarkMode
-                    ? 'text-gray-300 group-hover:text-gray-100'
+                    ? 'text-slate-300 group-hover:text-slate-100'
                     : 'text-purple-600 group-hover:text-purple-700'
                 }`} />
               </div>
@@ -1828,15 +1828,15 @@ export default function ClientDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
-        <div className={`mb-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className={`mb-6 border-b ${isDarkMode ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('overview')}
               className={`${
                 activeTab === 'overview'
-                  ? 'border-blue-500 text-blue-600'
+                  ? isDarkMode ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
                   : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    ? 'border-transparent text-slate-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
@@ -1849,9 +1849,9 @@ export default function ClientDashboard() {
               onClick={() => setActiveTab('meetings')}
               className={`${
                 activeTab === 'meetings'
-                  ? 'border-blue-500 text-blue-600'
+                  ? isDarkMode ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
                   : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    ? 'border-transparent text-slate-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
@@ -1864,9 +1864,9 @@ export default function ClientDashboard() {
               onClick={() => setActiveTab('calendar')}
               className={`${
                 activeTab === 'calendar'
-                  ? 'border-blue-500 text-blue-600'
+                  ? isDarkMode ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
                   : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    ? 'border-transparent text-slate-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
@@ -1880,9 +1880,9 @@ export default function ClientDashboard() {
               title="Review and refine your ideal customer profile and targeting criteria. See which companies and decision makers we are reaching out to on your behalf."
               className={`${
                 activeTab === 'icp'
-                  ? 'border-blue-500 text-blue-600'
+                  ? isDarkMode ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
                   : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    ? 'border-transparent text-slate-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
@@ -1896,9 +1896,9 @@ export default function ClientDashboard() {
               title="View and manage lead samples - add, import, and export example leads that match your ICP"
               className={`${
                 activeTab === 'lead-sample'
-                  ? 'border-blue-500 text-blue-600'
+                  ? isDarkMode ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
                   : isDarkMode
-                    ? 'border-transparent text-gray-400 hover:text-blue-400 hover:border-blue-400'
+                    ? 'border-transparent text-slate-400 hover:text-blue-400 hover:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
@@ -2045,24 +2045,24 @@ export default function ClientDashboard() {
                     meetings.slice(0, 5).map((meeting) => (
                       <div
                         key={meeting.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
                       >
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className={`text-sm font-medium ${textPrimary}`}>
                             {meeting.contact_full_name || 'Meeting'}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className={`text-xs ${textSecondary}`}>
                             {new Date(meeting.scheduled_date).toLocaleDateString()} at{' '}
                             {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
                               hour: '2-digit', 
                               minute: '2-digit' 
                             })}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className={`text-xs ${textTertiary}`}>
                             SDR: {meeting.sdr_name}
                           </p>
                           {meeting.company && (
-                            <p className="text-xs text-gray-400">
+                            <p className={`text-xs ${textTertiary}`}>
                               Company: {meeting.company}
                             </p>
                           )}
@@ -2070,8 +2070,8 @@ export default function ClientDashboard() {
                         <span
                           className={`px-2 py-1 text-xs font-medium rounded-full ${
                             meeting.status === 'confirmed'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-yellow-100 text-yellow-700'
+                              ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'
+                              : isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-700'
                           }`}
                         >
                           {meeting.status}
@@ -2079,7 +2079,7 @@ export default function ClientDashboard() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                    <p className={`${textSecondary} text-sm text-center`}>No meetings to display</p>
                   )}
                 </div>
               </div>
@@ -2146,7 +2146,7 @@ export default function ClientDashboard() {
               <div id="past-due-section" className={`${cardBg} rounded-lg shadow-md border-2 border-orange-300 scroll-mt-6`}>
                 <div 
                   onClick={() => setIsPastDueCollapsed(!isPastDueCollapsed)}
-                  className={`p-6 border-b ${cardBorder} bg-gradient-to-r from-orange-50 to-red-50 ${isDarkMode ? 'from-orange-900/20 to-red-900/20' : ''} cursor-pointer hover:opacity-80 transition-opacity`}
+                  className={`p-6 border-b ${cardBorder} ${isDarkMode ? 'bg-gradient-to-r from-orange-900/20 to-red-900/20' : 'bg-gradient-to-r from-orange-50 to-red-50'} cursor-pointer hover:opacity-80 transition-opacity`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -2161,7 +2161,7 @@ export default function ClientDashboard() {
                         <p className={`text-sm ${textSecondary} mt-1`}>Please update the status of these past meetings</p>
                       </div>
                     </div>
-                    <button className={`p-2 hover:bg-orange-100 rounded-lg transition-colors ${textPrimary}`}>
+                    <button className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-[#2d3139]' : 'hover:bg-orange-100'} ${textPrimary}`}>
                       {isPastDueCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                     </button>
                   </div>
@@ -2169,7 +2169,7 @@ export default function ClientDashboard() {
                 {!isPastDueCollapsed && (
                 <div className="p-6">
                   {pastDueMeetings.map((meeting) => (
-                    <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-gray-700/50' : 'bg-gradient-to-r from-orange-50/50 to-white'}`}>
+                    <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-[#1d1f24]' : 'bg-gradient-to-r from-orange-50/50 to-white'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
@@ -2202,20 +2202,20 @@ export default function ClientDashboard() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             {meeting.contact_email && (
                               <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                                <Mail className="w-4 h-4 text-gray-400" />
+                                <Mail className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                                 <span className="font-medium">Email:</span>
                                 <span>{meeting.contact_email}</span>
                               </div>
                             )}
                             {meeting.company && (
                               <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                                <Building className="w-4 h-4 text-gray-400" />
+                                <Building className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                                 <span className="font-medium">Company:</span>
                                 <span>{meeting.company}</span>
                               </div>
                             )}
                             <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                              <Users className="w-4 h-4 text-gray-400" />
+                              <Users className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                               <span className="font-medium">SDR:</span>
                               <span>{meeting.sdr_name}</span>
                             </div>
@@ -2279,7 +2279,7 @@ export default function ClientDashboard() {
                       <p className={`text-sm ${textSecondary} mt-1`}>{upcomingMeetings.length} meetings scheduled</p>
                     </div>
                   </div>
-                  <button className={`p-2 hover:bg-blue-100 rounded-lg transition-colors ${textPrimary}`}>
+                  <button className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-[#2d3139]' : 'hover:bg-blue-100'} ${textPrimary}`}>
                     {isUpcomingCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                   </button>
                 </div>
@@ -2287,7 +2287,7 @@ export default function ClientDashboard() {
               {!isUpcomingCollapsed && (
               <div className="p-6">
                 {upcomingMeetings.map((meeting) => (
-                  <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-gray-700/50 hover:border-blue-400' : 'bg-gradient-to-r from-blue-50/30 to-white hover:border-blue-300'}`}>
+                  <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-[#1d1f24] hover:border-blue-400' : 'bg-gradient-to-r from-blue-50/30 to-white hover:border-blue-300'}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
@@ -2317,14 +2317,14 @@ export default function ClientDashboard() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           {meeting.contact_email && (
                             <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                              <Mail className="w-4 h-4 text-gray-400" />
+                              <Mail className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                               <span className="font-medium">Email:</span>
                               <span>{meeting.contact_email}</span>
                             </div>
                           )}
                           {meeting.company && (
                             <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
-                              <Building className="w-4 h-4 text-gray-400" />
+                              <Building className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                               <span className="font-medium">Company:</span>
                               <span>{meeting.company}</span>
                             </div>
@@ -2363,8 +2363,8 @@ export default function ClientDashboard() {
                 ))}
                 {upcomingMeetings.length === 0 && (
                   <div className="text-center py-12">
-                    <div className={`p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <Calendar className={`w-8 h-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <div className={`p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center ${isDarkMode ? 'bg-[#2d3139]' : 'bg-gray-50'}`}>
+                      <Calendar className={`w-8 h-8 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                     </div>
                     <p className={`font-medium ${textSecondary}`}>No upcoming meetings scheduled</p>
                     <p className={`text-sm mt-1 ${textTertiary}`}>New meetings will appear here once scheduled</p>
@@ -2450,10 +2450,10 @@ export default function ClientDashboard() {
         )}
 
         {activeTab === 'calendar' && (
-          <div className="bg-white rounded-lg shadow-md">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Meeting Calendar</h3>
-              <p className="text-sm text-gray-600 mt-1">View all meetings in the calendar</p>
+          <div className={`rounded-lg shadow-md ${isDarkMode ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+            <div className={`p-6 border-b ${isDarkMode ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>Meeting Calendar</h3>
+              <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>View all meetings in the calendar</p>
             </div>
             <div className="p-6">
               <CalendarView 
@@ -2461,7 +2461,8 @@ export default function ClientDashboard() {
                   const icpStatus = (m as any).icp_status;
                   return icpStatus !== 'not_qualified' && icpStatus !== 'rejected' && icpStatus !== 'denied';
                 }) as any} 
-                colorByStatus={true} 
+                colorByStatus={true}
+                darkTheme={isDarkMode}
               />
             </div>
           </div>
@@ -2470,9 +2471,9 @@ export default function ClientDashboard() {
         {activeTab === 'icp' && (
           <div className="space-y-6">
             {/* Active Filters Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Active Filters</h2>
+                <h2 className={`text-2xl font-bold ${textPrimary}`}>Active Filters</h2>
                 <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
                   {totalActiveFilters} filters applied
                 </div>
@@ -2482,10 +2483,10 @@ export default function ClientDashboard() {
                 {/* Job Titles */}
                 {jobTitles.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Job Titles</h3>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Job Titles</h3>
                     <div className="space-y-2">
                       <div>
-                        <span className="text-sm font-medium text-gray-700">Include:</span>
+                        <span className={`text-sm font-medium ${textSecondary}`}>Include:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {jobTitles.map((title, index) => (
                             <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-blue-100">
@@ -2507,7 +2508,7 @@ export default function ClientDashboard() {
                 {/* Company Types */}
                 {companyTypes.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Company</h3>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Company</h3>
                     <div className="flex flex-wrap gap-2">
                       {companyTypes.map((type, index) => (
                         <span key={index} className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-gray-100">
@@ -2527,10 +2528,10 @@ export default function ClientDashboard() {
                 {/* Locations */}
                 {locations.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Location</h3>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Location</h3>
                     <div className="space-y-2">
                       <div>
-                        <span className="text-sm font-medium text-gray-700">Company Locations:</span>
+                        <span className={`text-sm font-medium ${textSecondary}`}>Company Locations:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {locations.map((location, index) => (
                             <span key={index} className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-green-100">
@@ -2552,10 +2553,10 @@ export default function ClientDashboard() {
                 {/* Industries */}
                 {industries.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Industry & Keywords</h3>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Industry & Keywords</h3>
                     <div className="space-y-2">
                       <div>
-                        <span className="text-sm font-medium text-gray-700">Industry:</span>
+                        <span className={`text-sm font-medium ${textSecondary}`}>Industry:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {industries.map((industry, index) => (
                             <span key={index} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-100">
@@ -2617,7 +2618,7 @@ export default function ClientDashboard() {
             </div>
 
             {/* ICP Notes Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquare className="w-5 h-5 text-indigo-600" />
                 <h2 className="text-2xl font-bold text-gray-900">ICP Notes</h2>
@@ -2645,7 +2646,7 @@ export default function ClientDashboard() {
             {/* Input Sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Job Titles Input */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Titles</h3>
                 <div className="space-y-2">
                   <input
@@ -2673,7 +2674,7 @@ export default function ClientDashboard() {
               </div>
 
               {/* Company Input */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Company</h3>
                 <div className="space-y-2">
                   <input
@@ -2701,7 +2702,7 @@ export default function ClientDashboard() {
               </div>
 
               {/* Location Input */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Location</h3>
                 <div className="space-y-2">
                   <input
@@ -2729,7 +2730,7 @@ export default function ClientDashboard() {
               </div>
 
               {/* Number of Employees Input */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Number of Employees</h3>
                 <div className="space-y-2">
                   <input
@@ -2757,7 +2758,7 @@ export default function ClientDashboard() {
               </div>
 
               {/* Revenue Input */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue</h3>
                 <div className="space-y-2">
                   <input
@@ -2785,7 +2786,7 @@ export default function ClientDashboard() {
               </div>
 
               {/* Industry Input */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Industry</h3>
                 <div className="space-y-2">
                   <input
@@ -2818,11 +2819,11 @@ export default function ClientDashboard() {
         {activeTab === 'lead-sample' && (
           <div className="space-y-6">
             {/* Header with Actions */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Lead Samples</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h2 className={`text-2xl font-bold ${textPrimary}`}>Lead Samples</h2>
+                  <p className={`text-sm ${textSecondary} mt-1`}>
                     Manage example leads that match your ICP targeting criteria
                   </p>
                 </div>
@@ -2896,7 +2897,7 @@ export default function ClientDashboard() {
 
             {/* Add/Edit Lead Form */}
             {showLeadForm && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   {editingLead ? 'Edit Lead Sample' : 'Add New Lead Sample'}
                 </h3>
@@ -3245,7 +3246,7 @@ export default function ClientDashboard() {
         {activeTab === 'email' && (
           <div className="space-y-6">
             {/* Email Accounts & Domains Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Email Accounts & Domains</h2>
@@ -3391,7 +3392,7 @@ export default function ClientDashboard() {
             </div>
 
             {/* Email Campaigns Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Email Campaigns</h2>
@@ -4715,7 +4716,7 @@ export default function ClientDashboard() {
         {activeTab === 'cold-calling' && (
           <div className="space-y-6">
             {/* SDR Management Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">SDR Management</h2>
                 <button
@@ -4856,7 +4857,7 @@ export default function ClientDashboard() {
             </div>
 
             {/* Talk Tracks Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${cardBg} rounded-lg shadow-md p-6 border ${cardBorder}`}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Talk Tracks</h2>
                 <button
@@ -4978,12 +4979,12 @@ export default function ClientDashboard() {
       {/* Meeting Details Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">{modalTitle}</h2>
+          <div className={`rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden ${isDarkMode ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+            <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+              <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>{modalTitle}</h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className={isDarkMode ? 'text-slate-400 hover:text-slate-200 transition-colors' : 'text-gray-400 hover:text-gray-600 transition-colors'}
               >
                 <X className="w-6 h-6" />
               </button>
@@ -4992,23 +4993,23 @@ export default function ClientDashboard() {
               {modalContent && modalContent.data && modalContent.data.length > 0 ? (
                 <div className="space-y-6">
                   {modalContent.data.map((meeting: Meeting) => (
-                    <div key={meeting.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-200 bg-gradient-to-r from-blue-50/20 to-white">
+                    <div key={meeting.id} className={`border rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'border-[#2d3139] bg-[#1d1f24] hover:border-blue-500' : 'border-gray-200 bg-gradient-to-r from-blue-50/20 to-white hover:border-blue-300'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-blue-100 rounded-full">
-                              <User className="w-5 h-5 text-blue-600" />
+                            <div className={`p-2 rounded-full ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                              <User className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                             </div>
                             <div>
-                              <h3 className="text-xl font-semibold text-gray-900">
+                              <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
                                 {meeting.contact_full_name || 'Meeting'}
                               </h3>
                               <div className="flex items-center gap-4 mt-1">
-                                <span className="inline-flex items-center gap-1 text-sm text-gray-600">
+                                <span className={`inline-flex items-center gap-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                                   <Calendar className="w-4 h-4" />
                                   {new Date(meeting.scheduled_date).toLocaleDateString()}
                                 </span>
-                                <span className="inline-flex items-center gap-1 text-sm text-gray-600">
+                                <span className={`inline-flex items-center gap-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                                   <Clock className="w-4 h-4" />
                                   {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
                                     hour: '2-digit', 
@@ -5020,28 +5021,28 @@ export default function ClientDashboard() {
                           </div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Users className="w-4 h-4 text-gray-400" />
+                            <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                              <Users className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                               <span className="font-medium">SDR:</span>
                               <span>{meeting.sdr_name}</span>
                             </div>
                             {meeting.contact_email && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Mail className="w-4 h-4 text-gray-400" />
+                              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                <Mail className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                                 <span className="font-medium">Email:</span>
                                 <span className="truncate">{meeting.contact_email}</span>
                               </div>
                             )}
                             {meeting.contact_phone && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Phone className="w-4 h-4 text-gray-400" />
+                              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                <Phone className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                                 <span className="font-medium">Phone:</span>
                                 <span>{meeting.contact_phone}</span>
                               </div>
                             )}
                             {meeting.company && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Building className="w-4 h-4 text-gray-400" />
+                              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                <Building className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
                                 <span className="font-medium">Company:</span>
                                 <span>{meeting.company}</span>
                               </div>
@@ -5049,9 +5050,9 @@ export default function ClientDashboard() {
                           </div>
                           
                           {meeting.notes && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-blue-200">
-                              <p className="text-sm font-medium text-gray-900 mb-1">Notes:</p>
-                              <p className="text-sm text-gray-700 leading-relaxed">
+                            <div className={`mt-4 p-4 rounded-lg border-l-4 ${isDarkMode ? 'bg-[#2d3139] border-blue-500' : 'bg-gray-50 border-blue-200'}`}>
+                              <p className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>Notes:</p>
+                              <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                                 {meeting.notes}
                               </p>
                             </div>
@@ -5060,10 +5061,10 @@ export default function ClientDashboard() {
                         <div className="ml-6 flex flex-col items-end gap-2">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
                             meeting.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-800 border border-green-200'
+                              ? isDarkMode ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-green-100 text-green-800 border border-green-200'
                               : meeting.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                              : 'bg-gray-100 text-gray-800 border border-gray-200'
+                              ? isDarkMode ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800' : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                              : isDarkMode ? 'bg-[#2d3139] text-slate-300 border border-[#3a3f47]' : 'bg-gray-100 text-gray-800 border border-gray-200'
                           }`}>
                             {meeting.status === 'confirmed' ? (
                               <CheckCircle className="w-4 h-4" />
@@ -5081,15 +5082,15 @@ export default function ClientDashboard() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No meetings found</p>
+                  <Calendar className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-slate-600' : 'text-gray-300'}`} />
+                  <p className={isDarkMode ? 'text-slate-400' : 'text-gray-500'}>No meetings found</p>
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-4 p-6 border-t border-gray-200">
+            <div className={`flex justify-end gap-4 p-6 border-t ${isDarkMode ? 'border-[#2d3139]' : 'border-gray-200'}`}>
               <button
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition duration-150"
+                className={`px-4 py-2 rounded-md transition duration-150 ${isDarkMode ? 'bg-[#2d3139] hover:bg-[#353941] text-slate-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
               >
                 Close
               </button>

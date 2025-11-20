@@ -528,7 +528,7 @@ export default function TeamMeetings({
       </div>
         {/* Manager Calendar View */}
         <div className="mb-32 px-4">
-          <CalendarView meetings={filteredMeetings} />
+          <CalendarView meetings={filteredMeetings} darkTheme={darkTheme} />
         </div>
 
         {/* Visual Separator */}
