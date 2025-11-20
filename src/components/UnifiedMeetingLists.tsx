@@ -19,6 +19,7 @@ interface UnifiedMeetingListsProps {
   onUpdateHeldDate?: (meetingId: string, heldDate: string | null) => void;
   onUpdateConfirmedDate?: (meetingId: string, confirmedDate: string | null) => void;
   onMeetingStatusChange?: (meetingId: string, newStatus: 'pending' | 'confirmed' | 'held' | 'no-show') => void;
+  darkTheme?: boolean;
 }
 
 export default function UnifiedMeetingLists({
@@ -38,6 +39,7 @@ export default function UnifiedMeetingLists({
   onEdit,
   onSave,
   onCancel,
+  darkTheme = false,
 }: UnifiedMeetingListsProps & { pastDuePendingMeetings?: Meeting[] }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [draggedMeeting, setDraggedMeeting] = useState<Meeting | null>(null);
@@ -100,11 +102,11 @@ export default function UnifiedMeetingLists({
   const filteredPastDuePendingMeetings = filterMeetings(pastDuePendingMeetings);
 
   const MeetingList = ({ title, meetings }: { title: string; meetings: Meeting[] }) => (
-    <div className="bg-white rounded-lg shadow-md">
-      <div className="p-4 border-b border-gray-200">
+    <div className={`rounded-lg shadow-md ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+      <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <span className="text-sm text-gray-500">{meetings.length} meetings</span>
+          <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{title}</h3>
+          <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meetings.length} meetings</span>
         </div>
       </div>
       <div className="p-4 max-h-[800px] overflow-y-auto">
@@ -123,10 +125,11 @@ export default function UnifiedMeetingLists({
                 onSave={onSave}
                 onCancel={onCancel}
                 showDateControls={true}
+                darkTheme={darkTheme}
               />
             ))
           ) : (
-            <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+            <p className={`text-sm text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings to display</p>
           )}
         </div>
       </div>
@@ -135,16 +138,18 @@ export default function UnifiedMeetingLists({
 
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-lg shadow-md p-4">
+      <div className={`rounded-lg shadow-md p-4 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className="relative max-w-2xl mx-auto">
           <input
             type="text"
             placeholder="Search all meetings..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'
+            }`}
           />
-          <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+          <Search className={`absolute left-3 top-3.5 w-5 h-5 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
         </div>
       </div>
 
@@ -152,16 +157,16 @@ export default function UnifiedMeetingLists({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending Meetings */}
         <div 
-          className={`bg-white rounded-lg shadow-md border-t-4 border-yellow-400 transition-all ${dragOverSection === 'pending' ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}`}
+          className={`${darkTheme ? 'bg-[#232529]' : 'bg-white'} rounded-lg shadow-md border-t-4 border-yellow-400 transition-all ${dragOverSection === 'pending' ? (darkTheme ? 'ring-4 ring-yellow-600 bg-yellow-900/20' : 'ring-4 ring-yellow-300 bg-yellow-50') : ''}`}
           onDragOver={(e) => handleDragOver(e, 'pending')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'pending')}
         >
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-yellow-50 cursor-pointer select-none" onClick={() => toggleSection('pending')}>
+          <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-yellow-900/10' : 'border-gray-200 bg-yellow-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('pending')}>
             <Clock className="w-5 h-5 text-yellow-500" />
-            <h3 className="text-lg font-semibold text-yellow-800 flex-1">Pending Meetings</h3>
-            <span className="text-sm text-yellow-600">{filteredPendingMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.pending ? '' : 'rotate-180'}`} />
+            <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-yellow-200' : 'text-yellow-800'}`}>Pending Meetings</h3>
+            <span className={`text-sm ${darkTheme ? 'text-yellow-300' : 'text-yellow-600'}`}>{filteredPendingMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-yellow-300' : ''} ${openSections.pending ? '' : 'rotate-180'}`} />
           </div>
           {openSections.pending && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
@@ -169,16 +174,16 @@ export default function UnifiedMeetingLists({
                 filteredPendingMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    className={`mb-4 border border-yellow-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-yellow-800/30 bg-[#1d1f24]' : 'border-yellow-100 bg-white'}`}
                   >
                     <div
                       draggable
                       onDragStart={() => handleDragStart(meeting)}
                       onDragEnd={handleDragEnd}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
                       title="Drag to move"
                     >
-                      <GripVertical className="w-3 h-3 text-gray-500" />
+                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
                     </div>
                     <MeetingCard
                       meeting={meeting}
@@ -191,11 +196,12 @@ export default function UnifiedMeetingLists({
                       onSave={onSave}
                       onCancel={onCancel}
                       showDateControls={true}
+                      darkTheme={darkTheme}
                     />
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'pending' ? 'Drop here to mark as Pending' : 'No meetings to display'}
                 </p>
               )}
@@ -204,16 +210,16 @@ export default function UnifiedMeetingLists({
         </div>
         {/* Confirmed Meetings */}
         <div 
-          className={`bg-white rounded-lg shadow-md border-t-4 border-blue-400 transition-all ${dragOverSection === 'confirmed' ? 'ring-4 ring-blue-300 bg-blue-50' : ''}`}
+          className={`${darkTheme ? 'bg-[#232529]' : 'bg-white'} rounded-lg shadow-md border-t-4 border-blue-400 transition-all ${dragOverSection === 'confirmed' ? (darkTheme ? 'ring-4 ring-blue-600 bg-blue-900/20' : 'ring-4 ring-blue-300 bg-blue-50') : ''}`}
           onDragOver={(e) => handleDragOver(e, 'confirmed')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'confirmed')}
         >
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-blue-50 cursor-pointer select-none" onClick={() => toggleSection('confirmed')}>
+          <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-blue-900/10' : 'border-gray-200 bg-blue-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('confirmed')}>
             <CheckCircle className="w-5 h-5 text-blue-500" />
-            <h3 className="text-lg font-semibold text-blue-800 flex-1">Confirmed Meetings</h3>
-            <span className="text-sm text-blue-600">{filteredConfirmedMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.confirmed ? '' : 'rotate-180'}`} />
+            <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-blue-200' : 'text-blue-800'}`}>Confirmed Meetings</h3>
+            <span className={`text-sm ${darkTheme ? 'text-blue-300' : 'text-blue-600'}`}>{filteredConfirmedMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-blue-300' : ''} ${openSections.confirmed ? '' : 'rotate-180'}`} />
           </div>
           {openSections.confirmed && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
@@ -221,16 +227,16 @@ export default function UnifiedMeetingLists({
                 filteredConfirmedMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    className={`mb-4 border border-blue-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-blue-800/30 bg-[#1d1f24]' : 'border-blue-100 bg-white'}`}
                   >
                     <div
                       draggable
                       onDragStart={() => handleDragStart(meeting)}
                       onDragEnd={handleDragEnd}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
                       title="Drag to move"
                     >
-                      <GripVertical className="w-3 h-3 text-gray-500" />
+                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
                     </div>
                     <MeetingCard
                       meeting={meeting}
@@ -243,11 +249,12 @@ export default function UnifiedMeetingLists({
                       onSave={onSave}
                       onCancel={onCancel}
                       showDateControls={true}
+                      darkTheme={darkTheme}
                     />
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'confirmed' ? 'Drop here to mark as Confirmed' : 'No meetings to display'}
                 </p>
               )}
@@ -255,18 +262,18 @@ export default function UnifiedMeetingLists({
           )}
         </div>
         {/* Past Due Pending */}
-        <div className="bg-white rounded-lg shadow-md border-t-4 border-orange-400">
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-orange-50 cursor-pointer select-none" onClick={() => toggleSection('pastDue')}>
+        <div className={`${darkTheme ? 'bg-[#232529]' : 'bg-white'} rounded-lg shadow-md border-t-4 border-orange-400`}>
+          <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-orange-900/10' : 'border-gray-200 bg-orange-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('pastDue')}>
             <AlertCircle className="w-5 h-5 text-orange-500" />
-            <h3 className="text-lg font-semibold text-orange-800 flex-1">Past Due Pending</h3>
-            <span className="text-sm text-orange-600">{filteredPastDuePendingMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.pastDue ? '' : 'rotate-180'}`} />
+            <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-orange-200' : 'text-orange-800'}`}>Past Due Pending</h3>
+            <span className={`text-sm ${darkTheme ? 'text-orange-300' : 'text-orange-600'}`}>{filteredPastDuePendingMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-orange-300' : ''} ${openSections.pastDue ? '' : 'rotate-180'}`} />
           </div>
           {openSections.pastDue && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredPastDuePendingMeetings.length > 0 ? (
                 filteredPastDuePendingMeetings.map((meeting) => (
-                  <div key={meeting.id} className="mb-4 border border-orange-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                  <div key={meeting.id} className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-shadow ${darkTheme ? 'border-orange-800/30 bg-[#1d1f24]' : 'border-orange-100 bg-white'}`}>
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -278,11 +285,12 @@ export default function UnifiedMeetingLists({
                       onSave={onSave}
                       onCancel={onCancel}
                       showDateControls={true}
+                      darkTheme={darkTheme}
                     />
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                <p className={`text-sm text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings to display</p>
               )}
             </div>
           )}
@@ -292,16 +300,16 @@ export default function UnifiedMeetingLists({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {/* Held Meetings */}
         <div 
-          className={`bg-white rounded-lg shadow-md border-t-4 border-green-400 transition-all ${dragOverSection === 'held' ? 'ring-4 ring-green-300 bg-green-50' : ''}`}
+          className={`${darkTheme ? 'bg-[#232529]' : 'bg-white'} rounded-lg shadow-md border-t-4 border-green-400 transition-all ${dragOverSection === 'held' ? (darkTheme ? 'ring-4 ring-green-600 bg-green-900/20' : 'ring-4 ring-green-300 bg-green-50') : ''}`}
           onDragOver={(e) => handleDragOver(e, 'held')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'held')}
         >
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-green-50 cursor-pointer select-none" onClick={() => toggleSection('held')}>
+          <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-green-900/10' : 'border-gray-200 bg-green-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('held')}>
             <CheckCircle className="w-5 h-5 text-green-500" />
-            <h3 className="text-lg font-semibold text-green-800 flex-1">Held Meetings</h3>
-            <span className="text-sm text-green-600">{filteredHeldMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.held ? '' : 'rotate-180'}`} />
+            <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-green-200' : 'text-green-800'}`}>Held Meetings</h3>
+            <span className={`text-sm ${darkTheme ? 'text-green-300' : 'text-green-600'}`}>{filteredHeldMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-green-300' : ''} ${openSections.held ? '' : 'rotate-180'}`} />
           </div>
           {openSections.held && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
@@ -309,16 +317,16 @@ export default function UnifiedMeetingLists({
                 filteredHeldMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    className={`mb-4 border border-green-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-green-800/30 bg-[#1d1f24]' : 'border-green-100 bg-white'}`}
                   >
                     <div
                       draggable
                       onDragStart={() => handleDragStart(meeting)}
                       onDragEnd={handleDragEnd}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
                       title="Drag to move"
                     >
-                      <GripVertical className="w-3 h-3 text-gray-500" />
+                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
                     </div>
                     <MeetingCard
                       meeting={meeting}
@@ -331,11 +339,12 @@ export default function UnifiedMeetingLists({
                       onSave={onSave}
                       onCancel={onCancel}
                       showDateControls={true}
+                      darkTheme={darkTheme}
                     />
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'held' ? 'Drop here to mark as Held' : 'No meetings to display'}
                 </p>
               )}
@@ -344,16 +353,16 @@ export default function UnifiedMeetingLists({
         </div>
         {/* No Shows */}
         <div 
-          className={`bg-white rounded-lg shadow-md border-t-4 border-red-400 transition-all ${dragOverSection === 'noShow' ? 'ring-4 ring-red-300 bg-red-50' : ''}`}
+          className={`${darkTheme ? 'bg-[#232529]' : 'bg-white'} rounded-lg shadow-md border-t-4 border-red-400 transition-all ${dragOverSection === 'noShow' ? (darkTheme ? 'ring-4 ring-red-600 bg-red-900/20' : 'ring-4 ring-red-300 bg-red-50') : ''}`}
           onDragOver={(e) => handleDragOver(e, 'noShow')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'no-show')}
         >
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-red-50 cursor-pointer select-none" onClick={() => toggleSection('noShow')}>
+          <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-red-900/10' : 'border-gray-200 bg-red-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('noShow')}>
             <XCircle className="w-5 h-5 text-red-500" />
-            <h3 className="text-lg font-semibold text-red-800 flex-1">No Shows</h3>
-            <span className="text-sm text-red-600">{filteredNoShowMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.noShow ? '' : 'rotate-180'}`} />
+            <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-red-200' : 'text-red-800'}`}>No Shows</h3>
+            <span className={`text-sm ${darkTheme ? 'text-red-300' : 'text-red-600'}`}>{filteredNoShowMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-red-300' : ''} ${openSections.noShow ? '' : 'rotate-180'}`} />
           </div>
           {openSections.noShow && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
@@ -361,16 +370,16 @@ export default function UnifiedMeetingLists({
                 filteredNoShowMeetings.map((meeting) => (
                   <div 
                     key={meeting.id} 
-                    className={`mb-4 border border-red-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''}`}
+                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-red-800/30 bg-[#1d1f24]' : 'border-red-100 bg-white'}`}
                   >
                     <div
                       draggable
                       onDragStart={() => handleDragStart(meeting)}
                       onDragEnd={handleDragEnd}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 bg-gray-100 hover:bg-gray-200 rounded-r z-10"
+                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
                       title="Drag to move"
                     >
-                      <GripVertical className="w-3 h-3 text-gray-500" />
+                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
                     </div>
                     <MeetingCard
                       meeting={meeting}
@@ -383,11 +392,12 @@ export default function UnifiedMeetingLists({
                       onSave={onSave}
                       onCancel={onCancel}
                       showDateControls={true}
+                      darkTheme={darkTheme}
                     />
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'noShow' ? 'Drop here to mark as No Show' : 'No meetings to display'}
                 </p>
               )}
@@ -398,18 +408,18 @@ export default function UnifiedMeetingLists({
       {/* No Longer Interested and Not ICP Qualified - Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {/* No Longer Interested */}
-        <div className="bg-white rounded-lg shadow-md border-t-4 border-purple-400">
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-purple-50 cursor-pointer select-none" onClick={() => toggleSection('noLongerInterested')}>
+        <div className={`${darkTheme ? 'bg-[#232529]' : 'bg-white'} rounded-lg shadow-md border-t-4 border-purple-400`}>
+          <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-purple-900/10' : 'border-gray-200 bg-purple-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('noLongerInterested')}>
             <UserX className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold text-purple-800 flex-1">No Longer Interested</h3>
-            <span className="text-sm text-purple-600">{filteredNoLongerInterestedMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.noLongerInterested ? '' : 'rotate-180'}`} />
+            <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-purple-200' : 'text-purple-800'}`}>No Longer Interested</h3>
+            <span className={`text-sm ${darkTheme ? 'text-purple-300' : 'text-purple-600'}`}>{filteredNoLongerInterestedMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-purple-300' : ''} ${openSections.noLongerInterested ? '' : 'rotate-180'}`} />
           </div>
           {openSections.noLongerInterested && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredNoLongerInterestedMeetings.length > 0 ? (
                 filteredNoLongerInterestedMeetings.map((meeting) => (
-                  <div key={meeting.id} className="mb-4 border border-purple-100 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                  <div key={meeting.id} className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-shadow ${darkTheme ? 'border-purple-800/30 bg-[#1d1f24]' : 'border-purple-100 bg-white'}`}>
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -421,28 +431,29 @@ export default function UnifiedMeetingLists({
                       onSave={onSave}
                       onCancel={onCancel}
                       showDateControls={true}
+                      darkTheme={darkTheme}
                     />
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                <p className={`text-sm text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings to display</p>
               )}
             </div>
           )}
         </div>
         {/* Not ICP Qualified */}
-        <div className="bg-white rounded-lg shadow-md border-t-4 border-gray-400">
-          <div className="p-4 border-b border-gray-200 flex items-center gap-2 bg-gray-50 cursor-pointer select-none" onClick={() => toggleSection('notIcp')}>
-            <Ban className="w-5 h-5 text-gray-700" />
-            <h3 className="text-lg font-semibold text-gray-800 flex-1">Not ICP Qualified</h3>
-            <span className="text-sm text-gray-600">{filteredNotIcpQualifiedMeetings.length}</span>
-            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${openSections.notIcp ? '' : 'rotate-180'}`} />
+        <div className={`${darkTheme ? 'bg-[#232529]' : 'bg-white'} rounded-lg shadow-md border-t-4 border-gray-400`}>
+          <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-slate-800/50' : 'border-gray-200 bg-gray-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('notIcp')}>
+            <Ban className={`w-5 h-5 ${darkTheme ? 'text-slate-400' : 'text-gray-700'}`} />
+            <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-slate-200' : 'text-gray-800'}`}>Not ICP Qualified</h3>
+            <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{filteredNotIcpQualifiedMeetings.length}</span>
+            <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-slate-400' : ''} ${openSections.notIcp ? '' : 'rotate-180'}`} />
           </div>
           {openSections.notIcp && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredNotIcpQualifiedMeetings.length > 0 ? (
                 filteredNotIcpQualifiedMeetings.map((meeting) => (
-                  <div key={meeting.id} className="mb-4 border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow">
+                  <div key={meeting.id} className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-shadow ${darkTheme ? 'border-[#2d3139] bg-[#1d1f24]' : 'border-gray-200 bg-white'}`}>
                     <MeetingCard
                       meeting={meeting}
                       onDelete={onDelete}
@@ -454,11 +465,12 @@ export default function UnifiedMeetingLists({
                       onSave={onSave}
                       onCancel={onCancel}
                       showDateControls={true}
+                      darkTheme={darkTheme}
                     />
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm text-center">No meetings to display</p>
+                <p className={`text-sm text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings to display</p>
               )}
             </div>
           )}

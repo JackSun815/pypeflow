@@ -6,13 +6,15 @@ interface TimeSelectorProps {
   onChange: (timeString: string) => void; // Returns EST ISO string
   className?: string;
   timezone?: string; // Default to EST
+  darkTheme?: boolean;
 }
 
 export default function TimeSelector({ 
   value, 
   onChange, 
   className = '', 
-  timezone = 'America/New_York' 
+  timezone = 'America/New_York',
+  darkTheme = false
 }: TimeSelectorProps) {
   // Internal state for 12-hour format display
   const [hour, setHour] = useState<number>(9);
@@ -125,7 +127,7 @@ export default function TimeSelector({
       <select
         value={hour}
         onChange={handleHourChange}
-        className="rounded-md border border-gray-300 px-2 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+        className={`rounded-md border px-2 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
       >
         {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((h) => (
           <option key={h} value={h}>
@@ -134,13 +136,13 @@ export default function TimeSelector({
         ))}
       </select>
       
-      <span className="text-gray-500">:</span>
+      <span className={darkTheme ? 'text-slate-400' : 'text-gray-500'}>:</span>
       
       {/* Minute selector */}
       <select
         value={minute}
         onChange={handleMinuteChange}
-        className="rounded-md border border-gray-300 px-2 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+        className={`rounded-md border px-2 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
       >
         {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
           <option key={m} value={m}>
@@ -153,7 +155,7 @@ export default function TimeSelector({
       <select
         value={period}
         onChange={handlePeriodChange}
-        className="rounded-md border border-gray-300 px-2 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+        className={`rounded-md border px-2 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
       >
         <option value="AM">AM</option>
         <option value="PM">PM</option>

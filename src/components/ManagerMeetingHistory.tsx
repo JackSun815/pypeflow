@@ -20,6 +20,7 @@ interface ManagerMeetingHistoryProps {
   error: string | null;
   onUpdateHeldDate: (meetingId: string, heldDate: string | null) => Promise<void>;
   onUpdateConfirmedDate: (meetingId: string, confirmedDate: string | null) => Promise<void>;
+  darkTheme?: boolean;
 }
 
 export default function ManagerMeetingHistory({ 
@@ -27,7 +28,8 @@ export default function ManagerMeetingHistory({
   loading, 
   error,
   onUpdateHeldDate,
-  onUpdateConfirmedDate
+  onUpdateConfirmedDate,
+  darkTheme = false
 }: ManagerMeetingHistoryProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>(
@@ -126,8 +128,8 @@ export default function ManagerMeetingHistory({
 
   if (error) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <div className="flex items-center gap-2 text-red-600">
+      <div className={`p-6 rounded-lg shadow-md ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <div className={`flex items-center gap-2 ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>
           <AlertCircle className="w-5 h-5" />
           <p>{error}</p>
         </div>
@@ -240,31 +242,31 @@ export default function ManagerMeetingHistory({
   return (
     <div className="space-y-6">
       {/* All-time Stats */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">All-time Team Performance</h2>
+      <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <h2 className={`text-xl font-semibold mb-6 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>All-time Team Performance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div>
-            <p className="text-sm text-gray-500">Total Meetings Booked</p>
-            <p className="text-2xl font-bold text-gray-900">{allTimeStats.totalBooked}</p>
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Meetings Booked</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{allTimeStats.totalBooked}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total Meetings Held</p>
-            <p className="text-2xl font-bold text-green-600">{allTimeStats.totalHeld}</p>
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Meetings Held</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{allTimeStats.totalHeld}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total No Shows</p>
-            <p className="text-2xl font-bold text-red-600">{allTimeStats.totalNoShow}</p>
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total No Shows</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>{allTimeStats.totalNoShow}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total Pending</p>
-            <p className="text-2xl font-bold text-yellow-600">{allTimeStats.totalPending}</p>
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Pending</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-yellow-400' : 'text-yellow-600'}`}>{allTimeStats.totalPending}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Held Rate</p>
-            <p className="text-2xl font-bold text-indigo-600">
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held Rate</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}>
               {allTimeStats.showRate.toFixed(1)}%
             </p>
-            <p className="text-xs text-gray-500">
+            <p className={`text-xs ${darkTheme ? 'text-slate-500' : 'text-gray-500'}`}>
               {(() => {
                 const heldAndNoShow = allTimeStats.totalHeld + allTimeStats.totalNoShow;
                 return `${allTimeStats.totalHeld} / ${heldAndNoShow}`;
@@ -272,11 +274,11 @@ export default function ManagerMeetingHistory({
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">No Show Rate</p>
-            <p className="text-2xl font-bold text-red-600">
+            <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No Show Rate</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>
               {allTimeStats.noShowRate.toFixed(1)}%
             </p>
-            <p className="text-xs text-gray-500">
+            <p className={`text-xs ${darkTheme ? 'text-slate-500' : 'text-gray-500'}`}>
               {(() => {
                 const heldAndNoShow = allTimeStats.totalHeld + allTimeStats.totalNoShow;
                 return `${allTimeStats.totalNoShow} / ${heldAndNoShow}`;
@@ -287,14 +289,14 @@ export default function ManagerMeetingHistory({
       </div>
 
       {/* Monthly Stats and Controls */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">{selectedMonthLabel}</h2>
+          <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{selectedMonthLabel}</h2>
           <div className="flex gap-2 items-center">
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className={`rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
             >
               {monthOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -315,13 +317,13 @@ export default function ManagerMeetingHistory({
         {/* Export Modal */}
         {showExport && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Export Meetings</h3>
+            <div className={`rounded-lg shadow-xl p-6 w-full max-w-md ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Export Meetings</h3>
               <div className="mb-4">
-                <p className="text-sm text-gray-700 mb-2">Select columns to include:</p>
+                <p className={`text-sm mb-2 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>Select columns to include:</p>
                 <div className="grid grid-cols-2 gap-2">
                   {columnOptions.map(col => (
-                    <label key={col.key} className="flex items-center gap-2 text-sm">
+                    <label key={col.key} className={`flex items-center gap-2 text-sm ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="checkbox"
                         checked={selectedColumns.includes(col.key)}
@@ -332,6 +334,7 @@ export default function ManagerMeetingHistory({
                             setSelectedColumns(selectedColumns.filter(k => k !== col.key));
                           }
                         }}
+                        className={darkTheme ? 'accent-indigo-500' : ''}
                       />
                       {col.label}
                     </label>
@@ -340,7 +343,7 @@ export default function ManagerMeetingHistory({
               </div>
               <div className="flex justify-end gap-2 mt-4">
                 <button
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  className={`px-4 py-2 rounded-md ${darkTheme ? 'text-slate-200 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
                   onClick={() => setShowExport(false)}
                 >
                   Cancel
@@ -360,73 +363,73 @@ export default function ManagerMeetingHistory({
         {/* Monthly Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
           <div 
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-blue-50 transition-all duration-200 border-2 border-transparent hover:border-blue-200"
+            className={`rounded-lg p-4 cursor-pointer transition-all duration-200 border-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] hover:border-blue-800/50 hover:bg-blue-900/20' : 'bg-gray-50 border-transparent hover:border-blue-200 hover:bg-blue-50'}`}
             onClick={() => openMeetingsModal('booked')}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Meetings Booked</h3>
+              <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Meetings Booked</h3>
               <Calendar className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{monthlyStats.totalBooked}</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{monthlyStats.totalBooked}</p>
           </div>
 
           <div 
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-green-50 transition-all duration-200 border-2 border-transparent hover:border-green-200"
+            className={`rounded-lg p-4 cursor-pointer transition-all duration-200 border-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] hover:border-green-800/50 hover:bg-green-900/20' : 'bg-gray-50 border-transparent hover:border-green-200 hover:bg-green-50'}`}
             onClick={() => openMeetingsModal('held')}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Meetings Held</h3>
+              <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Meetings Held</h3>
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-green-600">{monthlyStats.totalHeld}</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{monthlyStats.totalHeld}</p>
           </div>
 
           <div 
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-red-50 transition-all duration-200 border-2 border-transparent hover:border-red-200"
+            className={`rounded-lg p-4 cursor-pointer transition-all duration-200 border-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] hover:border-red-800/50 hover:bg-red-900/20' : 'bg-gray-50 border-transparent hover:border-red-200 hover:bg-red-50'}`}
             onClick={() => openMeetingsModal('noShows')}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">No Shows</h3>
+              <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No Shows</h3>
               <Clock className="w-5 h-5 text-red-600" />
             </div>
-            <p className="text-2xl font-bold text-red-600">{monthlyStats.totalNoShow}</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>{monthlyStats.totalNoShow}</p>
           </div>
 
           <div 
-            className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-yellow-50 transition-all duration-200 border-2 border-transparent hover:border-yellow-200"
+            className={`rounded-lg p-4 cursor-pointer transition-all duration-200 border-2 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] hover:border-yellow-800/50 hover:bg-yellow-900/20' : 'bg-gray-50 border-transparent hover:border-yellow-200 hover:bg-yellow-50'}`}
             onClick={() => openMeetingsModal('pending')}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Pending</h3>
+              <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Pending</h3>
               <Hourglass className="w-5 h-5 text-yellow-600" />
             </div>
-            <p className="text-2xl font-bold text-yellow-600">{monthlyStats.totalPending}</p>
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-yellow-400' : 'text-yellow-600'}`}>{monthlyStats.totalPending}</p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className={`rounded-lg p-4 ${darkTheme ? 'bg-[#1d1f24] border border-[#2d3139]' : 'bg-gray-50'}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Held Rate</h3>
+              <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held Rate</h3>
               <Target className="w-5 h-5 text-indigo-600" />
             </div>
-            <p className="text-2xl font-bold text-indigo-600">
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}>
               {monthlyStats.showRate.toFixed(1)}%
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-500' : 'text-gray-500'}`}>
               {(() => {
                 const heldAndNoShow = monthlyStats.totalHeld + monthlyStats.totalNoShow;
                 return `${monthlyStats.totalHeld} / ${heldAndNoShow}`;
               })()}
             </p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className={`rounded-lg p-4 ${darkTheme ? 'bg-[#1d1f24] border border-[#2d3139]' : 'bg-gray-50'}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">No Show Rate</h3>
+              <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No Show Rate</h3>
               <Clock className="w-5 h-5 text-red-600" />
             </div>
-            <p className="text-2xl font-bold text-red-600">
+            <p className={`text-2xl font-bold ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>
               {monthlyStats.noShowRate.toFixed(1)}%
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-500' : 'text-gray-500'}`}>
               {(() => {
                 const heldAndNoShow = monthlyStats.totalHeld + monthlyStats.totalNoShow;
                 return `${monthlyStats.totalNoShow} / ${heldAndNoShow}`;
@@ -442,9 +445,9 @@ export default function ManagerMeetingHistory({
             placeholder="Search meetings by SDR, client, contact..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+            className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
           />
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+          <Search className={`absolute left-3 top-2.5 w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
         </div>
 
         {/* Meetings List */}
@@ -457,10 +460,11 @@ export default function ManagerMeetingHistory({
               onUpdateConfirmedDate={onUpdateConfirmedDate}
               showDateControls={true}
               showSDR={true}
+              darkTheme={darkTheme}
             />
           ))}
           {filteredMeetings.length === 0 && (
-            <p className="text-center text-gray-500">
+            <p className={`text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
               {searchTerm ? 'No meetings found matching your search' : 'No meetings for this month'}
             </p>
           )}
@@ -470,30 +474,30 @@ export default function ManagerMeetingHistory({
       {/* Modal for meetings breakdown */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className={`rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">
+              <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                 {modalType === 'booked' ? 'All Meetings Booked This Month' :
                  modalType === 'held' ? 'Meetings Held This Month' :
                  modalType === 'noShows' ? 'No-Show Meetings This Month' :
                  modalType === 'pending' ? 'Pending Meetings This Month' : 'Modal'}
               </h3>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+              <button onClick={closeModal} className={`text-2xl font-bold ${darkTheme ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}`}>&times;</button>
             </div>
             
             <div className="space-y-4">
               {/* Summary section */}
               <div className={`p-4 rounded-lg ${
-                modalType === 'booked' ? 'bg-indigo-50' :
-                modalType === 'held' ? 'bg-green-50' :
-                modalType === 'pending' ? 'bg-yellow-50' :
-                'bg-red-50'
+                modalType === 'booked' ? (darkTheme ? 'bg-indigo-900/20' : 'bg-indigo-50') :
+                modalType === 'held' ? (darkTheme ? 'bg-green-900/20' : 'bg-green-50') :
+                modalType === 'pending' ? (darkTheme ? 'bg-yellow-900/20' : 'bg-yellow-50') :
+                (darkTheme ? 'bg-red-900/20' : 'bg-red-50')
               }`}>
                 <h4 className={`text-lg font-semibold mb-2 ${
-                  modalType === 'booked' ? 'text-indigo-900' :
-                  modalType === 'held' ? 'text-green-900' :
-                  modalType === 'pending' ? 'text-yellow-900' :
-                  'text-red-900'
+                  modalType === 'booked' ? (darkTheme ? 'text-indigo-200' : 'text-indigo-900') :
+                  modalType === 'held' ? (darkTheme ? 'text-green-200' : 'text-green-900') :
+                  modalType === 'pending' ? (darkTheme ? 'text-yellow-200' : 'text-yellow-900') :
+                  (darkTheme ? 'text-red-200' : 'text-red-900')
                 }`}>
                   {modalType === 'booked' ? 'All Meetings Booked This Month' :
                    modalType === 'held' ? 'Meetings Held This Month' :
@@ -501,10 +505,10 @@ export default function ManagerMeetingHistory({
                    'No-Show Meetings This Month'}
                 </h4>
                 <p className={`text-2xl font-bold ${
-                  modalType === 'booked' ? 'text-indigo-700' :
-                  modalType === 'held' ? 'text-green-700' :
-                  modalType === 'pending' ? 'text-yellow-700' :
-                  'text-red-700'
+                  modalType === 'booked' ? (darkTheme ? 'text-indigo-300' : 'text-indigo-700') :
+                  modalType === 'held' ? (darkTheme ? 'text-green-300' : 'text-green-700') :
+                  modalType === 'pending' ? (darkTheme ? 'text-yellow-300' : 'text-yellow-700') :
+                  (darkTheme ? 'text-red-300' : 'text-red-700')
                 }`}>
                   {modalType === 'booked' ? monthlyStats.totalBooked :
                    modalType === 'held' ? monthlyStats.totalHeld :
@@ -512,10 +516,10 @@ export default function ManagerMeetingHistory({
                    monthlyStats.totalNoShow}
                 </p>
                 <p className={`text-sm ${
-                  modalType === 'booked' ? 'text-indigo-600' :
-                  modalType === 'held' ? 'text-green-600' :
-                  modalType === 'pending' ? 'text-yellow-600' :
-                  'text-red-600'
+                  modalType === 'booked' ? (darkTheme ? 'text-indigo-300' : 'text-indigo-600') :
+                  modalType === 'held' ? (darkTheme ? 'text-green-300' : 'text-green-600') :
+                  modalType === 'pending' ? (darkTheme ? 'text-yellow-300' : 'text-yellow-600') :
+                  (darkTheme ? 'text-red-300' : 'text-red-600')
                 }`}>
                   {modalType === 'booked' ? 'Total meetings scheduled' :
                    modalType === 'held' ? 'Successfully held meetings' :
@@ -547,11 +551,12 @@ export default function ManagerMeetingHistory({
                           onUpdateConfirmedDate={onUpdateConfirmedDate}
                           showDateControls={true}
                           showSDR={true}
+                          darkTheme={darkTheme}
                         />
                       ))
                     ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <Calendar className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                         <p>
                           {modalType === 'booked' ? 'No meetings booked this month' :
                            modalType === 'held' ? 'No meetings held this month' :

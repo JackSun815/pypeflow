@@ -9,6 +9,7 @@ import { useAgency } from '../contexts/AgencyContext';
 interface ClientManagementProps {
   sdrs: Profile[];
   onUpdate: () => void;
+  darkTheme?: boolean;
 }
 
 interface ClientWithAssignments extends Client {
@@ -30,7 +31,7 @@ interface MeetingMetrics {
   heldCount: number;
 }
 
-export default function ClientManagement({ sdrs, onUpdate }: ClientManagementProps) {
+export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: ClientManagementProps) {
   const { agency } = useAgency();
   const [clients, setClients] = useState<ClientWithAssignments[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1023,23 +1024,23 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
+    <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+      <div className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-gray-900">Manage Clients</h2>
+            <h2 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Manage Clients</h2>
             {/* Month-specific client management - no archived toggle needed */}
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label htmlFor="sort" className="text-sm font-medium text-gray-700">Sort by:</label>
+              <label htmlFor="sort" className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Sort by:</label>
               <select
                 id="sort"
                 value={sortOption}
                 onChange={(e) => {
                   setSortOption(e.target.value as any);
                 }}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                className={`border rounded px-2 py-1 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               >
                 <option value="alphabetical">Alphabetical</option>
                 <option value="target">% Target Assigned</option>
@@ -1047,11 +1048,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Month:</label>
+              <label className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Month:</label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                className={`border rounded px-2 py-1 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               >
                 {monthOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -1060,7 +1061,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                 ))}
               </select>
               {selectedMonth === currentMonth && (
-                <span className="text-xs text-gray-500">(Current)</span>
+                <span className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>(Current)</span>
               )}
             </div>
 
@@ -1069,8 +1070,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               disabled={!canUndo}
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border ${
                 canUndo 
-                  ? 'text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200' 
-                  : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
+                  ? darkTheme ? 'text-orange-300 bg-orange-900/30 hover:bg-orange-900/50 border-orange-800/50' : 'text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200'
+                  : darkTheme ? 'text-slate-500 bg-[#1d1f24] border-[#2d3139] cursor-not-allowed' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
               }`}
               title={canUndo ? `Undo last action (${undoStack.length} actions available)` : 'No actions to undo'}
             >
@@ -1085,7 +1086,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   await copyFromPreviousMonth();
                 }
               }}
-              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded hover:bg-green-100 border border-green-200"
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-green-100 border ${darkTheme ? 'text-green-300 bg-green-900/30 border-green-800/50 hover:bg-green-900/50' : 'text-green-700 bg-green-50 border-green-200'}`}
               title="Migrate all clients and assignments from previous month"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1099,7 +1100,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   exportToExcel();
                 }
               }}
-              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 border border-blue-200"
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-blue-100 border ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-800/50 hover:bg-blue-900/50' : 'text-blue-700 bg-blue-50 border-blue-200'}`}
               title="Export all clients and assignments to Excel"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1134,8 +1135,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       )}
 
       {/* Overview Section */}
-      <div className="p-6 bg-gray-50 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <div className={`p-6 border-b ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
+        <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
           <Target className="w-5 h-5" />
           Target Overview - {monthOptions.find(m => m.value === selectedMonth)?.label}
         </h3>
@@ -1191,57 +1192,57 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
           return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Total Client Targets */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Total Client Targets</h4>
+              <div className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#232529] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
+                <h4 className={`text-sm font-medium mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Total Client Targets</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Set Target:</span>
-                    <span className="font-semibold text-blue-600">{totalClientSetTarget}</span>
+                    <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Set Target:</span>
+                    <span className={`font-semibold ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`}>{totalClientSetTarget}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Hold Target:</span>
-                    <span className="font-semibold text-green-600">{totalClientHeldTarget}</span>
+                    <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Hold Target:</span>
+                    <span className={`font-semibold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{totalClientHeldTarget}</span>
                   </div>
                 </div>
               </div>
 
               {/* Assigned Targets */}
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Assigned to SDRs</h4>
+              <div className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#232529] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
+                <h4 className={`text-sm font-medium mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Assigned to SDRs</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Set Target:</span>
-                    <span className="font-semibold text-blue-600">{totalAssignedSetTarget}</span>
+                    <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Set Target:</span>
+                    <span className={`font-semibold ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`}>{totalAssignedSetTarget}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Hold Target:</span>
-                    <span className="font-semibold text-green-600">{totalAssignedHeldTarget}</span>
+                    <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Hold Target:</span>
+                    <span className={`font-semibold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{totalAssignedHeldTarget}</span>
                   </div>
                 </div>
               </div>
 
               {/* Unassigned Targets */}
               <div 
-                className={`bg-white p-4 rounded-lg border border-gray-200 ${(unassignedSetTarget > 0 || unassignedHeldTarget > 0) ? 'cursor-pointer hover:bg-gray-50 hover:border-orange-300 transition-colors' : ''}`}
+                className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#232529] border-[#2d3139]' : 'bg-white border-gray-200'} ${(unassignedSetTarget > 0 || unassignedHeldTarget > 0) ? darkTheme ? 'cursor-pointer hover:bg-[#2d3139] hover:border-orange-800/50 transition-colors' : 'cursor-pointer hover:bg-gray-50 hover:border-orange-300 transition-colors' : ''}`}
                 onClick={(unassignedSetTarget > 0 || unassignedHeldTarget > 0) ? handleUnassignedClick : undefined}
                 title={(unassignedSetTarget > 0 || unassignedHeldTarget > 0) ? 'Click to view unassigned clients' : 'No unassigned targets'}
               >
-                <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <h4 className={`text-sm font-medium mb-2 flex items-center gap-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                   Unassigned
                   {(unassignedSetTarget > 0 || unassignedHeldTarget > 0) && (
-                    <span className="text-xs text-orange-600"></span>
+                    <span className={`text-xs ${darkTheme ? 'text-orange-400' : 'text-orange-600'}`}></span>
                   )}
                 </h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Set Target:</span>
-                    <span className={`font-semibold ${unassignedSetTarget > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+                    <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Set Target:</span>
+                    <span className={`font-semibold ${unassignedSetTarget > 0 ? (darkTheme ? 'text-orange-400' : 'text-orange-600') : (darkTheme ? 'text-slate-400' : 'text-gray-500')}`}>
                       {unassignedSetTarget}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Hold Target:</span>
-                    <span className={`font-semibold ${unassignedHeldTarget > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+                    <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Hold Target:</span>
+                    <span className={`font-semibold ${unassignedHeldTarget > 0 ? (darkTheme ? 'text-orange-400' : 'text-orange-600') : (darkTheme ? 'text-slate-400' : 'text-gray-500')}`}>
                       {unassignedHeldTarget}
                     </span>
                   </div>
@@ -1275,20 +1276,20 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                           return (
                 <div
                   key={client.id}
-                  className="bg-white border border-gray-200 rounded-xl shadow-lg p-6 space-y-6 hover:shadow-xl transition-all duration-200 hover:border-gray-300"
+                  className={`border rounded-xl shadow-lg p-6 space-y-6 hover:shadow-xl transition-all duration-200 ${darkTheme ? 'bg-[#232529] border-[#2d3139] hover:border-[#3a3f47]' : 'bg-white border-gray-200 hover:border-gray-300'}`}
                 >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">{client.name}</h3>
+                    <h3 className={`text-xl font-bold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{client.name}</h3>
                     <div className="space-y-4">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <Target className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">Monthly Targets:</span>
+                          <Target className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
+                          <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Monthly Targets:</span>
                           {clientEditMode === client.id ? (
                             <>
                               <div className="flex flex-col">
-                                <label className="text-xs text-gray-500">Set</label>
+                                <label className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set</label>
                                 <input
                                   type="number"
                                   min="0"
@@ -1302,11 +1303,11 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                                       }));
                                     }
                                   }}
-                                  className="w-20 px-2 py-1 border border-indigo-500 rounded-md"
+                                  className={`w-20 px-2 py-1 border border-indigo-500 rounded-md ${darkTheme ? 'bg-[#1d1f24] text-slate-100' : ''}`}
                                 />
                               </div>
                               <div className="flex flex-col">
-                                <label className="text-xs text-gray-500">Hold</label>
+                                <label className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Hold</label>
                                 <input
                                   type="number"
                                   min="0"
@@ -1320,25 +1321,25 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                                       }));
                                     }
                                   }}
-                                  className="w-20 px-2 py-1 border border-indigo-500 rounded-md"
+                                  className={`w-20 px-2 py-1 border border-indigo-500 rounded-md ${darkTheme ? 'bg-[#1d1f24] text-slate-100' : ''}`}
                                 />
                               </div>
                             </>
                           ) : (
                             <>
                               <div className="flex flex-col">
-                                <span className="text-sm">Set: {client.monthly_set_target}</span>
-                                <span className="text-sm">Hold: {client.monthly_hold_target}</span>
+                                <span className={`text-sm ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>Set: {client.monthly_set_target}</span>
+                                <span className={`text-sm ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>Hold: {client.monthly_hold_target}</span>
                               </div>
                             </>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">
+                          <Users className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
+                          <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                             {client.assignments.length} SDR{client.assignments.length !== 1 ? 's' : ''} assigned
                           </span>
-                          <span className="text-sm font-medium">
+                          <span className={`text-sm font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
                             (Set: {setAssignmentPercentage.toFixed(1)}% assigned, Hold: {holdAssignmentPercentage.toFixed(1)}% assigned)
                           </span>
                         </div>
@@ -1356,8 +1357,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                         disabled={clientEditMode === client.id}
                         className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ${
                           clientEditMode === client.id
-                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500 border border-indigo-200'
+                            ? darkTheme ? 'bg-[#2d3139] text-slate-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50 focus:ring-indigo-500 border border-indigo-800/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500 border border-indigo-200'
                         }`}
                       >
                         <Users className="w-4 h-4" />
@@ -1378,8 +1379,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                         disabled={clientEditMode === client.id}
                         className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ${
                           clientEditMode === client.id
-                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'text-blue-700 bg-blue-50 hover:bg-blue-100 focus:ring-blue-500 border border-blue-200'
+                            ? darkTheme ? 'bg-[#2d3139] text-slate-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : darkTheme ? 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 focus:ring-blue-500 border border-blue-800/50' : 'text-blue-700 bg-blue-50 hover:bg-blue-100 focus:ring-blue-500 border border-blue-200'
                         }`}
                       >
                         <Edit className="w-4 h-4" />
@@ -1422,7 +1423,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                             return copy;
                           });
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-gray-200 ${darkTheme ? 'text-slate-300 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-600 bg-gray-100'}`}
                       >
                         Cancel
                       </button>
@@ -1431,7 +1432,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                     
                     <button
                       onClick={() => handleDeleteClient(client.id)}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${darkTheme ? 'text-red-300 bg-red-900/30 hover:bg-red-900/50' : 'text-red-700 bg-red-50 hover:bg-red-100'}`}
                       title={`Remove from ${monthOptions.find(m => m.value === selectedMonth)?.label}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1443,7 +1444,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                 {/* Assignments */}
                 {client.assignments.length > 0 ? (
                   <div className="mt-6 space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">SDR Assignments</h4>
+                    <h4 className={`text-sm font-semibold mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>SDR Assignments</h4>
                     {client.assignments.map((assignment, index) => {
                       const sdr = sdrs.find((s) => s.id === assignment.sdr_id);
                       const assignmentSetPercentage = client.monthly_set_target > 0
@@ -1454,7 +1455,18 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                         : 0;
 
                       // Color scheme for SDR cards - 10 unique colors
-                      const colorSchemes = [
+                      const colorSchemes = darkTheme ? [
+                        { bg: 'bg-blue-900/20', border: 'border-blue-800/50', text: 'text-blue-300', icon: 'text-blue-400' },
+                        { bg: 'bg-green-900/20', border: 'border-green-800/50', text: 'text-green-300', icon: 'text-green-400' },
+                        { bg: 'bg-purple-900/20', border: 'border-purple-800/50', text: 'text-purple-300', icon: 'text-purple-400' },
+                        { bg: 'bg-orange-900/20', border: 'border-orange-800/50', text: 'text-orange-300', icon: 'text-orange-400' },
+                        { bg: 'bg-pink-900/20', border: 'border-pink-800/50', text: 'text-pink-300', icon: 'text-pink-400' },
+                        { bg: 'bg-teal-900/20', border: 'border-teal-800/50', text: 'text-teal-300', icon: 'text-teal-400' },
+                        { bg: 'bg-indigo-900/20', border: 'border-indigo-800/50', text: 'text-indigo-300', icon: 'text-indigo-400' },
+                        { bg: 'bg-yellow-900/20', border: 'border-yellow-800/50', text: 'text-yellow-300', icon: 'text-yellow-400' },
+                        { bg: 'bg-red-900/20', border: 'border-red-800/50', text: 'text-red-300', icon: 'text-red-400' },
+                        { bg: 'bg-cyan-900/20', border: 'border-cyan-800/50', text: 'text-cyan-300', icon: 'text-cyan-400' }
+                      ] : [
                         { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600' },
                         { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: 'text-green-600' },
                         { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', icon: 'text-purple-600' },
@@ -1514,7 +1526,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                                           [`${client.id}-${assignment.sdr_id}-set`]: v
                                         }));
                                       }}
-                                      className="w-16 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      className={`w-16 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] text-slate-100' : ''}`}
                                     />
                                     <input
                                       type="number"
@@ -1527,7 +1539,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                                           [`${client.id}-${assignment.sdr_id}-hold`]: v
                                         }));
                                       }}
-                                      className="w-16 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      className={`w-16 px-2 py-1 text-center border border-indigo-500 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] text-slate-100' : ''}`}
                                     />
                                   </div>
                                 ) : (
@@ -1537,16 +1549,16 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                                         <span className={`text-lg font-bold ${colorScheme.text}`}>
                                           {assignment.monthly_set_target}
                                         </span>
-                                        <div className="text-xs text-gray-500">Set Target</div>
+                                        <div className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set Target</div>
                                       </div>
                                       <div className="text-center">
                                         <span className={`text-lg font-bold ${colorScheme.text}`}>
                                           {assignment.monthly_hold_target}
                                         </span>
-                                        <div className="text-xs text-gray-500">Held Target</div>
+                                        <div className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held Target</div>
                                       </div>
                                     </div>
-                                    <div className="text-xs text-gray-500 mt-1">
+                                    <div className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                       Set: {assignmentSetPercentage.toFixed(1)}% | Hold: {assignmentHoldPercentage.toFixed(1)}%
                                     </div>
                                   </div>
@@ -1601,7 +1613,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   </div>
                 ) : (
                   <div className="mt-6">
-                    <div className="flex items-center gap-2 text-gray-400 text-sm italic p-4 bg-gray-50 rounded-md border border-dashed border-gray-200">
+                    <div className={`flex items-center gap-2 text-sm italic p-4 rounded-md border border-dashed ${darkTheme ? 'text-slate-400 bg-[#1d1f24] border-[#2d3139]' : 'text-gray-400 bg-gray-50 border-gray-200'}`}>
                       <span>Looks like this client has no SDR assigned yet.</span>
                     </div>
                   </div>
@@ -1615,13 +1627,13 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       {/* Add Client Modal */}
       {showAddClient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Add New Client</h2>
+          <div className={`rounded-lg shadow-xl p-6 w-full max-w-md ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+            <h2 className={`text-xl font-semibold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Add New Client</h2>
             <form onSubmit={handleAddClient} className="space-y-4">
               <div>
                 <label
                   htmlFor="clientName"
-                  className="block text-sm font-medium text-gray-700"
+                  className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}
                 >
                   Client Name
                 </label>
@@ -1631,13 +1643,13 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   value={newClientName}
                   onChange={(e) => setNewClientName(e.target.value)}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 />
               </div>
               <div>
                 <label
                   htmlFor="clientSetTarget"
-                  className="block text-sm font-medium text-gray-700"
+                  className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}
                 >
                   Monthly Set Target
                 </label>
@@ -1648,13 +1660,13 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   value={newClientSetTarget}
                   onChange={(e) => setNewClientSetTarget(e.target.value === '' ? '' : parseInt(e.target.value))}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 />
               </div>
               <div>
                 <label
                   htmlFor="clientHoldTarget"
-                  className="block text-sm font-medium text-gray-700"
+                  className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}
                 >
                   Monthly Held Target
                 </label>
@@ -1665,14 +1677,14 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   value={newClientHoldTarget}
                   onChange={(e) => setNewClientHoldTarget(e.target.value === '' ? '' : parseInt(e.target.value))}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 />
               </div>
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowAddClient(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${darkTheme ? 'text-slate-200 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
                 >
                   Cancel
                 </button>
@@ -1691,13 +1703,13 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       {/* Assign Client Modal */}
       {showAssignForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Assign Client to SDR</h2>
+          <div className={`rounded-lg shadow-xl p-6 w-full max-w-md ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+            <h2 className={`text-xl font-semibold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Assign Client to SDR</h2>
             <form onSubmit={handleAssignClient} className="space-y-4">
               <div>
                 <label
                   htmlFor="client"
-                  className="block text-sm font-medium text-gray-700"
+                  className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}
                 >
                   Select Client
                 </label>
@@ -1706,7 +1718,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   value={selectedClient || ''}
                   onChange={(e) => setSelectedClient(e.target.value)}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 >
                   <option value="">Select a client</option>
                   {allClients.map((client) => (
@@ -1719,7 +1731,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               <div>
                 <label
                   htmlFor="sdr"
-                  className="block text-sm font-medium text-gray-700"
+                  className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}
                 >
                   Select SDR
                 </label>
@@ -1728,7 +1740,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                   value={selectedSDR || ''}
                   onChange={(e) => setSelectedSDR(e.target.value)}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 >
                   <option value="">Select an SDR</option>
                   {sdrs.map((sdr) => (
@@ -1741,14 +1753,14 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
 
               {/* SDR Summary Section */}
               {selectedSDR && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                <div className={`rounded-lg p-4 border ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
+                  <h3 className={`text-sm font-semibold mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-800'}`}>
                     SDR Total Goals for {monthOptions.find(m => m.value === selectedMonth)?.label}
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <div className="text-gray-600 font-medium">SDR Total Set Goal:</div>
-                      <div className="text-lg font-bold text-orange-600">
+                      <div className={`font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>SDR Total Set Goal:</div>
+                      <div className={`text-lg font-bold ${darkTheme ? 'text-orange-400' : 'text-orange-600'}`}>
                         {(() => {
                           // Calculate total set target across all SDR's client assignments for this month
                           const sdrAssignments = clients.filter(client => 
@@ -1762,8 +1774,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600 font-medium">SDR Total Held Goal:</div>
-                      <div className="text-lg font-bold text-purple-600">
+                      <div className={`font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>SDR Total Held Goal:</div>
+                      <div className={`text-lg font-bold ${darkTheme ? 'text-purple-400' : 'text-purple-600'}`}>
                         {(() => {
                           // Calculate total held target across all SDR's client assignments for this month
                           const sdrAssignments = clients.filter(client => 
@@ -1782,7 +1794,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
               <div>
                 <label
                   htmlFor="holdTarget"
-                  className="block text-sm font-medium text-gray-700"
+                  className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}
                 >
                   Monthly Meeting Held Target
                 </label>
@@ -1796,13 +1808,13 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                     setMonthlyHoldTarget(!isNaN(val) ? val : 0);
                   }}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 />
               </div>
               <div>
                 <label
                   htmlFor="setTarget"
-                  className="block text-sm font-medium text-gray-700"
+                  className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}
                 >
                   Monthly Meeting Set Target
                 </label>
@@ -1816,7 +1828,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                     setMonthlySetTarget(!isNaN(val) ? val : 0);
                   }}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 />
               </div>
               <div className="flex justify-end gap-3">
@@ -1829,7 +1841,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                     setMonthlySetTarget(0);
                     setMonthlyHoldTarget(0);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${darkTheme ? 'text-slate-200 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
                 >
                   Cancel
                 </button>
@@ -1848,14 +1860,14 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
       {/* Unassigned Clients Modal */}
       {showUnassignedModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+          <div className={`rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                 Unassigned Clients - {monthOptions.find(m => m.value === selectedMonth)?.label}
               </h2>
               <button
                 onClick={() => setShowUnassignedModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className={darkTheme ? 'text-slate-400 hover:text-slate-200 transition-colors' : 'text-gray-400 hover:text-gray-600 transition-colors'}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1865,8 +1877,8 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             
             <div className="overflow-y-auto max-h-[60vh]">
               {unassignedClients.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Target className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                  <Target className={`w-12 h-12 mx-auto mb-4 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                   <p>No unassigned clients found for this month.</p>
                 </div>
               ) : (
@@ -1879,16 +1891,16 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                     const unassignedHoldTarget = client.monthly_hold_target - totalAssignedHoldTarget;
                     
                     return (
-                      <div key={client.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div key={client.id} className={`rounded-lg p-4 border ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
                         <div className="flex justify-between items-start mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
+                          <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{client.name}</h3>
                           <button
                             onClick={() => {
                               setSelectedClient(client.id);
                               setShowAssignForm(true);
                               setShowUnassignedModal(false);
                             }}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-800/50 hover:bg-blue-900/50' : 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100'}`}
                           >
                             <Users className="w-4 h-4" />
                             Assign SDR
@@ -1897,52 +1909,52 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Set Targets</h4>
+                            <h4 className={`text-sm font-medium mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Set Targets</h4>
                             <div className="space-y-1">
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Total Target:</span>
-                                <span className="font-medium">{client.monthly_set_target}</span>
+                                <span className={darkTheme ? 'text-slate-300' : 'text-gray-600'}>Total Target:</span>
+                                <span className={`font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{client.monthly_set_target}</span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Assigned:</span>
-                                <span className="font-medium text-green-600">{totalAssignedSetTarget}</span>
+                                <span className={darkTheme ? 'text-slate-300' : 'text-gray-600'}>Assigned:</span>
+                                <span className={`font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{totalAssignedSetTarget}</span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Unassigned:</span>
-                                <span className="font-medium text-orange-600">{unassignedSetTarget}</span>
+                                <span className={darkTheme ? 'text-slate-300' : 'text-gray-600'}>Unassigned:</span>
+                                <span className={`font-medium ${darkTheme ? 'text-orange-400' : 'text-orange-600'}`}>{unassignedSetTarget}</span>
                               </div>
                             </div>
                           </div>
                           
                           <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Hold Targets</h4>
+                            <h4 className={`text-sm font-medium mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Hold Targets</h4>
                             <div className="space-y-1">
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Total Target:</span>
-                                <span className="font-medium">{client.monthly_hold_target}</span>
+                                <span className={darkTheme ? 'text-slate-300' : 'text-gray-600'}>Total Target:</span>
+                                <span className={`font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{client.monthly_hold_target}</span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Assigned:</span>
-                                <span className="font-medium text-green-600">{totalAssignedHoldTarget}</span>
+                                <span className={darkTheme ? 'text-slate-300' : 'text-gray-600'}>Assigned:</span>
+                                <span className={`font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{totalAssignedHoldTarget}</span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Unassigned:</span>
-                                <span className="font-medium text-orange-600">{unassignedHoldTarget}</span>
+                                <span className={darkTheme ? 'text-slate-300' : 'text-gray-600'}>Unassigned:</span>
+                                <span className={`font-medium ${darkTheme ? 'text-orange-400' : 'text-orange-600'}`}>{unassignedHoldTarget}</span>
                               </div>
                             </div>
                           </div>
                         </div>
                         
                         {client.assignments.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Current Assignments</h4>
+                          <div className={`mt-3 pt-3 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                            <h4 className={`text-sm font-medium mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Current Assignments</h4>
                             <div className="space-y-1">
                               {client.assignments.map((assignment) => {
                                 const sdr = sdrs.find(s => s.id === assignment.sdr_id);
                                 return (
                                   <div key={assignment.id} className="flex justify-between text-sm">
-                                    <span className="text-gray-600">{sdr?.full_name || 'Unknown SDR'}:</span>
-                                    <span className="font-medium">
+                                    <span className={darkTheme ? 'text-slate-300' : 'text-gray-600'}>{sdr?.full_name || 'Unknown SDR'}:</span>
+                                    <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
                                       Set: {assignment.monthly_set_target}, Hold: {assignment.monthly_hold_target}
                                     </span>
                                   </div>
@@ -1961,7 +1973,7 @@ export default function ClientManagement({ sdrs, onUpdate }: ClientManagementPro
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowUnassignedModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${darkTheme ? 'text-slate-200 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
               >
                 Close
               </button>

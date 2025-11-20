@@ -2383,20 +2383,20 @@ export default function ManagerDashboard() {
 
             {/* Today's Activity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+                <h3 className={`text-lg font-semibold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                   Meetings Booked Today ({todayMeetings.length})
                 </h3>
                 <div className="space-y-3">
                   {todayMeetings.map((meeting) => (
                     <div
                       key={meeting.id}
-                      className={`flex items-center justify-between p-3 bg-gray-50 rounded-lg ${
+                      className={`flex items-center justify-between p-3 rounded-lg ${
                         meeting.status === 'pending' ? 'animate-glow-orange ring-2 ring-orange-400' : ''
-                      }`}
+                      } ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                           {(meeting as any).clients?.name}
                         </p>
                         <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -2929,7 +2929,7 @@ export default function ManagerDashboard() {
 
         {activeTab === 'meetings' && (
           <>
-            <TeamMeetings meetings={meetings} fetchSDRs={fetchSDRs} />
+            <TeamMeetings meetings={meetings} fetchSDRs={fetchSDRs} darkTheme={darkTheme} />
           </>
         )}
 
@@ -2938,7 +2938,7 @@ export default function ManagerDashboard() {
           isDemoMode ? (
             <LockedTabMessage featureName="Client Management" />
           ) : (
-            <ClientManagement sdrs={sdrs} onUpdate={fetchSDRs} />
+            <ClientManagement sdrs={sdrs} onUpdate={fetchSDRs} darkTheme={darkTheme} />
           )
         )}
 
@@ -2949,7 +2949,8 @@ export default function ManagerDashboard() {
             <UnifiedUserManagement 
               sdrs={allSDRs.length > 0 ? allSDRs : sdrs} 
               clients={clients as any} 
-              onUpdate={fetchSDRs} 
+              onUpdate={fetchSDRs}
+              darkTheme={darkTheme}
             />
           )
         )}
@@ -2964,6 +2965,7 @@ export default function ManagerDashboard() {
               error={null} 
               onUpdateHeldDate={updateMeetingHeldDate}
               onUpdateConfirmedDate={updateMeetingConfirmedDate}
+              darkTheme={darkTheme}
             />
           )
         )}
@@ -3111,6 +3113,7 @@ export default function ManagerDashboard() {
                                 <MeetingCard
                                   meeting={meeting}
                                   showSDR={false}
+                                  darkTheme={darkTheme}
                                 />
                               </div>
                             ))}
@@ -3138,6 +3141,7 @@ export default function ManagerDashboard() {
                                 <MeetingCard
                                   meeting={meeting}
                                   showSDR={false}
+                                  darkTheme={darkTheme}
                                 />
                               </div>
                             ))}
@@ -3165,6 +3169,7 @@ export default function ManagerDashboard() {
                                 <MeetingCard
                                   meeting={meeting}
                                   showSDR={false}
+                                  darkTheme={darkTheme}
                                 />
                               </div>
                             ))}
@@ -3192,6 +3197,7 @@ export default function ManagerDashboard() {
                                 <MeetingCard
                                   meeting={meeting}
                                   showSDR={false}
+                                  darkTheme={darkTheme}
                                 />
                               </div>
                             ))}
@@ -3376,6 +3382,7 @@ export default function ManagerDashboard() {
                                       key={meeting.id}
                                       meeting={meeting}
                                       showSDR={true}
+                                      darkTheme={darkTheme}
                                     />
                                   ))}
                                 </div>
@@ -3498,6 +3505,7 @@ export default function ManagerDashboard() {
                                       key={meeting.id}
                                       meeting={meeting}
                                       showSDR={true}
+                                      darkTheme={darkTheme}
                                     />
                                   ))}
                                 </div>
@@ -3603,6 +3611,7 @@ export default function ManagerDashboard() {
                                 key={meeting.id}
                                 meeting={meeting}
                                 showSDR={true}
+                                darkTheme={darkTheme}
                               />
                             ))}
                           </div>

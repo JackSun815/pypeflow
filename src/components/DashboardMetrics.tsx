@@ -313,9 +313,9 @@ export default function DashboardMetrics({
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Set Target</h3>
           </div>
-          <div className="space-y-1 bg-blue-50 p-3 rounded-md">
+          <div className={`space-y-1 p-3 rounded-md ${darkTheme ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
             <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-blue-700">{totalSetTarget.toLocaleString()}</span>
+              <span className={`text-3xl font-bold ${darkTheme ? 'text-blue-400' : 'text-blue-700'}`}>{totalSetTarget.toLocaleString()}</span>
               <span className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>set goal</span>
             </div>
             <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{(monthProgress ?? 0).toFixed(1)}% of month completed</p>
@@ -569,8 +569,8 @@ export default function DashboardMetrics({
                       
                       if (processed.length === 0) {
                         return (
-                          <div className="text-center py-8 text-gray-500">
-                            <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <Calendar className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                             <p>No meetings set this month</p>
                           </div>
                         );
@@ -593,23 +593,23 @@ export default function DashboardMetrics({
                               .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
                               .map(([clientName, groupMeetings]) => (
                                 <div key={clientName} className="mb-4">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                  <h4 className={`text-sm font-semibold mb-2 flex items-center gap-2 pb-1 border-b ${darkTheme ? 'text-slate-200 border-[#2d3139]' : 'text-gray-700 border-gray-200'}`}>
                                     <Building className="w-4 h-4 text-indigo-600" />
                                     {clientName} ({groupMeetings.length})
                                   </h4>
                                   <div className="space-y-3 pl-4">
                                     {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                      <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                         <div className="flex items-start justify-between">
                                           <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                              <User className="w-4 h-4 text-gray-400" />
-                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                              <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(meeting.status, meeting.no_show)}`}>
                                                 {getStatusText(meeting.status, meeting.no_show)}
                                               </span>
                                             </div>
-                                            <div className="space-y-1 text-sm text-gray-600">
+                                            <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                               {meeting.contact_email && (
                                                 <div className="flex items-center gap-2">
                                                   <Mail className="w-3 h-3" />
@@ -633,7 +633,7 @@ export default function DashboardMetrics({
                                                 </div>
                                               )}
                                               {meeting.title && (
-                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                                <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                               )}
                                             </div>
                                           </div>
@@ -650,25 +650,25 @@ export default function DashboardMetrics({
                           <>
                             <SectionControls type="meetingsSet" meetings={modalContent.data.meetings} />
                             {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                              <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
                                     {meeting.clients?.name && (
                                       <div className="mb-2">
-                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 ${darkTheme ? 'bg-indigo-900/30 text-indigo-200 border-indigo-800/50' : 'bg-indigo-100 text-indigo-800 border-indigo-200'}`}>
                                           <User className="w-3 h-3 mr-1" />
                                           {meeting.clients.name}
                                         </span>
                                       </div>
                                     )}
                                     <div className="flex items-center gap-2 mb-2">
-                                      <User className="w-4 h-4 text-gray-400" />
-                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                      <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(meeting.status, meeting.no_show)}`}>
                                         {getStatusText(meeting.status, meeting.no_show)}
                                       </span>
                                     </div>
-                                    <div className="space-y-1 text-sm text-gray-600">
+                                    <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                       {meeting.contact_email && (
                                         <div className="flex items-center gap-2">
                                           <Mail className="w-3 h-3" />
@@ -692,7 +692,7 @@ export default function DashboardMetrics({
                                         </div>
                                       )}
                                       {meeting.title && (
-                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                        <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                       )}
                                     </div>
                                   </div>
@@ -707,20 +707,20 @@ export default function DashboardMetrics({
                 </div>
               ) : modalContent?.type === 'meetingsHeld' ? (
                 <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-green-900 mb-2">Meetings Held This Month</h3>
+                  <div className={`p-4 rounded-lg ${darkTheme ? 'bg-green-900/20' : 'bg-green-50'}`}>
+                    <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-green-200' : 'text-green-900'}`}>Meetings Held This Month</h3>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <p className="text-2xl font-bold text-green-700">{modalContent.data.total}</p>
-                        <p className="text-sm text-green-600">Meetings Held</p>
+                        <p className={`text-2xl font-bold ${darkTheme ? 'text-green-300' : 'text-green-700'}`}>{modalContent.data.total}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-green-300' : 'text-green-600'}`}>Meetings Held</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-indigo-700">{modalContent.data.target}</p>
-                        <p className="text-sm text-indigo-600">Target</p>
+                        <p className={`text-2xl font-bold ${darkTheme ? 'text-indigo-300' : 'text-indigo-700'}`}>{modalContent.data.target}</p>
+                        <p className={`text-sm ${darkTheme ? 'text-indigo-300' : 'text-indigo-600'}`}>Target</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div className={`flex-1 h-3 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             modalContent.data.percentage >= 100 ? 'bg-green-600' :
@@ -732,15 +732,15 @@ export default function DashboardMetrics({
                         />
                       </div>
                       <span className={`text-sm font-medium ${
-                        modalContent.data.percentage >= 100 ? 'text-green-600' :
-                        modalContent.data.percentage >= 75 ? 'text-green-600' :
-                        modalContent.data.percentage >= 50 ? 'text-yellow-600' :
-                        modalContent.data.percentage >= 25 ? 'text-orange-600' : 'text-red-600'
+                        modalContent.data.percentage >= 100 ? (darkTheme ? 'text-green-400' : 'text-green-600') :
+                        modalContent.data.percentage >= 75 ? (darkTheme ? 'text-green-400' : 'text-green-600') :
+                        modalContent.data.percentage >= 50 ? (darkTheme ? 'text-yellow-400' : 'text-yellow-600') :
+                        modalContent.data.percentage >= 25 ? (darkTheme ? 'text-orange-400' : 'text-orange-600') : (darkTheme ? 'text-red-400' : 'text-red-600')
                       }`}>
                         {modalContent.data.percentage.toFixed(1)}%
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                       {modalContent.data.percentage >= 100 ? 'Target achieved!' : 
                        modalContent.data.percentage >= 75 ? 'Excellent progress!' :
                        modalContent.data.percentage >= 50 ? 'Good progress' :
@@ -777,23 +777,23 @@ export default function DashboardMetrics({
                               .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
                               .map(([clientName, groupMeetings]) => (
                                 <div key={clientName} className="mb-4">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                  <h4 className={`text-sm font-semibold mb-2 flex items-center gap-2 pb-1 border-b ${darkTheme ? 'text-slate-200 border-[#2d3139]' : 'text-gray-700 border-gray-200'}`}>
                                     <Building className="w-4 h-4 text-indigo-600" />
                                     {clientName} ({groupMeetings.length})
                                   </h4>
                                   <div className="space-y-3 pl-4">
                                     {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                      <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                         <div className="flex items-start justify-between">
                                           <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                              <User className="w-4 h-4 text-gray-400" />
-                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                              <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                               <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
                                                 Held
                                               </span>
                                             </div>
-                                            <div className="space-y-1 text-sm text-gray-600">
+                                            <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                               {meeting.contact_email && (
                                                 <div className="flex items-center gap-2">
                                                   <Mail className="w-3 h-3" />
@@ -817,10 +817,10 @@ export default function DashboardMetrics({
                                                 </div>
                                               )}
                                               {meeting.title && (
-                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                                <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                               )}
                                               {meeting.held_at && (
-                                                <div className="flex items-center gap-2 text-green-600">
+                                                <div className={`flex items-center gap-2 ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>
                                                   <CheckCircle className="w-3 h-3" />
                                                   <span className="text-xs">Held on {formatDate(meeting.held_at)}</span>
                                                 </div>
@@ -840,25 +840,25 @@ export default function DashboardMetrics({
                           <>
                             <SectionControls type="meetingsHeld" meetings={modalContent.data.meetings} />
                             {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                              <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
                                     {meeting.clients?.name && (
                                       <div className="mb-2">
-                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 ${darkTheme ? 'bg-indigo-900/30 text-indigo-200 border-indigo-800/50' : 'bg-indigo-100 text-indigo-800 border-indigo-200'}`}>
                                           <User className="w-3 h-3 mr-1" />
                                           {meeting.clients.name}
                                         </span>
                                       </div>
                                     )}
                                     <div className="flex items-center gap-2 mb-2">
-                                      <User className="w-4 h-4 text-gray-400" />
-                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                      <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
                                         Held
                                       </span>
                                     </div>
-                                    <div className="space-y-1 text-sm text-gray-600">
+                                    <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                       {meeting.contact_email && (
                                         <div className="flex items-center gap-2">
                                           <Mail className="w-3 h-3" />
@@ -882,10 +882,10 @@ export default function DashboardMetrics({
                                         </div>
                                       )}
                                       {meeting.title && (
-                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                        <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                       )}
                                       {meeting.held_at && (
-                                        <div className="flex items-center gap-2 text-green-600">
+                                        <div className={`flex items-center gap-2 ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>
                                           <CheckCircle className="w-3 h-3" />
                                           <span className="text-xs">Held on {formatDate(meeting.held_at)}</span>
                                         </div>
@@ -903,12 +903,12 @@ export default function DashboardMetrics({
                 </div>
               ) : modalContent?.type === 'pending' ? (
                 <div className="space-y-4">
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-yellow-900 mb-2">Pending Meetings</h3>
-                    <p className="text-2xl font-bold text-yellow-700">{modalContent.data.total}</p>
-                    <p className="text-sm text-yellow-600">Meetings awaiting confirmation</p>
+                  <div className={`p-4 rounded-lg ${darkTheme ? 'bg-yellow-900/20' : 'bg-yellow-50'}`}>
+                    <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-yellow-200' : 'text-yellow-900'}`}>Pending Meetings</h3>
+                    <p className={`text-2xl font-bold ${darkTheme ? 'text-yellow-300' : 'text-yellow-700'}`}>{modalContent.data.total}</p>
+                    <p className={`text-sm ${darkTheme ? 'text-yellow-300' : 'text-yellow-600'}`}>Meetings awaiting confirmation</p>
                     <div className="mt-4">
-                      <p className="text-sm text-gray-700">
+                      <p className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
                         These meetings have been scheduled but are still pending confirmation from the prospect.
                         You can confirm them once you receive confirmation from the contact.
                       </p>
@@ -920,8 +920,8 @@ export default function DashboardMetrics({
                       
                       if (processed.length === 0) {
                         return (
-                          <div className="text-center py-8 text-gray-500">
-                            <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <Clock className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                             <p>No pending meetings</p>
                           </div>
                         );
@@ -944,23 +944,23 @@ export default function DashboardMetrics({
                               .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
                               .map(([clientName, groupMeetings]) => (
                                 <div key={clientName} className="mb-4">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                  <h4 className={`text-sm font-semibold mb-2 flex items-center gap-2 pb-1 border-b ${darkTheme ? 'text-slate-200 border-[#2d3139]' : 'text-gray-700 border-gray-200'}`}>
                                     <Building className="w-4 h-4 text-indigo-600" />
                                     {clientName} ({groupMeetings.length})
                                   </h4>
                                   <div className="space-y-3 pl-4">
                                     {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                      <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                         <div className="flex items-start justify-between">
                                           <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                              <User className="w-4 h-4 text-gray-400" />
-                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                              <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                               <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
                                                 Pending
                                               </span>
                                             </div>
-                                            <div className="space-y-1 text-sm text-gray-600">
+                                            <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                               {meeting.contact_email && (
                                                 <div className="flex items-center gap-2">
                                                   <Mail className="w-3 h-3" />
@@ -984,7 +984,7 @@ export default function DashboardMetrics({
                                                 </div>
                                               )}
                                               {meeting.title && (
-                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                                <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                               )}
                                             </div>
                                           </div>
@@ -1001,25 +1001,25 @@ export default function DashboardMetrics({
                           <>
                             <SectionControls type="pending" meetings={modalContent.data.meetings} />
                             {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                              <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
                                     {meeting.clients?.name && (
                                       <div className="mb-2">
-                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 ${darkTheme ? 'bg-indigo-900/30 text-indigo-200 border-indigo-800/50' : 'bg-indigo-100 text-indigo-800 border-indigo-200'}`}>
                                           <User className="w-3 h-3 mr-1" />
                                           {meeting.clients.name}
                                         </span>
                                       </div>
                                     )}
                                     <div className="flex items-center gap-2 mb-2">
-                                      <User className="w-4 h-4 text-gray-400" />
-                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                      <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
                                         Pending
                                       </span>
                                     </div>
-                                    <div className="space-y-1 text-sm text-gray-600">
+                                    <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                       {meeting.contact_email && (
                                         <div className="flex items-center gap-2">
                                           <Mail className="w-3 h-3" />
@@ -1043,7 +1043,7 @@ export default function DashboardMetrics({
                                         </div>
                                       )}
                                       {meeting.title && (
-                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                        <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                       )}
                                     </div>
                                   </div>
@@ -1058,12 +1058,12 @@ export default function DashboardMetrics({
                 </div>
               ) : modalContent?.type === 'noShows' ? (
                 <div className="space-y-4">
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-red-900 mb-2">No-Show Meetings</h3>
-                    <p className="text-2xl font-bold text-red-700">{modalContent.data.total}</p>
-                    <p className="text-sm text-red-600">Meetings marked as no-shows</p>
+                  <div className={`p-4 rounded-lg ${darkTheme ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                    <h3 className={`text-lg font-semibold mb-2 ${darkTheme ? 'text-red-200' : 'text-red-900'}`}>No-Show Meetings</h3>
+                    <p className={`text-2xl font-bold ${darkTheme ? 'text-red-300' : 'text-red-700'}`}>{modalContent.data.total}</p>
+                    <p className={`text-sm ${darkTheme ? 'text-red-300' : 'text-red-600'}`}>Meetings marked as no-shows</p>
                     <div className="mt-4">
-                      <p className="text-sm text-gray-700">
+                      <p className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
                         These meetings were scheduled but the prospect did not attend. 
                         No-shows are tracked separately from your targets and don't count against your performance.
                       </p>
@@ -1075,8 +1075,8 @@ export default function DashboardMetrics({
                       
                       if (processed.length === 0) {
                         return (
-                          <div className="text-center py-8 text-gray-500">
-                            <X className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                          <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <X className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
                             <p>No no-show meetings</p>
                           </div>
                         );
@@ -1099,23 +1099,23 @@ export default function DashboardMetrics({
                               .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
                               .map(([clientName, groupMeetings]) => (
                                 <div key={clientName} className="mb-4">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 pb-1 border-b border-gray-200">
+                                  <h4 className={`text-sm font-semibold mb-2 flex items-center gap-2 pb-1 border-b ${darkTheme ? 'text-slate-200 border-[#2d3139]' : 'text-gray-700 border-gray-200'}`}>
                                     <Building className="w-4 h-4 text-indigo-600" />
                                     {clientName} ({groupMeetings.length})
                                   </h4>
                                   <div className="space-y-3 pl-4">
                                     {groupMeetings.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                                      <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                      <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                         <div className="flex items-start justify-between">
                                           <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                              <User className="w-4 h-4 text-gray-400" />
-                                              <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                              <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                              <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                               <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
                                                 No Show
                                               </span>
                                             </div>
-                                            <div className="space-y-1 text-sm text-gray-600">
+                                            <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                               {meeting.contact_email && (
                                                 <div className="flex items-center gap-2">
                                                   <Mail className="w-3 h-3" />
@@ -1139,7 +1139,7 @@ export default function DashboardMetrics({
                                                 </div>
                                               )}
                                               {meeting.title && (
-                                                <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                                <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                               )}
                                             </div>
                                           </div>
@@ -1156,25 +1156,25 @@ export default function DashboardMetrics({
                           <>
                             <SectionControls type="noShows" meetings={modalContent.data.meetings} />
                             {processed.map((meeting: Meeting & { clients?: { name?: string } }) => (
-                              <div key={meeting.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                              <div key={meeting.id} className={`border rounded-lg p-4 shadow-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-white border-gray-200'}`}>
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
                                     {meeting.clients?.name && (
                                       <div className="mb-2">
-                                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 bg-indigo-100 text-indigo-800 border-indigo-200">
+                                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md border-2 ${darkTheme ? 'bg-indigo-900/30 text-indigo-200 border-indigo-800/50' : 'bg-indigo-100 text-indigo-800 border-indigo-200'}`}>
                                           <User className="w-3 h-3 mr-1" />
                                           {meeting.clients.name}
                                         </span>
                                       </div>
                                     )}
                                     <div className="flex items-center gap-2 mb-2">
-                                      <User className="w-4 h-4 text-gray-400" />
-                                      <h4 className="font-semibold text-gray-900">{meeting.contact_full_name}</h4>
+                                      <User className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-400'}`} />
+                                      <h4 className={`font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</h4>
                                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
                                         No Show
                                       </span>
                                     </div>
-                                    <div className="space-y-1 text-sm text-gray-600">
+                                    <div className={`space-y-1 text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                                       {meeting.contact_email && (
                                         <div className="flex items-center gap-2">
                                           <Mail className="w-3 h-3" />
@@ -1198,7 +1198,7 @@ export default function DashboardMetrics({
                                         </div>
                                       )}
                                       {meeting.title && (
-                                        <p className="text-xs text-gray-500 mt-1">{meeting.title}</p>
+                                        <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meeting.title}</p>
                                       )}
                                     </div>
                                   </div>

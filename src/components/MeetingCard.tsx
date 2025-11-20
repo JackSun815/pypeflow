@@ -17,6 +17,7 @@ interface MeetingCardProps {
   showDateControls?: boolean;
   showSDR?: boolean;
   editingMeetingId?: string | null;
+  darkTheme?: boolean;
 }
 
 export function MeetingCard({
@@ -31,6 +32,7 @@ export function MeetingCard({
   onUpdateConfirmedDate,
   showDateControls = false,
   showSDR = false,
+  darkTheme = false,
 }: MeetingCardProps) {
   const isEditing = editingMeetingId === meeting.id;
   const [editedData, setEditedData] = useState({
@@ -255,24 +257,24 @@ export function MeetingCard({
     <div className="max-h-[80vh] overflow-y-auto">
       <div className={`rounded-lg p-4 ${
         needsConfirmation 
-          ? 'bg-amber-50 border-2 border-amber-300 animate-pulse' 
-          : 'bg-gray-50'
+          ? darkTheme ? 'bg-amber-900/20 border-2 border-amber-600/50 animate-pulse' : 'bg-amber-50 border-2 border-amber-300 animate-pulse'
+          : darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'
       } ${clientName ? 'border-l-4' : ''}`} style={{
         borderLeftColor: clientName ? getBorderColor(clientName) : undefined
       }}>
         {/* Collapsed summary row */}
         {!isEditing && collapsed && (
-          <div className="flex items-center justify-between cursor-pointer hover:bg-gray-100 rounded-md p-2 -m-2" onClick={() => setCollapsed(false)}>
+          <div className={`flex items-center justify-between cursor-pointer rounded-md p-2 -m-2 ${darkTheme ? 'hover:bg-[#232529]' : 'hover:bg-gray-100'}`} onClick={() => setCollapsed(false)}>
             <div className="flex flex-col gap-1">
               <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${clientColorClass} mb-1`}>
                 <User className="w-3 h-3 mr-1" />
                 {clientName || 'Unknown Client'}
               </span>
-              <span className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</span>
-              <span className="text-xs text-gray-500">{meetingDate} {formattedTime} EST</span>
+              <span className={`font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name || 'Untitled Meeting'}</span>
+              <span className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{meetingDate} {formattedTime} EST</span>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <button className="text-gray-500 hover:text-indigo-600" title="Expand details">
+              <button className={darkTheme ? 'text-slate-400 hover:text-indigo-400' : 'text-gray-500 hover:text-indigo-600'} title="Expand details">
                 <ChevronDown className="w-5 h-5" />
               </button>
             </div>
@@ -291,15 +293,15 @@ export function MeetingCard({
                   </span>
                 </div>
                 {needsConfirmation && (
-                  <div className="flex items-center gap-2 text-amber-600 mb-2">
+                  <div className={`flex items-center gap-2 mb-2 ${darkTheme ? 'text-amber-400' : 'text-amber-600'}`}>
                     <span className="text-sm font-medium">Needs confirmation for tomorrow!</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium text-gray-900">{meeting.contact_full_name || 'Untitled Meeting'}</p>
+                    <p className={`font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name || 'Untitled Meeting'}</p>
                     {meeting.sdr_name && (
-                      <p className="text-sm text-gray-500">SDR: {meeting.sdr_name}</p>
+                      <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>SDR: {meeting.sdr_name}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -307,14 +309,14 @@ export function MeetingCard({
                       <>
                         <button
                           onClick={handleInternalSave}
-                          className="p-1 text-green-600 hover:text-green-700 focus:outline-none"
+                          className={`p-1 focus:outline-none ${darkTheme ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-700'}`}
                           title="Save changes"
                         >
                           Save
                         </button>
                         <button
                           onClick={onCancel}
-                          className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
+                          className={`p-1 focus:outline-none ${darkTheme ? 'text-slate-300 hover:text-slate-200' : 'text-gray-600 hover:text-gray-700'}`}
                           title="Cancel"
                         >
                           Cancel
@@ -324,7 +326,7 @@ export function MeetingCard({
                       editable && onEdit && (
                         <button
                           onClick={() => onEdit(meeting)}
-                          className="p-1 text-gray-600 hover:text-gray-700 focus:outline-none"
+                          className={`p-1 focus:outline-none ${darkTheme ? 'text-slate-300 hover:text-slate-200' : 'text-gray-600 hover:text-gray-700'}`}
                           title="Edit meeting"
                         >
                           <Edit2 className="w-5 h-5" />
@@ -338,14 +340,14 @@ export function MeetingCard({
                             onDelete(meeting.id);
                           }
                         }}
-                        className="p-1 text-red-600 hover:text-red-700 focus:outline-none"
+                        className={`p-1 focus:outline-none ${darkTheme ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'}`}
                         title="Delete meeting"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
                     )}
                     {!isEditing && (
-                      <button className="text-gray-500 hover:text-indigo-600" title="Collapse details" onClick={() => setCollapsed(true)}>
+                      <button className={darkTheme ? 'text-slate-400 hover:text-indigo-400' : 'text-gray-500 hover:text-indigo-600'} title="Collapse details" onClick={() => setCollapsed(true)}>
                         <ChevronUp className="w-5 h-5" />
                       </button>
                     )}
@@ -355,55 +357,56 @@ export function MeetingCard({
                 {isEditing ? (
                   <div className="space-y-3 mt-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Contact Name</label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.contact_full_name}
                         onChange={e => setEditedData({ ...editedData, contact_full_name: e.target.value })}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Email</label>
                       <input
                         type="email"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.contact_email}
                         onChange={e => setEditedData({ ...editedData, contact_email: e.target.value })}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Phone</label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.contact_phone}
                         onChange={e => setEditedData({ ...editedData, contact_phone: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Date</label>
                         <input
                           type="date"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                           value={getDatePart(editedData.scheduled_date)}
                           onChange={handleDateChange}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                        <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Time</label>
                         <TimeSelector
                           value={editedData.scheduled_date}
                           onChange={handleTimeChange}
                           className="w-full"
+                          darkTheme={darkTheme}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Creation Time (EST)</label>
+                        <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Creation Time (EST)</label>
                         <input
                           type="datetime-local"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                           value={(() => {
                             // Convert created_at to datetime-local format in EST
                             const dt = DateTime.fromISO(editedData.created_at, { zone: 'America/New_York' });
@@ -419,9 +422,9 @@ export function MeetingCard({
                     </div>
                     {/* Meeting Status Dropdown */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Status</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Meeting Status</label>
                       <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={(() => {
                           if (editedData.no_longer_interested) return 'no_longer_interested';
                           if (editedData.no_show) return 'no_show';
@@ -460,9 +463,9 @@ export function MeetingCard({
                     </div>
                     {/* ICP Status Dropdown */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">ICP Status</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>ICP Status</label>
                       <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.icp_status}
                         onChange={e => setEditedData(d => ({ ...d, icp_status: e.target.value as 'pending' | 'approved' | 'denied' }))}
                       >
@@ -472,37 +475,37 @@ export function MeetingCard({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Title</label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.title}
                         onChange={e => setEditedData({ ...editedData, title: e.target.value })}
                         placeholder="CEO, VP of Sales, etc."
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Company</label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.company}
                         onChange={e => setEditedData({ ...editedData, company: e.target.value })}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>LinkedIn URL</label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.linkedin_page}
                         onChange={e => setEditedData({ ...editedData, linkedin_page: e.target.value })}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Prospect's Timezone</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Prospect's Timezone</label>
                       <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.timezone || 'America/New_York'}
                         onChange={e => setEditedData({ ...editedData, timezone: e.target.value })}
                       >
@@ -516,10 +519,10 @@ export function MeetingCard({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                      <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Notes</label>
                       <textarea
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                         value={editedData.notes}
                         onChange={e => setEditedData({ ...editedData, notes: e.target.value })}
                       />
@@ -527,13 +530,13 @@ export function MeetingCard({
                   </div>
                 ) : (
                   <>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Meeting Time: </span>
-                      <span className="text-gray-900">{meetingDate} {formattedTime} EST</span>
+                    <div className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                      <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Meeting Time: </span>
+                      <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>{meetingDate} {formattedTime} EST</span>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-700">Created Time (EST): </span>
-                      <span className="text-gray-900">
+                    <div className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                      <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Created Time (EST): </span>
+                      <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>
                         {formatDateToEST(meeting.created_at, {
                           month: 'short',
                           day: 'numeric',
@@ -544,11 +547,11 @@ export function MeetingCard({
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium text-gray-700">Meeting Status: </span>
+                      <div className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Meeting Status: </span>
                         {isEditing ? (
                           <select
-                            className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className={`px-2 py-1 border rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                             value={
                               meeting.no_longer_interested ? 'no_longer_interested' :
                               meeting.no_show ? 'no_show' :
@@ -617,16 +620,16 @@ export function MeetingCard({
                         ) : (
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
                             meeting.no_longer_interested
-                              ? 'bg-purple-100 text-purple-700'
+                              ? darkTheme ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700'
                               : meeting.no_show
-                              ? 'bg-red-100 text-red-700'
+                              ? darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'
                               : meeting.held_at
-                              ? 'bg-green-100 text-green-700'
+                              ? darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
                               : meeting.status === 'confirmed' && new Date(meeting.scheduled_date) < new Date() && !meeting.held_at
-                              ? 'bg-orange-100 text-orange-700'
+                              ? darkTheme ? 'bg-orange-900/30 text-orange-300' : 'bg-orange-100 text-orange-700'
                               : meeting.status === 'confirmed'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-yellow-100 text-yellow-700'
+                              ? darkTheme ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
+                              : darkTheme ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
                           }`}>
                             {meeting.no_longer_interested
                               ? 'No Longer Interested'
@@ -644,11 +647,11 @@ export function MeetingCard({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium text-gray-700">ICP Status: </span>
+                      <div className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>ICP Status: </span>
                         {isEditing ? (
                           <select
-                            className="px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className={`px-2 py-1 border rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                             value={meeting.icp_status || 'pending'}
                             onChange={async (e) => {
                               const newIcpStatus = e.target.value as 'pending' | 'approved' | 'denied';
@@ -669,10 +672,10 @@ export function MeetingCard({
                         ) : (
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
                             (meeting.icp_status || 'pending') === 'approved'
-                              ? 'bg-green-100 text-green-800'
+                              ? darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-800'
                               : (meeting.icp_status || 'pending') === 'denied'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
+                              ? darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-800'
+                              : darkTheme ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {(meeting.icp_status || 'pending') === 'approved'
                               ? 'Approved'
@@ -684,21 +687,21 @@ export function MeetingCard({
                       </div>
                     </div>
                     {meeting.contact_full_name && (
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium text-gray-700">Contact: </span>
-                        <span className="text-gray-900">{meeting.contact_full_name}</span>
+                      <div className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Contact: </span>
+                        <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>{meeting.contact_full_name}</span>
                       </div>
                     )}
                     {meeting.title && (
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium text-gray-700">Title: </span>
-                        <span className="text-gray-900">{meeting.title}</span>
+                      <div className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Title: </span>
+                        <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>{meeting.title}</span>
                       </div>
                     )}
                     {meeting.contact_email && (
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium text-gray-700">Email: </span>
-                        <span className="text-gray-900">{meeting.contact_email}</span>
+                      <div className={`text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Email: </span>
+                        <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>{meeting.contact_email}</span>
                       </div>
                     )}
                     
@@ -713,11 +716,11 @@ export function MeetingCard({
                   
                     {/* Expanded details always shown when expanded or editing */}
                     {!collapsed || isEditing ? (
-                      <div className="mt-2 space-y-2 text-sm text-gray-600 relative">
+                      <div className={`mt-2 space-y-2 text-sm relative ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                         {/* Client Timezone row */}
                         <div>
-                          <span className="font-medium text-gray-700">Prospect's Timezone: </span>
-                          <span className="text-gray-900">
+                          <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Prospect's Timezone: </span>
+                          <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>
                             {(() => {
                               const tz = meeting.timezone || 'America/New_York';
                               const dt = DateTime.now().setZone(tz);
@@ -727,31 +730,31 @@ export function MeetingCard({
                         </div>
                         {meeting.contact_phone && (
                           <div>
-                            <span className="font-medium text-gray-700">Phone Number: </span>
-                            <span className="text-gray-900">{meeting.contact_phone}</span>
+                            <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Phone Number: </span>
+                            <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>{meeting.contact_phone}</span>
                           </div>
                         )}
                         {meeting.company && (
                           <div>
-                            <span className="font-medium text-gray-700">Company: </span>
-                            <span className="text-gray-900">{meeting.company}</span>
+                            <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Company: </span>
+                            <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>{meeting.company}</span>
                           </div>
                         )}
                         {meeting.linkedin_page && (
                           <div>
-                            <span className="font-medium text-gray-700">LinkedIn: </span>
-                            <span className="text-gray-900">{meeting.linkedin_page}</span>
+                            <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>LinkedIn: </span>
+                            <span className={darkTheme ? 'text-slate-100' : 'text-gray-900'}>{meeting.linkedin_page}</span>
                           </div>
                         )}
                         {meeting.notes && (
                           <div>
-                            <span className="font-medium text-gray-700">Notes: </span>
-                            <span className="text-gray-900 whitespace-pre-wrap">{meeting.notes}</span>
+                            <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Notes: </span>
+                            <span className={`whitespace-pre-wrap ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.notes}</span>
                           </div>
                         )}
                         <button
                           onClick={handleCopySlack}
-                          className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 border border-indigo-300 text-indigo-600 bg-white rounded-md hover:bg-indigo-50 hover:border-indigo-400 transition text-sm focus:outline-none"
+                          className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-md transition text-sm focus:outline-none ${darkTheme ? 'border-indigo-600/50 text-indigo-300 bg-[#232529] hover:bg-indigo-900/30 hover:border-indigo-500' : 'border-indigo-300 text-indigo-600 bg-white hover:bg-indigo-50 hover:border-indigo-400'}`}
                           title="Copy meeting info for Slack"
                           type="button"
                         >

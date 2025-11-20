@@ -1300,6 +1300,7 @@ function SDRDashboardContent() {
                 onUpdateHeldDate={handleMeetingHeldDateUpdate}
                 onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
                 onMeetingStatusChange={handleMeetingStatusChange}
+                darkTheme={darkTheme}
               />
 
               {/* Data Visualizations - Moved to bottom */}
@@ -1582,10 +1583,11 @@ function SDRDashboardContent() {
               onUpdateHeldDate={handleMeetingHeldDateUpdate} 
               onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate} 
               sdrId={sdrId || ''}
+              darkTheme={darkTheme}
             />
           } 
         />
-        <Route path="commissions" element={<Commissions sdrId={sdrId || ''} />} />
+        <Route path="commissions" element={<Commissions sdrId={sdrId || ''} darkTheme={darkTheme} />} />
         <Route path="calendar" element={<CalendarView meetings={meetingsWithSDR} colorByStatus={true} />} />
       </Routes>
     </main>

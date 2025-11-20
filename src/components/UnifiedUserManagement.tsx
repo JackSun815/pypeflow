@@ -43,9 +43,10 @@ interface UnifiedUserManagementProps {
   sdrs: SDRProfile[];
   clients: ClientWithTargets[];
   onUpdate: () => void;
+  darkTheme?: boolean;
 }
 
-export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: UnifiedUserManagementProps) {
+export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkTheme = false }: UnifiedUserManagementProps) {
   const { agency } = useAgency();
   const [activeTab, setActiveTab] = useState<'managers' | 'sdrs' | 'clients'>('managers');
   
@@ -423,33 +424,33 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
 
   const renderManagers = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <div className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
             <Shield className="w-5 h-5" />
             Manage Managers
           </h2>
         </div>
 
-        <form onSubmit={handleAddManager} className="p-6 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Add New Manager</h3>
+        <form onSubmit={handleAddManager} className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Add New Manager</h3>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 text-red-700">
+            <div className={`mb-4 p-3 border rounded-md flex items-center gap-2 ${darkTheme ? 'bg-red-900/20 border-red-800/50 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
               <AlertCircle className="w-4 h-4" />
               <p className="text-sm">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-sm text-green-700">{success}</p>
+            <div className={`mb-4 p-3 border rounded-md ${darkTheme ? 'bg-green-900/20 border-green-800/50 text-green-300' : 'bg-green-50 border-green-200 text-green-700'}`}>
+              <p className="text-sm">{success}</p>
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="fullName" className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 Full Name
               </label>
               <input
@@ -458,12 +459,12 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 Email Address
               </label>
               <input
@@ -474,12 +475,12 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                 onChange={(e) => setEmail(e.target.value)}
                 pattern="[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
                 title="Please enter a valid email address"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 Password
               </label>
               <input
@@ -489,7 +490,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
 
@@ -511,25 +512,25 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
         </form>
 
         <div className="p-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Current Managers</h3>
+          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Current Managers</h3>
           <div className="space-y-3">
             {managers.map((manager) => (
               <div
                 key={manager.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                className={`flex items-center justify-between p-4 rounded-lg ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{manager.full_name}</p>
-                  <p className="text-xs text-gray-500">{manager.email}</p>
-                  <p className="text-xs text-gray-400">
+                  <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{manager.full_name}</p>
+                  <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{manager.email}</p>
+                  <p className={`text-xs ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`}>
                     Created: {new Date(manager.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     manager.active 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
+                      ? darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-800'
+                      : darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-800'
                   }`}>
                     {manager.active ? 'Active' : 'Inactive'}
                   </span>
@@ -540,11 +541,11 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="New password"
-                        className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className={`px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                       />
                       <button
                         onClick={() => handleUpdatePassword(manager.email)}
-                        className="p-1 text-green-600 hover:text-green-700 focus:outline-none"
+                        className={`p-1 focus:outline-none ${darkTheme ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-700'}`}
                         title="Save new password"
                       >
                         <Check className="w-4 h-4" />
@@ -557,7 +558,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                         setNewPassword('');
                         setError(null);
                       }}
-                      className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
                     >
                       <Key className="w-4 h-4" />
                       Edit Password
@@ -567,7 +568,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
               </div>
             ))}
             {managers.length === 0 && (
-              <p className="text-sm text-gray-500">No managers have been added yet</p>
+              <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No managers have been added yet</p>
             )}
           </div>
         </div>
@@ -577,33 +578,33 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
 
   const renderSDRs = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <div className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
             <Users className="w-5 h-5" />
             Manage SDRs
           </h2>
         </div>
 
-        <form onSubmit={handleAddSDR} className="p-6 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Add New SDR</h3>
+        <form onSubmit={handleAddSDR} className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Add New SDR</h3>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 text-red-700">
+            <div className={`mb-4 p-3 border rounded-md flex items-center gap-2 ${darkTheme ? 'bg-red-900/20 border-red-800/50 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
               <AlertCircle className="w-4 h-4" />
               <p className="text-sm">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-sm text-green-700">{success}</p>
+            <div className={`mb-4 p-3 border rounded-md ${darkTheme ? 'bg-green-900/20 border-green-800/50 text-green-300' : 'bg-green-50 border-green-200 text-green-700'}`}>
+              <p className="text-sm">{success}</p>
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="sdrFullName" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="sdrFullName" className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 Full Name
               </label>
               <input
@@ -612,12 +613,12 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                 required
                 value={sdrFullName}
                 onChange={(e) => setSdrFullName(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
 
             <div>
-              <label htmlFor="sdrEmail" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="sdrEmail" className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 Email Address
               </label>
               <input
@@ -628,7 +629,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                 onChange={(e) => setSdrEmail(e.target.value)}
                 pattern="[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
                 title="Please enter a valid email address"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               />
             </div>
 
@@ -659,37 +660,37 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
         />
       )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className="p-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Active SDRs</h3>
+          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active SDRs</h3>
           <div className="space-y-3">
             {sdrs.filter(sdr => sdr.active).map((sdr) => (
               <div
                 key={sdr.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-l-4 border-green-500"
+                className={`flex items-center justify-between p-4 rounded-lg border-l-4 ${darkTheme ? 'bg-[#1d1f24] border-green-600' : 'bg-gray-50 border-green-500'}`}
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">{sdr.full_name}</p>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdr.full_name}</p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-800'}`}>
                       Active
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">{sdr.email}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{sdr.email}</p>
+                  <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     Created {sdr.created_at && new Date(sdr.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setSelectedSDR(selectedSDR === sdr.id ? null : sdr.id)}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
                   >
                     {selectedSDR === sdr.id ? 'Hide Compensation' : 'Manage Compensation'}
                   </button>
                   <button
                     onClick={() => handleCopyUrl(sdr.id)}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
                     title="Copy dashboard URL"
                   >
                     {copiedId === sdr.id ? (
@@ -706,7 +707,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                   </button>
                   <button
                     onClick={() => handleToggleSDRActive(sdr.id, sdr.active)}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                    className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${darkTheme ? 'text-red-300 bg-red-900/30 hover:bg-red-900/50' : 'text-red-700 bg-red-50 hover:bg-red-100'}`}
                     title="Deactivate SDR"
                   >
                     <UserX className="w-4 h-4" />
@@ -716,38 +717,38 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
               </div>
             ))}
             {sdrs.filter(sdr => sdr.active).length === 0 && (
-              <p className="text-sm text-gray-500">No active SDRs</p>
+              <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No active SDRs</p>
             )}
           </div>
         </div>
       </div>
 
       {sdrs.filter(sdr => !sdr.active).length > 0 && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
           <div className="p-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Inactive SDRs</h3>
+            <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Inactive SDRs</h3>
             <div className="space-y-3">
               {sdrs.filter(sdr => !sdr.active).map((sdr) => (
                 <div
                   key={sdr.id}
-                  className="flex items-center justify-between p-4 bg-gray-100 rounded-lg border-l-4 border-gray-400 opacity-75"
+                  className={`flex items-center justify-between p-4 rounded-lg border-l-4 opacity-75 ${darkTheme ? 'bg-[#1d1f24] border-slate-600' : 'bg-gray-100 border-gray-400'}`}
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-700">{sdr.full_name}</p>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                      <p className={`text-sm font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>{sdr.full_name}</p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${darkTheme ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-700'}`}>
                         Inactive
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500">{sdr.email}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{sdr.email}</p>
+                    <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                       Created {sdr.created_at && new Date(sdr.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleToggleSDRActive(sdr.id, sdr.active)}
-                      className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${darkTheme ? 'text-green-300 bg-green-900/30 hover:bg-green-900/50' : 'text-green-700 bg-green-50 hover:bg-green-100'}`}
                       title="Reactivate SDR"
                     >
                       <UserCheck className="w-4 h-4" />
@@ -762,8 +763,8 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
       )}
       
       {sdrs.length === 0 && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
-          <p className="text-sm text-gray-500">No SDRs have been added yet</p>
+        <div className={`rounded-lg shadow-md overflow-hidden p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No SDRs have been added yet</p>
         </div>
       )}
     </div>
@@ -771,16 +772,16 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
 
   const renderClients = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <div className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
             <Building className="w-5 h-5" />
             Client Dashboard Access
           </h2>
         </div>
 
         <div className="p-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Active Clients</h3>
+          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active Clients</h3>
           <div className="space-y-3">
             {clientTokens.filter(token => {
               const client = clients.find(c => c.id === token.client_id);
@@ -790,21 +791,21 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
               return (
               <div
                 key={token.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                className={`flex items-center justify-between p-4 rounded-lg ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{token.client_name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{token.client_name}</p>
+                  <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     Set Target: {client?.monthly_set_target || 0} | Hold Target: {client?.monthly_hold_target || 0}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     Created {new Date(token.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCopyClientUrl(token.token)}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
                     title="Copy dashboard URL"
                   >
                     {copiedId === token.token ? (
@@ -821,7 +822,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                   </button>
                   <button
                     onClick={() => handleToggleClientArchive(token.client_id, false)}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-orange-700 bg-orange-50 rounded-md hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${darkTheme ? 'text-orange-300 bg-orange-900/30 hover:bg-orange-900/50' : 'text-orange-700 bg-orange-50 hover:bg-orange-100'}`}
                     title="Archive client"
                   >
                     <Archive className="w-4 h-4" />
@@ -834,7 +835,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
               const client = clients.find(c => c.id === token.client_id);
               return !client?.archived_at;
             }).length === 0 && (
-              <p className="text-sm text-gray-500">No active clients</p>
+              <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No active clients</p>
             )}
           </div>
         </div>
@@ -844,9 +845,9 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
         const client = clients.find(c => c.id === token.client_id);
         return client?.archived_at;
       }).length > 0 && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
           <div className="p-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Archived Clients</h3>
+            <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Archived Clients</h3>
             <div className="space-y-3">
               {clientTokens.filter(token => {
                 const client = clients.find(c => c.id === token.client_id);
@@ -856,26 +857,26 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
                 return (
                 <div
                   key={token.id}
-                  className="flex items-center justify-between p-4 bg-gray-100 rounded-lg border-l-4 border-gray-400 opacity-75"
+                  className={`flex items-center justify-between p-4 rounded-lg border-l-4 opacity-75 ${darkTheme ? 'bg-[#1d1f24] border-slate-600' : 'bg-gray-100 border-gray-400'}`}
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-700">{token.client_name}</p>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                      <p className={`text-sm font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>{token.client_name}</p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${darkTheme ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-700'}`}>
                         Archived
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                       Set Target: {client?.monthly_set_target || 0} | Hold Target: {client?.monthly_hold_target || 0}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                       Archived {client?.archived_at && new Date(client.archived_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleToggleClientArchive(token.client_id, true)}
-                      className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${darkTheme ? 'text-green-300 bg-green-900/30 hover:bg-green-900/50' : 'text-green-700 bg-green-50 hover:bg-green-100'}`}
                       title="Unarchive client"
                     >
                       <ArchiveRestore className="w-4 h-4" />
@@ -890,8 +891,8 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
       )}
       
       {clientTokens.length === 0 && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden p-6">
-          <p className="text-sm text-gray-500">No clients have been added yet. Add clients in the Client Management page.</p>
+        <div className={`rounded-lg shadow-md overflow-hidden p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No clients have been added yet. Add clients in the Client Management page.</p>
         </div>
       )}
     </div>
@@ -900,15 +901,15 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-gray-200">
+      <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <div className={`border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('managers')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'managers'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -920,8 +921,8 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
               onClick={() => setActiveTab('sdrs')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'sdrs'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -933,8 +934,8 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate }: Unifi
               onClick={() => setActiveTab('clients')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'clients'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center gap-2">

@@ -12,9 +12,11 @@ import toast from 'react-hot-toast';
 
 export default function TeamMeetings({
   fetchSDRs,
+  darkTheme = false,
 }: {
   meetings: Meeting[];
   fetchSDRs: () => void;
+  darkTheme?: boolean;
 }) {
   const { agency } = useAgency();
   const { sdrs, loading: sdrsLoading } = useSDRs();
@@ -461,19 +463,19 @@ export default function TeamMeetings({
   return (
     <div className="space-y-8 px-2">
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Team's Meetings</h2>
+          <h2 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Team's Meetings</h2>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label htmlFor="sdr-filter" className="text-sm font-medium text-gray-700">
+              <label htmlFor="sdr-filter" className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 SDR:
               </label>
               <select
                 id="sdr-filter"
                 value={selectedSDR}
                 onChange={(e) => setSelectedSDR(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className={`rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               >
                 <option value="all">All SDRs</option>
                 {sdrs.map((sdr) => (
@@ -484,14 +486,14 @@ export default function TeamMeetings({
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="client-filter" className="text-sm font-medium text-gray-700">
+              <label htmlFor="client-filter" className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                 Client:
               </label>
               <select
                 id="client-filter"
                 value={selectedClient}
                 onChange={(e) => setSelectedClient(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className={`rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
               >
                 <option value="all">All Clients</option>
                 {clients.map((client) => (
@@ -504,7 +506,7 @@ export default function TeamMeetings({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setAddDirectMeetingModalOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded hover:bg-indigo-100 border border-indigo-200"
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-indigo-100 border ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 border-indigo-800/50 hover:bg-indigo-900/50' : 'text-indigo-700 bg-indigo-50 border-indigo-200'}`}
                 title="Add meeting from other sources (email, LinkedIn, etc.)"
               >
                 <Plus className="w-3 h-3" />
@@ -512,7 +514,7 @@ export default function TeamMeetings({
               </button>
               <button
                 onClick={() => setExportModalOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 border border-blue-200"
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-blue-100 border ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-800/50 hover:bg-blue-900/50' : 'text-blue-700 bg-blue-50 border-blue-200'}`}
                 title="Export team meetings organized by SDR"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -530,7 +532,7 @@ export default function TeamMeetings({
         </div>
 
         {/* Visual Separator */}
-        <div className="border-t-2 border-gray-200 my-8"></div>
+        <div className={`border-t-2 my-8 ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}></div>
 
         {/* Unified Meeting Lists with Drag & Drop */}
         <UnifiedMeetingLists
@@ -546,18 +548,19 @@ export default function TeamMeetings({
           onSave={handleSaveMeeting}
           onCancel={() => { setEditingMeetingId(null); }}
           onMeetingStatusChange={handleMeetingStatusChange}
+          darkTheme={darkTheme}
         />
 
       {/* Export Modal */}
       {exportModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className={`rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Export Team Meetings by SDR</h3>
+                <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Export Team Meetings by SDR</h3>
                 <button
                   onClick={() => setExportModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className={darkTheme ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}
                 >
                   <XCircle className="w-6 h-6" />
                 </button>
@@ -566,56 +569,56 @@ export default function TeamMeetings({
               <div className="space-y-6">
                 {/* Date Range Filter */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Date Range</h4>
+                  <h4 className={`text-sm font-medium mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>Date Range</h4>
                   <div className="space-y-3">
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="radio"
                         value="all"
                         checked={exportFilters.dateRange === 'all'}
                         onChange={(e) => setExportFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                        className="mr-2"
+                        className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                       />
                       All Time
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="radio"
                         value="currentMonth"
                         checked={exportFilters.dateRange === 'currentMonth'}
                         onChange={(e) => setExportFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                        className="mr-2"
+                        className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                       />
                       Current Month
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="radio"
                         value="custom"
                         checked={exportFilters.dateRange === 'custom'}
                         onChange={(e) => setExportFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                        className="mr-2"
+                        className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                       />
                       Custom Range
                     </label>
                     {exportFilters.dateRange === 'custom' && (
                       <div className="flex gap-4 ml-6">
                         <div>
-                          <label className="block text-sm text-gray-600 mb-1">Start Date</label>
+                          <label className={`block text-sm mb-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Start Date</label>
                           <input
                             type="date"
                             value={exportFilters.startDate}
                             onChange={(e) => setExportFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+                            className={`rounded-md border px-3 py-2 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-gray-600 mb-1">End Date</label>
+                          <label className={`block text-sm mb-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>End Date</label>
                           <input
                             type="date"
                             value={exportFilters.endDate}
                             onChange={(e) => setExportFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+                            className={`rounded-md border px-3 py-2 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                           />
                         </div>
                       </div>
@@ -625,11 +628,11 @@ export default function TeamMeetings({
 
                 {/* Status Filter */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Status</h4>
+                  <h4 className={`text-sm font-medium mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>Status</h4>
                   <select
                     value={exportFilters.status}
                     onChange={(e) => setExportFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm w-full"
+                    className={`rounded-md border px-3 py-2 text-sm w-full ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                   >
                     <option value="all">All Statuses</option>
                     <option value="pending">Pending</option>
@@ -640,10 +643,10 @@ export default function TeamMeetings({
 
                 {/* SDR Filter */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">SDRs</h4>
-                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                  <h4 className={`text-sm font-medium mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>SDRs</h4>
+                  <div className={`max-h-32 overflow-y-auto border rounded-md p-2 ${darkTheme ? 'border-[#2d3139] bg-[#1d1f24]' : 'border-gray-300'}`}>
                     {sdrs.map(sdr => (
-                      <label key={sdr.id} className="flex items-center mb-2">
+                      <label key={sdr.id} className={`flex items-center mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                         <input
                           type="checkbox"
                           checked={exportFilters.sdrIds.includes(sdr.id)}
@@ -660,23 +663,23 @@ export default function TeamMeetings({
                               }));
                             }
                           }}
-                          className="mr-2"
+                          className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                         />
                         {sdr.full_name}
                       </label>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     {exportFilters.sdrIds.length === 0 ? 'All SDRs' : `${exportFilters.sdrIds.length} SDR(s) selected`}
                   </p>
                 </div>
 
                 {/* Client Filter */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Clients</h4>
-                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                  <h4 className={`text-sm font-medium mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>Clients</h4>
+                  <div className={`max-h-32 overflow-y-auto border rounded-md p-2 ${darkTheme ? 'border-[#2d3139] bg-[#1d1f24]' : 'border-gray-300'}`}>
                     {clients.map(client => (
-                      <label key={client.id} className="flex items-center mb-2">
+                      <label key={client.id} className={`flex items-center mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                         <input
                           type="checkbox"
                           checked={exportFilters.clientIds.includes(client.id)}
@@ -693,22 +696,22 @@ export default function TeamMeetings({
                               }));
                             }
                           }}
-                          className="mr-2"
+                          className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                         />
                         {client.name}
                       </label>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                     {exportFilters.clientIds.length === 0 ? 'All clients' : `${exportFilters.clientIds.length} client(s) selected`}
                   </p>
                 </div>
 
                 {/* Include Fields */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Include Fields</h4>
+                  <h4 className={`text-sm font-medium mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>Include Fields</h4>
                   <div className="space-y-2">
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.sdrInfo}
@@ -716,11 +719,11 @@ export default function TeamMeetings({
                           ...prev, 
                           includeFields: { ...prev.includeFields, sdrInfo: e.target.checked }
                         }))}
-                        className="mr-2"
+                        className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                       />
                       SDR Information
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.clientInfo}
@@ -728,11 +731,11 @@ export default function TeamMeetings({
                           ...prev, 
                           includeFields: { ...prev.includeFields, clientInfo: e.target.checked }
                         }))}
-                        className="mr-2"
+                        className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                       />
                       Client Information
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.meetingDetails}
@@ -740,11 +743,11 @@ export default function TeamMeetings({
                           ...prev, 
                           includeFields: { ...prev.includeFields, meetingDetails: e.target.checked }
                         }))}
-                        className="mr-2"
+                        className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                       />
                       Meeting Details
                     </label>
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                       <input
                         type="checkbox"
                         checked={exportFilters.includeFields.timestamps}
@@ -752,7 +755,7 @@ export default function TeamMeetings({
                           ...prev, 
                           includeFields: { ...prev.includeFields, timestamps: e.target.checked }
                         }))}
-                        className="mr-2"
+                        className={`mr-2 ${darkTheme ? 'accent-indigo-500' : ''}`}
                       />
                       Timestamps
                     </label>
@@ -760,10 +763,10 @@ export default function TeamMeetings({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+              <div className={`flex justify-end gap-3 mt-6 pt-6 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                 <button
                   onClick={() => setExportModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 ${darkTheme ? 'text-slate-200 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
                 >
                   Cancel
                 </button>
@@ -782,32 +785,32 @@ export default function TeamMeetings({
       {/* Add Direct Meeting Modal */}
       {addDirectMeetingModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className={`rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Add Direct Meeting</h3>
+                <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Add Direct Meeting</h3>
                 <button
                   onClick={() => setAddDirectMeetingModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className={darkTheme ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <p className="text-sm text-gray-600 mb-6">
+              <p className={`text-sm mb-6 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                 Add meetings from other sources (email, LinkedIn, referrals, etc.) that aren't associated with an SDR.
               </p>
 
               <div className="space-y-4">
                 {/* Client Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Client <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={newDirectMeeting.client_id}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, client_id: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                   >
                     <option value="">Select a client</option>
                     {clients.map((client) => (
@@ -820,13 +823,13 @@ export default function TeamMeetings({
 
                 {/* Source Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Source <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={newDirectMeeting.source}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, source: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                   >
                     <option value="direct">Direct</option>
                     <option value="cold_email">Cold Email</option>
@@ -839,106 +842,106 @@ export default function TeamMeetings({
 
                 {/* Contact Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Contact Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={newDirectMeeting.contact_full_name}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, contact_full_name: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                     placeholder="John Doe"
                   />
                 </div>
 
                 {/* Contact Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Contact Email
                   </label>
                   <input
                     type="email"
                     value={newDirectMeeting.contact_email}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, contact_email: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                     placeholder="john@example.com"
                   />
                 </div>
 
                 {/* Contact Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Contact Phone
                   </label>
                   <input
                     type="tel"
                     value={newDirectMeeting.contact_phone}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, contact_phone: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
 
                 {/* Company */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Company
                   </label>
                   <input
                     type="text"
                     value={newDirectMeeting.company}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, company: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                     placeholder="Acme Inc."
                   />
                 </div>
 
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Title
                   </label>
                   <input
                     type="text"
                     value={newDirectMeeting.title}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                     placeholder="CEO, VP of Sales, etc."
                   />
                 </div>
 
                 {/* Scheduled Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Scheduled Date & Time <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={newDirectMeeting.scheduled_date}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                   />
                 </div>
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                     Notes
                   </label>
                   <textarea
                     value={newDirectMeeting.notes}
                     onChange={(e) => setNewDirectMeeting(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                     rows={3}
                     placeholder="Additional details about the meeting..."
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+              <div className={`flex justify-end gap-3 mt-6 pt-6 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                 <button
                   onClick={() => setAddDirectMeetingModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 ${darkTheme ? 'text-slate-200 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
                 >
                   Cancel
                 </button>
