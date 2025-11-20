@@ -10,7 +10,7 @@ import MeetingsList from '../components/MeetingsList';
 import DashboardMetrics from '../components/DashboardMetrics';
 import MeetingsHistory from './MeetingsHistory';
 import Commissions from './Commissions';
-import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff, Upload, FileSpreadsheet, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
@@ -105,6 +105,12 @@ function SDRDashboardContent() {
   const [notes, setNotes] = useState('');
   const [prospectTimezone, setProspectTimezone] = useState('America/New_York'); // Default to EST
   const [allSDRs, setAllSDRs] = useState<{ id: string; full_name: string | null }[]>([]);
+  
+  // Import Meetings Modal State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   
   // Theme and chart visibility settings (SDR-specific)
   const [darkTheme, setDarkTheme] = useState(() => {
@@ -413,6 +419,449 @@ function SDRDashboardContent() {
     console.log('Editing meeting:', meeting.id);
     setEditingMeeting(meeting.id);
   };
+
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportError(null);
+    setImportSuccess(null);
+
+    try {
+      let rows: any[] = [];
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+
+      if (fileExtension === 'csv') {
+        // Parse CSV file
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+          throw new Error('CSV file must have at least a header row and one data row');
+        }
+
+        // Parse header
+        const headers = parseCSVLine(lines[0]);
+        const headerMap: Record<string, number> = {};
+        headers.forEach((header, index) => {
+          const normalizedHeader = header.trim().toLowerCase().replace(/\s+/g, ' ');
+          headerMap[normalizedHeader] = index;
+        });
+
+        // Parse data rows
+        for (let i = 1; i < lines.length; i++) {
+          const values = parseCSVLine(lines[i]);
+          if (values.length === 0 || values.every(v => !v.trim())) continue; // Skip empty rows
+          
+          const row: any = {};
+          Object.keys(headerMap).forEach(key => {
+            const index = headerMap[key];
+            row[key] = values[index]?.trim() || '';
+          });
+          rows.push(row);
+        }
+      } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+        // Parse Excel file using SheetJS (xlsx)
+        try {
+          const XLSX = await import('xlsx');
+          const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // Parse Excel with cell type detection to handle dates/times properly
+          // Use raw: false to get formatted strings, but we'll also check for serial numbers
+          rows = XLSX.utils.sheet_to_json(worksheet, { 
+            defval: '', 
+            raw: false, // Get formatted strings when possible
+            dateNF: 'mm/dd/yyyy' // Date format
+          });
+          
+          // Helper to convert Excel serial number to time string
+          const convertExcelSerialToTime = (serial: number): string => {
+            // Get the decimal part (time)
+            const timeFraction = serial % 1;
+            const totalSeconds = Math.floor(timeFraction * 86400); // 86400 seconds in a day
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            
+            // Format as HH:MM AM/PM
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+            return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+          };
+          
+          // Also parse with raw values to detect serial numbers that weren't converted
+          const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: true });
+          
+          // Merge: use formatted strings when available, but check raw values for serial numbers
+          rows = rows.map((row: any, index: number) => {
+            const rawRow = rawRows[index] || {};
+            const convertedRow: any = {};
+            
+            for (const key in row) {
+              const formattedValue = row[key];
+              const rawValue = rawRow[key];
+              
+              // If formatted value looks like a serial number (numeric string), check raw value
+              if (typeof rawValue === 'number' && rawValue > 0 && rawValue < 1000000) {
+                // Check if it's a time serial (has significant decimal part)
+                if (rawValue % 1 !== 0 && rawValue > 1) {
+                  // Date + time combination - extract time part
+                  convertedRow[key] = convertExcelSerialToTime(rawValue);
+                } else if (rawValue < 1) {
+                  // Pure time (fraction of day)
+                  convertedRow[key] = convertExcelSerialToTime(rawValue);
+                } else {
+                  // Use formatted value (should be a date string)
+                  convertedRow[key] = formattedValue;
+                }
+              } else {
+                // Use formatted value as-is
+                convertedRow[key] = formattedValue;
+              }
+            }
+            
+            return convertedRow;
+          });
+        } catch (err) {
+          throw new Error('Failed to parse Excel file. Please check the file format or use CSV format.');
+        }
+      } else {
+        throw new Error('Unsupported file format. Please use .csv, .xlsx, or .xls files.');
+      }
+
+      if (rows.length === 0) {
+        throw new Error('No data rows found in the file.');
+      }
+
+      // Map column names (case-insensitive, flexible matching)
+      const normalizeColumnName = (name: string) => {
+        return name.toLowerCase()
+          .replace(/[_\s]+/g, ' ')
+          .trim()
+          .replace(/\s+/g, ' ');
+      };
+
+      // Process each row and create meetings
+      const { createZonedDateTime } = await import('../utils/timeUtils');
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rowNum = i + 2; // +2 because row 1 is header, and arrays are 0-indexed
+
+        try {
+          // Map columns to meeting fields
+          const getValue = (possibleNames: string[]) => {
+            // First pass: exact matches
+            for (const name of possibleNames) {
+              const normalized = normalizeColumnName(name);
+              for (const key in row) {
+                const keyNormalized = normalizeColumnName(key);
+                if (keyNormalized === normalized) {
+                  const value = row[key];
+                  return value != null ? String(value).trim() : '';
+                }
+              }
+            }
+            
+            // Second pass: smart partial matches for truncated column names
+            // This handles cases like "Meeting Da" (truncated) matching "Meeting Date"
+            for (const name of possibleNames) {
+              const normalized = normalizeColumnName(name);
+              const nameWords = normalized.split(/\s+/);
+              const lastWord = nameWords[nameWords.length - 1] || ''; // e.g., "date", "time", "email"
+              
+              for (const key in row) {
+                const keyNormalized = normalizeColumnName(key);
+                const keyWords = keyNormalized.split(/\s+/);
+                const keyLastWord = keyWords[keyWords.length - 1] || '';
+                
+                // Check if key starts with name (for truncated columns)
+                // AND the last words match (to distinguish "date" from "time")
+                const startsWithName = keyNormalized.startsWith(normalized) || normalized.startsWith(keyNormalized);
+                
+                // Check if last words are compatible (e.g., "da" matches "date" but not "time")
+                // If key is truncated, check if the full word starts with the truncated part
+                // If full word is provided, check if it starts with the key part
+                const lastWordMatch = lastWord && keyLastWord && (
+                  keyLastWord === lastWord ||
+                  (keyLastWord.length <= lastWord.length && lastWord.startsWith(keyLastWord)) ||
+                  (lastWord.length <= keyLastWord.length && keyLastWord.startsWith(lastWord))
+                );
+                
+                // If key is shorter (truncated), check if it's a prefix of name
+                // If name is shorter, check if it's a prefix of key
+                const isTruncatedMatch = keyNormalized.length < normalized.length 
+                  ? normalized.startsWith(keyNormalized) && lastWordMatch
+                  : keyNormalized.startsWith(normalized) && lastWordMatch;
+                
+                if (isTruncatedMatch || (startsWithName && lastWordMatch && nameWords.length === keyWords.length)) {
+                  const value = row[key];
+                  return value != null ? String(value).trim() : '';
+                }
+              }
+            }
+            
+            return '';
+          };
+
+          const contactFullName = getValue(['Contact Full Name', 'Contact Name', 'Full Name', 'Name', 'Contact']);
+          const contactEmail = getValue(['Contact Email', 'Email', 'Email Address']);
+          const meetingDateStr = getValue(['Meeting Date', 'Date', 'Scheduled Date', 'Meeting Scheduled Date', 'Meeting Da']);
+          const meetingTimeStr = getValue(['Meeting Time', 'Time', 'Scheduled Time', 'Meeting Scheduled Time', 'Meeting Tir']);
+          const clientName = getValue(['Client Name', 'Client', 'Company Name']);
+          const contactPhone = getValue(['Contact Phone', 'Phone', 'Phone Number']);
+          const title = getValue(['Title', 'Job Title', 'Position']);
+          const company = getValue(['Company', 'Company Name']);
+          const linkedinPage = getValue(['LinkedIn Page', 'LinkedIn', 'LinkedIn URL', 'LinkedIn Profile', 'LinkedIn Pa']);
+          const prospectTimezone = getValue(['Prospect Timezone', 'Timezone', 'Time Zone', 'Prospect Ti']) || 'America/New_York';
+          const notes = getValue(['Notes', 'Note', 'Comments']);
+          const bookedDateStr = getValue(['Meeting Booked Date', 'Booked Date', 'Created Date']);
+
+          // Validate required fields (ensure they're non-empty strings)
+          if (!contactFullName || !contactEmail || !meetingDateStr || !meetingTimeStr || 
+              !String(contactFullName).trim() || !String(contactEmail).trim() || 
+              !String(meetingDateStr).trim() || !String(meetingTimeStr).trim()) {
+            errors.push(`Row ${rowNum}: Missing required fields (Contact Full Name, Email, Meeting Date, or Meeting Time)`);
+            errorCount++;
+            continue;
+          }
+
+          // Find client by name
+          let clientId = selectedClientId;
+          if (clientName && !clientId) {
+            const foundClient = clients.find(c => 
+              c.name.toLowerCase().trim() === clientName.toLowerCase().trim()
+            );
+            if (!foundClient) {
+              errors.push(`Row ${rowNum}: Client "${clientName}" not found. Please select a client first or ensure the client name matches exactly.`);
+              errorCount++;
+              continue;
+            }
+            clientId = foundClient.id;
+          }
+
+          if (!clientId) {
+            errors.push(`Row ${rowNum}: No client selected. Please select a client or include Client Name in the spreadsheet.`);
+            errorCount++;
+            continue;
+          }
+
+          // Parse meeting date and time (ensure strings)
+          const meetingDateStrClean = String(meetingDateStr).trim();
+          const meetingTimeStrClean = String(meetingTimeStr).trim();
+          
+          if (!meetingDateStrClean) {
+            throw new Error(`Row ${rowNum}: Meeting Date is required.`);
+          }
+          
+          if (!meetingTimeStrClean) {
+            throw new Error(`Row ${rowNum}: Meeting Time is required.`);
+          }
+          
+          let meetingDate: string;
+          let meetingTime: string;
+
+          // Try to parse date in various formats
+          // Format 1: MM/DD/YYYY or M/D/YYYY
+          let dateMatch = meetingDateStrClean.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+          if (dateMatch) {
+            meetingDate = `${dateMatch[3]}-${dateMatch[1].padStart(2, '0')}-${dateMatch[2].padStart(2, '0')}`;
+          } else {
+            // Format 2: YYYY-MM-DD
+            dateMatch = meetingDateStrClean.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (dateMatch) {
+              meetingDate = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
+            } else {
+              // Format 3: "Fri, Nov 21, 2025" or "Friday November 21st 2025" or "November 21, 2025"
+              const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+              const monthAbbr = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+              
+              let monthIndex = -1;
+              let day = '';
+              let year = '';
+              
+              // Try full month name
+              for (let i = 0; i < monthNames.length; i++) {
+                const regex = new RegExp(monthNames[i] + '\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})', 'i');
+                const match = meetingDateStrClean.match(regex);
+                if (match) {
+                  monthIndex = i;
+                  day = match[1];
+                  year = match[2];
+                  break;
+                }
+              }
+              
+              // Try abbreviated month name
+              if (monthIndex === -1) {
+                for (let i = 0; i < monthAbbr.length; i++) {
+                  const regex = new RegExp(monthAbbr[i] + '\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})', 'i');
+                  const match = meetingDateStrClean.match(regex);
+                  if (match) {
+                    monthIndex = i;
+                    day = match[1];
+                    year = match[2];
+                    break;
+                  }
+                }
+              }
+              
+              if (monthIndex !== -1 && day && year) {
+                meetingDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${day.padStart(2, '0')}`;
+              } else {
+                throw new Error(`Row ${rowNum}: Unable to parse date "${meetingDateStrClean}". Supported formats: MM/DD/YYYY, YYYY-MM-DD, or "Month Day, Year"`);
+              }
+            }
+          }
+
+          // Parse time (handle formats like "10:00 AM EST", "10:00 AM", "10:00", etc.)
+          // First check if it's an Excel serial number
+          let timeStrToParse = meetingTimeStrClean;
+          const excelSerialMatch = meetingTimeStrClean.match(/^(\d+\.?\d*)$/);
+          if (excelSerialMatch) {
+            const serialValue = parseFloat(meetingTimeStrClean);
+            // Excel serial numbers for time are typically < 1 (fraction of day) or have decimal part
+            if (serialValue > 0 && serialValue < 1000000) {
+              // Convert Excel serial to time
+              const timeFraction = serialValue % 1; // Get decimal part (time)
+              const totalSeconds = Math.floor(timeFraction * 86400); // 86400 seconds in a day
+              const hours = Math.floor(totalSeconds / 3600);
+              const minutes = Math.floor((totalSeconds % 3600) / 60);
+              
+              // Format as HH:MM AM/PM
+              const period = hours >= 12 ? 'PM' : 'AM';
+              const displayHours = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+              timeStrToParse = `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+            }
+          }
+          
+          // Remove timezone indicators first
+          const timeStrClean = timeStrToParse.replace(/\s*(EST|PST|CST|MST|EDT|PDT|CDT|MDT|UTC|GMT)\s*/i, '').trim();
+          
+          const timeMatch = timeStrClean.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+          if (timeMatch) {
+            let hours = parseInt(timeMatch[1]);
+            const minutes = timeMatch[2];
+            const ampm = timeMatch[3]?.toUpperCase();
+            
+            if (ampm === 'PM' && hours !== 12) hours += 12;
+            if (ampm === 'AM' && hours === 12) hours = 0;
+            
+            meetingTime = `${String(hours).padStart(2, '0')}:${minutes}`;
+          } else {
+            // Try 24-hour format
+            const time24Match = timeStrClean.match(/(\d{1,2}):(\d{2})/);
+            if (time24Match) {
+              meetingTime = `${time24Match[1].padStart(2, '0')}:${time24Match[2]}`;
+            } else {
+              throw new Error(`Row ${rowNum}: Unable to parse time "${meetingTimeStrClean}". Supported formats: "HH:MM AM/PM" or "HH:MM"`);
+            }
+          }
+
+          // Create scheduled datetime
+          const scheduledDateTime = createZonedDateTime(meetingDate, meetingTime, 'America/New_York');
+
+          // Parse booked date if provided
+          let bookedAtTimestamp: string | null = null;
+          if (bookedDateStr) {
+            const bookedDateMatch = bookedDateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})|(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (bookedDateMatch) {
+              let bookedDate: string;
+              if (bookedDateMatch[1]) {
+                bookedDate = `${bookedDateMatch[3]}-${bookedDateMatch[1].padStart(2, '0')}-${bookedDateMatch[2].padStart(2, '0')}`;
+              } else {
+                bookedDate = `${bookedDateMatch[4]}-${bookedDateMatch[5].padStart(2, '0')}-${bookedDateMatch[6].padStart(2, '0')}`;
+              }
+              bookedAtTimestamp = new Date(`${bookedDate}T00:00:00Z`).toISOString();
+            }
+          } else {
+            // Default to today if not provided
+            bookedAtTimestamp = new Date().toISOString();
+          }
+
+          // Create meeting data (matching database schema)
+          // Note: addMeeting function will add: client_id, sdr_id, scheduled_date, status, agency_id, etc.
+          const meetingData = {
+            contact_full_name: contactFullName,
+            contact_email: contactEmail,
+            contact_phone: contactPhone || null,
+            title: title || null,
+            company: company || null,
+            linkedin_page: linkedinPage || null, // Database field uses underscore
+            notes: notes || null,
+            timezone: prospectTimezone || 'America/New_York',
+            booked_at: bookedAtTimestamp, // timestamp with time zone
+            // status, no_show, held_at are set by addMeeting function
+          };
+
+          await addMeeting(clientId, scheduledDateTime, sdrId!, meetingData);
+          successCount++;
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : `Row ${rowNum}: Unknown error`;
+          errors.push(errorMsg);
+          errorCount++;
+        }
+      }
+
+      // Refresh clients after import
+      await fetchClients();
+
+      // Show results
+      if (successCount > 0) {
+        setImportSuccess(`Successfully imported ${successCount} meeting(s).${errorCount > 0 ? ` ${errorCount} error(s) occurred.` : ''}`);
+        if (errorCount > 0 && errors.length > 0) {
+          setImportError(errors.slice(0, 5).join('\n') + (errors.length > 5 ? `\n... and ${errors.length - 5} more errors` : ''));
+        }
+        triggerConfetti();
+      } else {
+        setImportError(`Failed to import meetings:\n${errors.slice(0, 10).join('\n')}`);
+      }
+    } catch (err) {
+      console.error('Import error:', err);
+      setImportError(err instanceof Error ? err.message : 'Failed to import meetings. Please check the file format.');
+    } finally {
+      setImporting(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  // Helper function to parse CSV line (handles quoted fields)
+  const parseCSVLine = (line: string): string[] => {
+    const values: string[] = [];
+    let currentValue = '';
+    let insideQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (insideQuotes && nextChar === '"') {
+          // Escaped quote
+          currentValue += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          insideQuotes = !insideQuotes;
+        }
+      } else if (char === ',' && !insideQuotes) {
+        // End of field
+        values.push(currentValue.trim());
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    // Add last field
+    values.push(currentValue.trim());
+    return values;
+  };
+
   async function handleAddMeeting(e: React.FormEvent) {
     e.preventDefault();
 
@@ -803,6 +1252,106 @@ function SDRDashboardContent() {
         </div>
       </div>
     )}
+
+    {/* Import Meetings Modal */}
+    {showImportModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className={`p-8 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className={`text-xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Import Meetings from Spreadsheet</h2>
+            <button
+              onClick={() => {
+                setShowImportModal(false);
+                setImportError(null);
+                setImportSuccess(null);
+              }}
+              className={darkTheme ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className={`text-sm mb-4 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                Upload an Excel (.xlsx, .xls) or CSV file with meeting data. Each row should represent one meeting.
+              </p>
+              <div className={`text-xs mb-4 p-4 rounded-lg ${darkTheme ? 'bg-[#1d1f24] border border-[#2d3139] text-slate-300' : 'bg-gray-50 border border-gray-200 text-gray-600'}`}>
+                <p className="font-semibold mb-2">Required columns:</p>
+                <ul className="list-disc list-inside space-y-1 mb-3">
+                  <li><strong>Contact Full Name</strong> - Full name of the contact</li>
+                  <li><strong>Contact Email</strong> - Email address</li>
+                  <li><strong>Meeting Date</strong> - Format: MM/DD/YYYY, YYYY-MM-DD, or "Month Day, Year" (e.g., "November 21, 2025")</li>
+                  <li><strong>Meeting Time</strong> - Format: "HH:MM AM/PM" or "HH:MM" (e.g., "10:00 AM" or "14:00")</li>
+                  <li><strong>Client Name</strong> - Must match an existing client name exactly (or select a client before importing)</li>
+                </ul>
+                <p className="font-semibold mb-2">Optional columns:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Contact Phone</li>
+                  <li>Title</li>
+                  <li>Company</li>
+                  <li>LinkedIn Page</li>
+                  <li>Prospect Timezone (defaults to America/New_York if not provided)</li>
+                  <li>Notes</li>
+                  <li>Meeting Booked Date</li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
+                Select File
+              </label>
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileImport}
+                disabled={importing}
+                className={`block w-full text-sm ${darkTheme ? 'text-slate-300' : 'text-gray-500'} file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold ${
+                  darkTheme 
+                    ? 'file:bg-blue-600 file:text-white file:hover:bg-blue-700' 
+                    : 'file:bg-blue-50 file:text-blue-700 file:hover:bg-blue-100'
+                } file:cursor-pointer cursor-pointer`}
+              />
+            </div>
+
+            {importError && (
+              <div className={`p-4 rounded-lg ${darkTheme ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-200'}`}>
+                <p className={`text-sm ${darkTheme ? 'text-red-300' : 'text-red-600'}`}>{importError}</p>
+              </div>
+            )}
+
+            {importSuccess && (
+              <div className={`p-4 rounded-lg ${darkTheme ? 'bg-green-900/30 border border-green-800' : 'bg-green-50 border border-green-200'}`}>
+                <p className={`text-sm ${darkTheme ? 'text-green-300' : 'text-green-600'}`}>{importSuccess}</p>
+              </div>
+            )}
+
+            {importing && (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className={`ml-3 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>Importing meetings...</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-4 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportError(null);
+                  setImportSuccess(null);
+                }}
+                className={`px-4 py-2 rounded-md transition-colors ${darkTheme ? 'bg-[#2d3139] hover:bg-[#353941] text-slate-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
     <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-[#16191f]' : 'bg-gradient-to-br from-blue-50 via-white to-cyan-50'}`}>
       <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gradient-to-r from-white via-blue-50/30 to-white border-blue-100'}`}>
         {/* Background Pattern */}
@@ -995,7 +1544,7 @@ function SDRDashboardContent() {
                     </div>
                     
                     {/* Inactive Assignments Toggle */}
-                    <div className="px-4 py-3">
+                    <div className={`px-4 py-3 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                       <div className={`text-xs font-semibold uppercase mb-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Display Options</div>
                       
                       <button
@@ -1009,6 +1558,18 @@ function SDRDashboardContent() {
                         ) : (
                           <EyeOff className={`w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
                         )}
+                      </button>
+                    </div>
+                    
+                    {/* Import Meetings Button */}
+                    <div className="px-4 py-3">
+                      <button
+                        onClick={() => setShowImportModal(true)}
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${darkTheme ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                        title="Import meetings from Excel or CSV file"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Import Meetings</span>
                       </button>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -49,31 +49,79 @@ interface CalendarViewProps {
   darkTheme?: boolean;
 }
 
-// Add a color palette for SDRs
+// Expanded color palette with visually distinct colors
+// Colors are chosen to maximize visual distinction and accessibility
 const SDR_COLORS = [
-  '#6366f1', // indigo
-  '#3b82f6', // blue
-  '#10b981', // green
-  '#8b5cf6', // purple
-  '#ec4899', // pink
-  '#f59e0b', // yellow
-  '#ef4444', // red
-  '#14b8a6', // teal
-  '#f97316', // orange
-  '#06b6d4'  // cyan
+  '#6366f1', // indigo-500 - distinct purple-blue
+  '#10b981', // emerald-500 - distinct green
+  '#f59e0b', // amber-500 - distinct yellow-orange
+  '#ef4444', // red-500 - distinct red
+  '#8b5cf6', // violet-500 - distinct purple
+  '#06b6d4', // cyan-500 - distinct cyan
+  '#f97316', // orange-500 - distinct orange
+  '#ec4899', // pink-500 - distinct pink
+  '#14b8a6', // teal-500 - distinct teal
+  '#84cc16', // lime-500 - distinct lime-green
+  '#3b82f6', // blue-500 - distinct blue
+  '#a855f7', // fuchsia-500 - distinct fuchsia
+  '#22c55e', // green-500 - distinct bright green
+  '#f43f5e', // rose-500 - distinct rose
+  '#0ea5e9', // sky-500 - distinct sky blue
+  '#d946ef', // magenta-500 - distinct magenta
+  '#64748b', // slate-500 - distinct gray
+  '#eab308', // yellow-500 - distinct yellow
+  '#7c3aed', // violet-600 - distinct deep purple
+  '#059669', // emerald-600 - distinct deep green
+  '#dc2626', // red-600 - distinct deep red
+  '#2563eb', // blue-600 - distinct deep blue
+  '#c026d3', // fuchsia-600 - distinct deep fuchsia
+  '#0891b2', // cyan-600 - distinct deep cyan
 ];
-function getSDRColor(sdrId: string) {
-  let hash = 0;
-  for (let i = 0; i < sdrId.length; i++) {
-    hash = ((hash << 5) - hash) + sdrId.charCodeAt(i);
-    hash = hash & hash;
+
+// Cache to ensure consistent color assignment per SDR
+const sdrColorCache = new Map<string, string>();
+let colorIndex = 0;
+
+function getSDRColor(sdrId: string): string {
+  // Return cached color if already assigned
+  if (sdrColorCache.has(sdrId)) {
+    return sdrColorCache.get(sdrId)!;
   }
-  return SDR_COLORS[Math.abs(hash) % SDR_COLORS.length];
+  
+  // Assign next available color in sequence for maximum distinction
+  // This ensures each SDR gets a unique color until we run out
+  const color = SDR_COLORS[colorIndex % SDR_COLORS.length];
+  sdrColorCache.set(sdrId, color);
+  colorIndex++;
+  
+  return color;
 }
 
 export default function CalendarView({ meetings, colorByStatus = false, defaultDate, darkTheme = false }: CalendarViewProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingEvent | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  
+  // Reset color cache when meetings change to ensure consistent assignment
+  // This ensures colors are assigned in a consistent order based on SDRs present
+  useEffect(() => {
+    sdrColorCache.clear();
+    colorIndex = 0;
+    
+    // Collect all unique SDR IDs from meetings and assign colors in order
+    const uniqueSdrIds = Array.from(new Set(
+      meetings
+        .map(m => m.sdr_id)
+        .filter((id): id is string => id !== null && id !== undefined)
+    ));
+    
+    // Sort SDR IDs for consistent ordering across renders
+    uniqueSdrIds.sort();
+    
+    // Pre-assign colors to all SDRs
+    uniqueSdrIds.forEach(sdrId => {
+      getSDRColor(sdrId);
+    });
+  }, [meetings]);
 
   // Debug logging
   console.log('CalendarView received meetings:', meetings.length);
