@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2 } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2, Search } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -302,6 +302,20 @@ export default function ClientDashboard() {
   const [isPastDueCollapsed, setIsPastDueCollapsed] = useState(false);
   const [isUpcomingCollapsed, setIsUpcomingCollapsed] = useState(false);
   const [isHeldCollapsed, setIsHeldCollapsed] = useState(false);
+  
+  // Filter, sort, and group state for meetings
+  const [meetingSearchTerm, setMeetingSearchTerm] = useState('');
+  const [meetingFilterBy, setMeetingFilterBy] = useState<string>('all');
+  const [meetingSortBy, setMeetingSortBy] = useState<'date' | 'contact' | 'sdr'>('date');
+  const [meetingSortOrder, setMeetingSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [meetingGroupBy, setMeetingGroupBy] = useState<'none' | 'sdr'>('none');
+  
+  // Filter, sort, and group state for modal (overview page)
+  const [modalSearchTerm, setModalSearchTerm] = useState('');
+  const [modalFilterBy, setModalFilterBy] = useState<string>('all');
+  const [modalSortBy, setModalSortBy] = useState<'date' | 'contact' | 'sdr'>('date');
+  const [modalSortOrder, setModalSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [modalGroupBy, setModalGroupBy] = useState<'none' | 'sdr'>('none');
 
   // Confetti function
   // const triggerConfetti = () => {
@@ -1428,39 +1442,110 @@ export default function ClientDashboard() {
     return !!(meeting.held_at || meeting.no_show || meeting.no_longer_interested);
   };
   
-  // Past due meetings that need action (past date but not finalized) - sorted with most overdue first
-  const pastDueMeetings = meetings
+  // Base meeting arrays (before filtering/sorting/grouping)
+  const basePastDueMeetings = meetings
     .filter(meeting => {
       const meetingDate = new Date(meeting.scheduled_date);
       return meetingDate < now && !isMeetingFinalized(meeting);
-    })
-    .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+    });
 
-  // Upcoming future meetings (future date and not finalized) - sorted with closest first
-  const upcomingMeetings = meetings
+  const baseUpcomingMeetings = meetings
     .filter(meeting => {
       const meetingDate = new Date(meeting.scheduled_date);
       return meetingDate >= now && !isMeetingFinalized(meeting);
-    })
-    .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+    });
 
-  // Completed meetings - includes meetings with held_at, no_show, or no_longer_interested - sorted with most recent first
-  const completedMeetings = meetings
-    .filter(meeting => isMeetingFinalized(meeting))
-    .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+  const baseCompletedMeetings = meetings
+    .filter(meeting => isMeetingFinalized(meeting));
 
-  const heldMeetingsHistory = completedMeetings.filter(
+  const baseHeldMeetingsHistory = baseCompletedMeetings.filter(
     meeting => !!meeting.held_at && !meeting.no_show && !meeting.no_longer_interested
   );
 
-  const noShowMeetingsHistory = completedMeetings.filter(
+  const baseNoShowMeetingsHistory = baseCompletedMeetings.filter(
     meeting => !!meeting.no_show
   );
 
-  const cancelledMeetingsHistory = completedMeetings.filter(
+  const baseCancelledMeetingsHistory = baseCompletedMeetings.filter(
     meeting => !!meeting.no_longer_interested && !meeting.no_show
   );
 
+  // Get unique SDRs for filter dropdown
+  const uniqueSDRs = Array.from(new Set(
+    meetings.map(m => (m as any).sdr_name).filter(Boolean)
+  )) as string[];
+
+  // Process meetings: filter, sort, and group
+  const processMeetings = (meetings: Meeting[]) => {
+    // Step 1: Search filter
+    let filtered = meetings.filter(meeting => {
+      const searchString = `${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''} ${(meeting as any).sdr_name || ''}`.toLowerCase();
+      return searchString.includes(meetingSearchTerm.toLowerCase());
+    });
+
+    // Step 2: SDR filter
+    if (meetingFilterBy !== 'all') {
+      const sdrName = meetingFilterBy.replace('sdr_', '');
+      filtered = filtered.filter(meeting => (meeting as any).sdr_name === sdrName);
+    }
+
+    // Step 3: Sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      if (meetingSortBy === 'date') {
+        const dateA = new Date(a.scheduled_date).getTime();
+        const dateB = new Date(b.scheduled_date).getTime();
+        comparison = dateA - dateB;
+      } else if (meetingSortBy === 'contact') {
+        const contactA = (a.contact_full_name || '').toLowerCase();
+        const contactB = (b.contact_full_name || '').toLowerCase();
+        comparison = contactA.localeCompare(contactB);
+      } else if (meetingSortBy === 'sdr') {
+        const sdrA = ((a as any).sdr_name || '').toLowerCase();
+        const sdrB = ((b as any).sdr_name || '').toLowerCase();
+        comparison = sdrA.localeCompare(sdrB);
+      }
+      
+      return meetingSortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    // Step 4: Group
+    if (meetingGroupBy === 'sdr') {
+      const grouped: Record<string, Meeting[]> = {};
+      filtered.forEach(meeting => {
+        const sdrName = (meeting as any).sdr_name || 'No SDR';
+        if (!grouped[sdrName]) {
+          grouped[sdrName] = [];
+        }
+        grouped[sdrName].push(meeting);
+      });
+      return { grouped, ungrouped: null };
+    }
+
+    return { grouped: null, ungrouped: filtered };
+  };
+
+  // Process all meeting lists
+  const processedPastDueMeetings = processMeetings(basePastDueMeetings);
+  const processedUpcomingMeetings = processMeetings(baseUpcomingMeetings);
+  const processedHeldMeetings = processMeetings(baseHeldMeetingsHistory);
+  const processedNoShowMeetings = processMeetings(baseNoShowMeetingsHistory);
+  const processedCancelledMeetings = processMeetings(baseCancelledMeetingsHistory);
+
+  // For backward compatibility, create flat arrays
+  const pastDueMeetings = processedPastDueMeetings.ungrouped || 
+    Object.values(processedPastDueMeetings.grouped || {}).flat();
+  const upcomingMeetings = processedUpcomingMeetings.ungrouped || 
+    Object.values(processedUpcomingMeetings.grouped || {}).flat();
+  const heldMeetingsHistory = processedHeldMeetings.ungrouped || 
+    Object.values(processedHeldMeetings.grouped || {}).flat();
+  const noShowMeetingsHistory = processedNoShowMeetings.ungrouped || 
+    Object.values(processedNoShowMeetings.grouped || {}).flat();
+  const cancelledMeetingsHistory = processedCancelledMeetings.ungrouped || 
+    Object.values(processedCancelledMeetings.grouped || {}).flat();
+  
+  const completedMeetings = [...heldMeetingsHistory, ...noShowMeetingsHistory, ...cancelledMeetingsHistory];
   const totalFinalizedMeetings =
     heldMeetingsHistory.length + noShowMeetingsHistory.length + cancelledMeetingsHistory.length;
 
@@ -2089,6 +2174,86 @@ export default function ClientDashboard() {
 
         {activeTab === 'meetings' && (
           <div className="space-y-6">
+            {/* Search and Filter Controls */}
+            <div className={`${cardBg} rounded-lg shadow-md p-4 border ${cardBorder}`}>
+              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+                {/* Search Bar */}
+                <div className="relative flex-1 w-full lg:w-auto min-w-[300px]">
+                  <input
+                    type="text"
+                    placeholder="Search meetings..."
+                    value={meetingSearchTerm}
+                    onChange={(e) => setMeetingSearchTerm(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      isDarkMode ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                    }`}
+                  />
+                  <Search className={`absolute left-3 top-2.5 w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                </div>
+                
+                {/* Filter, Sort, Group Controls - Inline */}
+                <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
+                  <div className="flex-1 lg:flex-initial min-w-[140px]">
+                    <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Filter</label>
+                    <select
+                      value={meetingFilterBy}
+                      onChange={(e) => setMeetingFilterBy(e.target.value)}
+                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                        isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                      }`}
+                    >
+                      <option value="all">All SDRs</option>
+                      {uniqueSDRs.map(sdrName => (
+                        <option key={sdrName} value={`sdr_${sdrName}`}>
+                          {sdrName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1 lg:flex-initial min-w-[120px]">
+                    <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Sort By</label>
+                    <select
+                      value={meetingSortBy}
+                      onChange={(e) => setMeetingSortBy(e.target.value as 'date' | 'contact' | 'sdr')}
+                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                        isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                      }`}
+                    >
+                      <option value="date">Date</option>
+                      <option value="contact">Contact</option>
+                      <option value="sdr">SDR</option>
+                    </select>
+                  </div>
+                  <div className="flex-1 lg:flex-initial min-w-[120px]">
+                    <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Order</label>
+                    <select
+                      value={meetingSortOrder}
+                      onChange={(e) => setMeetingSortOrder(e.target.value as 'asc' | 'desc')}
+                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                        isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                      }`}
+                    >
+                      <option value="asc">Ascending</option>
+                      <option value="desc">Descending</option>
+                    </select>
+                  </div>
+                  <div className="flex-1 lg:flex-initial min-w-[120px]">
+                    <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Group By</label>
+                    <select
+                      value={meetingGroupBy}
+                      onChange={(e) => setMeetingGroupBy(e.target.value as 'none' | 'sdr')}
+                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                        isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                      }`}
+                    >
+                      <option value="none">None</option>
+                      <option value="sdr">SDR</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div 
@@ -2168,8 +2333,111 @@ export default function ClientDashboard() {
                 </div>
                 {!isPastDueCollapsed && (
                 <div className="p-6">
-                  {pastDueMeetings.map((meeting) => (
-                    <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-[#1d1f24]' : 'bg-gradient-to-r from-orange-50/50 to-white'}`}>
+                  {meetingGroupBy === 'sdr' && processedPastDueMeetings.grouped ? (
+                    // Render grouped by SDR
+                    Object.entries(processedPastDueMeetings.grouped).map(([sdrName, sdrMeetings]) => (
+                      <div key={sdrName} className="mb-6">
+                        <h4 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                          {sdrName} ({sdrMeetings.length})
+                        </h4>
+                        <div className="space-y-4">
+                          {sdrMeetings.map((meeting) => (
+                            <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-[#1d1f24]' : 'bg-gradient-to-r from-orange-50/50 to-white'}`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className={`p-2 rounded-full ${isDarkMode ? 'bg-orange-900/50' : 'bg-orange-100'}`}>
+                                      <User className="w-4 h-4 text-orange-600" />
+                                    </div>
+                                    <div>
+                                      <h4 className={`text-lg font-semibold ${textPrimary}`}>
+                                        {meeting.contact_full_name || 'Meeting'}
+                                      </h4>
+                                      <div className="flex items-center gap-4 mt-1">
+                                        <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
+                                          <Calendar className="w-3 h-3" />
+                                          {new Date(meeting.scheduled_date).toLocaleDateString()}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
+                                          <Clock className="w-3 h-3" />
+                                          {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                          })}
+                                        </span>
+                                        <span className="text-xs text-orange-600 font-semibold">
+                                          ({Math.floor((now.getTime() - new Date(meeting.scheduled_date).getTime()) / (1000 * 60 * 60 * 24))} days ago)
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    {meeting.contact_email && (
+                                      <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                                        <Mail className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                        <span className="font-medium">Email:</span>
+                                        <span>{meeting.contact_email}</span>
+                                      </div>
+                                    )}
+                                    {meeting.company && (
+                                      <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                                        <Building className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                        <span className="font-medium">Company:</span>
+                                        <span>{meeting.company}</span>
+                                      </div>
+                                    )}
+                                    <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                                      <Users className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                      <span className="font-medium">SDR:</span>
+                                      <span>{meeting.sdr_name}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  {meeting.notes && (
+                                    <div className={`mt-3 p-3 rounded-lg border-l-4 border-orange-400 ${isDarkMode ? 'bg-gray-600/50' : 'bg-gray-50'}`}>
+                                      <p className={`text-sm ${textSecondary} leading-relaxed`}>
+                                        <span className={`font-medium ${textPrimary}`}>Notes:</span> {meeting.notes}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Action Buttons */}
+                                  <div className="mt-4 flex items-center gap-3">
+                                    <p className={`text-sm font-medium ${textPrimary}`}>Update Status:</p>
+                                    <button
+                                      onClick={() => updateMeetingStatus(meeting.id, 'held')}
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                      Meeting Held
+                                    </button>
+                                    <button
+                                      onClick={() => updateMeetingStatus(meeting.id, 'no-show')}
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors"
+                                    >
+                                      <AlertTriangle className="w-4 h-4" />
+                                      No-Show
+                                    </button>
+                                    <button
+                                      onClick={() => updateMeetingStatus(meeting.id, 'cancelled')}
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                      <X className="w-4 h-4" />
+                                      Cancelled
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    // Render ungrouped
+                    pastDueMeetings.map((meeting) => (
+                      <div key={meeting.id} className={`border ${cardBorder} rounded-xl p-5 mb-4 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'bg-[#1d1f24]' : 'bg-gradient-to-r from-orange-50/50 to-white'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
@@ -2257,7 +2525,8 @@ export default function ClientDashboard() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))
+                  )}
                 </div>
                 )}
               </div>
@@ -2425,7 +2694,32 @@ export default function ClientDashboard() {
                       </div>
 
                       {group.items.length > 0 ? (
-                        group.items.map((meeting) => renderOutcomeMeetingCard(meeting, group.key))
+                        meetingGroupBy === 'sdr' ? (
+                          // Render grouped by SDR
+                          (() => {
+                            const groupedBySDR: Record<string, Meeting[]> = {};
+                            group.items.forEach(meeting => {
+                              const sdrName = (meeting as any).sdr_name || 'No SDR';
+                              if (!groupedBySDR[sdrName]) {
+                                groupedBySDR[sdrName] = [];
+                              }
+                              groupedBySDR[sdrName].push(meeting);
+                            });
+                            return Object.entries(groupedBySDR).map(([sdrName, sdrMeetings]) => (
+                              <div key={sdrName} className="mb-6">
+                                <h5 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                                  {sdrName} ({sdrMeetings.length})
+                                </h5>
+                                <div className="space-y-4">
+                                  {sdrMeetings.map((meeting) => renderOutcomeMeetingCard(meeting, group.key))}
+                                </div>
+                              </div>
+                            ));
+                          })()
+                        ) : (
+                          // Render ungrouped
+                          group.items.map((meeting) => renderOutcomeMeetingCard(meeting, group.key))
+                        )
                       ) : (
                         <div
                           className={`text-center py-10 border ${cardBorder} rounded-xl ${
@@ -4983,7 +5277,15 @@ export default function ClientDashboard() {
             <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-[#2d3139]' : 'border-gray-200'}`}>
               <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>{modalTitle}</h2>
               <button
-                onClick={() => setModalOpen(false)}
+                onClick={() => {
+                  setModalOpen(false);
+                  // Reset modal filter/sort/group state when closing
+                  setModalSearchTerm('');
+                  setModalFilterBy('all');
+                  setModalSortBy('date');
+                  setModalSortOrder('desc');
+                  setModalGroupBy('none');
+                }}
                 className={isDarkMode ? 'text-slate-400 hover:text-slate-200 transition-colors' : 'text-gray-400 hover:text-gray-600 transition-colors'}
               >
                 <X className="w-6 h-6" />
@@ -4991,8 +5293,238 @@ export default function ClientDashboard() {
             </div>
             <div className="p-6 overflow-y-auto max-h-[70vh]">
               {modalContent && modalContent.data && modalContent.data.length > 0 ? (
-                <div className="space-y-6">
-                  {modalContent.data.map((meeting: Meeting) => (
+                <>
+                  {/* Search and Filter Controls */}
+                  <div className={`mb-6 p-4 rounded-lg border ${isDarkMode ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
+                    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+                      {/* Search Bar */}
+                      <div className="relative flex-1 w-full lg:w-auto min-w-[300px]">
+                        <input
+                          type="text"
+                          placeholder="Search meetings..."
+                          value={modalSearchTerm}
+                          onChange={(e) => setModalSearchTerm(e.target.value)}
+                          className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                          }`}
+                        />
+                        <Search className={`absolute left-3 top-2.5 w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                      </div>
+                      
+                      {/* Filter, Sort, Group Controls - Inline */}
+                      <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
+                        <div className="flex-1 lg:flex-initial min-w-[140px]">
+                          <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Filter</label>
+                          <select
+                            value={modalFilterBy}
+                            onChange={(e) => setModalFilterBy(e.target.value)}
+                            className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                              isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="all">All SDRs</option>
+                            {uniqueSDRs.map(sdrName => (
+                              <option key={sdrName} value={`sdr_${sdrName}`}>
+                                {sdrName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex-1 lg:flex-initial min-w-[120px]">
+                          <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Sort By</label>
+                          <select
+                            value={modalSortBy}
+                            onChange={(e) => setModalSortBy(e.target.value as 'date' | 'contact' | 'sdr')}
+                            className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                              isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="date">Date</option>
+                            <option value="contact">Contact</option>
+                            <option value="sdr">SDR</option>
+                          </select>
+                        </div>
+                        <div className="flex-1 lg:flex-initial min-w-[120px]">
+                          <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Order</label>
+                          <select
+                            value={modalSortOrder}
+                            onChange={(e) => setModalSortOrder(e.target.value as 'asc' | 'desc')}
+                            className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                              isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="asc">Ascending</option>
+                            <option value="desc">Descending</option>
+                          </select>
+                        </div>
+                        <div className="flex-1 lg:flex-initial min-w-[120px]">
+                          <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Group By</label>
+                          <select
+                            value={modalGroupBy}
+                            onChange={(e) => setModalGroupBy(e.target.value as 'none' | 'sdr')}
+                            className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                              isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="none">None</option>
+                            <option value="sdr">SDR</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Process modal meetings */}
+                  {(() => {
+                    // Process meetings: filter, sort, and group
+                    let filtered = modalContent.data.filter((meeting: Meeting) => {
+                      const searchString = `${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''} ${(meeting as any).sdr_name || ''}`.toLowerCase();
+                      return searchString.includes(modalSearchTerm.toLowerCase());
+                    });
+
+                    // SDR filter
+                    if (modalFilterBy !== 'all') {
+                      const sdrName = modalFilterBy.replace('sdr_', '');
+                      filtered = filtered.filter((meeting: Meeting) => (meeting as any).sdr_name === sdrName);
+                    }
+
+                    // Sort
+                    filtered = [...filtered].sort((a: Meeting, b: Meeting) => {
+                      let comparison = 0;
+                      
+                      if (modalSortBy === 'date') {
+                        const dateA = new Date(a.scheduled_date).getTime();
+                        const dateB = new Date(b.scheduled_date).getTime();
+                        comparison = dateA - dateB;
+                      } else if (modalSortBy === 'contact') {
+                        const contactA = (a.contact_full_name || '').toLowerCase();
+                        const contactB = (b.contact_full_name || '').toLowerCase();
+                        comparison = contactA.localeCompare(contactB);
+                      } else if (modalSortBy === 'sdr') {
+                        const sdrA = ((a as any).sdr_name || '').toLowerCase();
+                        const sdrB = ((b as any).sdr_name || '').toLowerCase();
+                        comparison = sdrA.localeCompare(sdrB);
+                      }
+                      
+                      return modalSortOrder === 'asc' ? comparison : -comparison;
+                    });
+
+                    // Group
+                    if (modalGroupBy === 'sdr') {
+                      const grouped: Record<string, Meeting[]> = {};
+                      filtered.forEach((meeting: Meeting) => {
+                        const sdrName = (meeting as any).sdr_name || 'No SDR';
+                        if (!grouped[sdrName]) {
+                          grouped[sdrName] = [];
+                        }
+                        grouped[sdrName].push(meeting);
+                      });
+                      
+                      return (
+                        <div className="space-y-6">
+                          {Object.entries(grouped).map(([sdrName, sdrMeetings]) => (
+                            <div key={sdrName}>
+                              <h4 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                                {sdrName} ({sdrMeetings.length})
+                              </h4>
+                              <div className="space-y-4">
+                                {sdrMeetings.map((meeting: Meeting) => (
+                                  <div key={meeting.id} className={`border rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'border-[#2d3139] bg-[#1d1f24] hover:border-blue-500' : 'border-gray-200 bg-gradient-to-r from-blue-50/20 to-white hover:border-blue-300'}`}>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-4">
+                                              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                                                <User className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                                              </div>
+                                              <div>
+                                                <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                                                  {meeting.contact_full_name || 'Meeting'}
+                                                </h3>
+                                                <div className="flex items-center gap-4 mt-1">
+                                                  <span className={`inline-flex items-center gap-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                    <Calendar className="w-4 h-4" />
+                                                    {new Date(meeting.scheduled_date).toLocaleDateString()}
+                                                  </span>
+                                                  <span className={`inline-flex items-center gap-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                    <Clock className="w-4 h-4" />
+                                                    {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
+                                                      hour: '2-digit', 
+                                                      minute: '2-digit' 
+                                                    })}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                <Users className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                                <span className="font-medium">SDR:</span>
+                                                <span>{meeting.sdr_name}</span>
+                                              </div>
+                                              {meeting.contact_email && (
+                                                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                  <Mail className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                                  <span className="font-medium">Email:</span>
+                                                  <span className="truncate">{meeting.contact_email}</span>
+                                                </div>
+                                              )}
+                                              {meeting.contact_phone && (
+                                                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                  <Phone className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                                  <span className="font-medium">Phone:</span>
+                                                  <span>{meeting.contact_phone}</span>
+                                                </div>
+                                              )}
+                                              {meeting.company && (
+                                                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                  <Building className={`w-4 h-4 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
+                                                  <span className="font-medium">Company:</span>
+                                                  <span>{meeting.company}</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                            
+                                            {meeting.notes && (
+                                              <div className={`mt-4 p-4 rounded-lg border-l-4 ${isDarkMode ? 'bg-[#2d3139] border-blue-500' : 'bg-gray-50 border-blue-200'}`}>
+                                                <p className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>Notes:</p>
+                                                <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                                                  {meeting.notes}
+                                                </p>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="ml-6 flex flex-col items-end gap-2">
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+                                              meeting.status === 'confirmed' 
+                                                ? isDarkMode ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-green-100 text-green-800 border border-green-200'
+                                                : meeting.status === 'pending'
+                                                ? isDarkMode ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800' : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                                : isDarkMode ? 'bg-[#2d3139] text-slate-300 border border-[#3a3f47]' : 'bg-gray-100 text-gray-800 border border-gray-200'
+                                            }`}>
+                                              {meeting.status === 'confirmed' ? (
+                                                <CheckCircle className="w-4 h-4" />
+                                              ) : meeting.status === 'pending' ? (
+                                                <AlertTriangle className="w-4 h-4" />
+                                              ) : (
+                                                <Clock className="w-4 h-4" />
+                                              )}
+                                              {meeting.status}
+                                            </span>
+                                          </div>
+                                        </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      // Render ungrouped
+                      return (
+                        <div className="space-y-6">
+                          {filtered.map((meeting: Meeting) => (
                     <div key={meeting.id} className={`border rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${isDarkMode ? 'border-[#2d3139] bg-[#1d1f24] hover:border-blue-500' : 'border-gray-200 bg-gradient-to-r from-blue-50/20 to-white hover:border-blue-300'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -5079,7 +5611,11 @@ export default function ClientDashboard() {
                       </div>
                     </div>
                   ))}
-                </div>
+                        </div>
+                      );
+                    }
+                  })()}
+                </>
               ) : (
                 <div className="text-center py-8">
                   <Calendar className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-slate-600' : 'text-gray-300'}`} />
@@ -5089,7 +5625,15 @@ export default function ClientDashboard() {
             </div>
             <div className={`flex justify-end gap-4 p-6 border-t ${isDarkMode ? 'border-[#2d3139]' : 'border-gray-200'}`}>
               <button
-                onClick={() => setModalOpen(false)}
+                onClick={() => {
+                  setModalOpen(false);
+                  // Reset modal filter/sort/group state when closing
+                  setModalSearchTerm('');
+                  setModalFilterBy('all');
+                  setModalSortBy('date');
+                  setModalSortOrder('desc');
+                  setModalGroupBy('none');
+                }}
                 className={`px-4 py-2 rounded-md transition duration-150 ${isDarkMode ? 'bg-[#2d3139] hover:bg-[#353941] text-slate-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
               >
                 Close
