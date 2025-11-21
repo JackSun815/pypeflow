@@ -7,9 +7,13 @@ interface DemoViewerProps {
   onClose: () => void;
 }
 
-// Static production token URLs that are validated by the backend
-const SDR_DEMO_URL = 'https://www.pypeflow.com/dashboard/sdr/eyJpZCI6ImE1MWE1ZjVhLTRkODMtNGU1Mi04NWUwLTZmNjNlMGNlM2VjYSIsInRpbWVzdGFtcCI6MTc2MzQwODM3MTE2OSwidHlwZSI6InNkcl9hY2Nlc3MifQ==';
-const CLIENT_DEMO_URL = 'https://www.pypeflow.com/dashboard/client/eyJpZCI6Ijc2OTMxMjBkLTgyYTYtNDE1Ni1hZGQ4LTQ1MTdmMTIyZGViMyIsInRpbWVzdGFtcCI6MTc2MzQwODQxMjM2OSwidHlwZSI6ImNsaWVudF9hY2Nlc3MiLCJleHAiOjE3OTQ5NDQ0MTIzNjl9';
+// Static production token URLs that are validated by the backend.
+// Use relative paths so the demo works consistently in local dev and on pypeflow.com
+// without breaking out of the sandbox/iframe context.
+const SDR_DEMO_URL =
+  '/dashboard/sdr/eyJpZCI6ImE1MWE1ZjVhLTRkODMtNGU1Mi04NWUwLTZmNjNlMGNlM2VjYSIsInRpbWVzdGFtcCI6MTc2MzQwODM3MTE2OSwidHlwZSI6InNkcl9hY2Nlc3MifQ==';
+const CLIENT_DEMO_URL =
+  '/dashboard/client/eyJpZCI6Ijc2OTMxMjBkLTgyYTYtNDE1Ni1hZGQ4LTQ1MTdmMTIyZGViMyIsInRpbWVzdGFtcCI6MTc2MzQwODQxMjM2OSwidHlwZSI6ImNsaWVudF9hY2Nlc3MiLCJleHAiOjE3OTQ5NDQ0MTIzNjl9';
 
 export default function DemoViewer({ type, onClose }: DemoViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
