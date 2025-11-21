@@ -162,8 +162,41 @@ function AppRoutes() {
 function App() {
   const { loading, error } = useAuth();
 
+  // Determine if we're on a public, token-based dashboard route or the public landing page.
+  // These routes should NOT be blocked by the global auth loading/error states, because they
+  // rely on token-based access instead of a signed-in Supabase session.
+  const path = window.location.pathname;
+  const isPublicTokenRoute =
+    path.startsWith('/dashboard/sdr/') || path.startsWith('/dashboard/client/');
+  const isPublicLanding = path === '/';
+
+  // Lightweight debug hook so we can understand what App thinks this route is doing in prod.
+  // This is intentionally left in production builds to help debug issues on pypeflow.com.
+  // It only logs basic routing flags and does NOT log any sensitive data.
+  try {
+    // Use a separate try/catch to avoid ever crashing render due to console issues.
+    console.debug('[App] Render', {
+      path,
+      loading,
+      hasError: !!error,
+      isPublicTokenRoute,
+      isPublicLanding,
+    });
+  } catch {
+    // Swallow any console errors – rendering should never fail because of logging.
+  }
+
   // Don't show loading state for public routes
-  if (loading && !window.location.pathname.startsWith('/dashboard/sdr/') && window.location.pathname !== '/') {
+  if (loading && !isPublicTokenRoute && !isPublicLanding) {
+    try {
+      console.debug('[App] Showing global loading screen', {
+        path,
+        loading,
+        isPublicTokenRoute,
+        isPublicLanding,
+      });
+    } catch {}
+
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -174,7 +207,16 @@ function App() {
     );
   }
 
-  if (error && !window.location.pathname.startsWith('/dashboard/sdr/') && window.location.pathname !== '/') {
+  if (error && !isPublicTokenRoute && !isPublicLanding) {
+    try {
+      console.error('[App] Auth error in protected route', {
+        path,
+        message: error,
+        isPublicTokenRoute,
+        isPublicLanding,
+      });
+    } catch {}
+
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">

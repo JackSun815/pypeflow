@@ -7,22 +7,11 @@ interface DemoViewerProps {
   onClose: () => void;
 }
 
-// Static production token URLs that are validated by the backend.
-// Use relative paths so the demo works consistently in local dev and on pypeflow.com
-// without breaking out of the sandbox/iframe context.
-const SDR_DEMO_URL =
-  '/dashboard/sdr/eyJpZCI6ImE1MWE1ZjVhLTRkODMtNGU1Mi04NWUwLTZmNjNlMGNlM2VjYSIsInRpbWVzdGFtcCI6MTc2MzQwODM3MTE2OSwidHlwZSI6InNkcl9hY2Nlc3MifQ==?agency=demo';
-const CLIENT_DEMO_URL =
-  '/dashboard/client/eyJpZCI6Ijc2OTMxMjBkLTgyYTYtNDE1Ni1hZGQ4LTQ1MTdmMTIyZGViMyIsInRpbWVzdGFtcCI6MTc2MzQwODQxMjM2OSwidHlwZSI6ImNsaWVudF9hY2Nlc3MiLCJleHAiOjE3OTQ5NDQ0MTIzNjl9?agency=demo';
-
 export default function DemoViewer({ type, onClose }: DemoViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeRole, setActiveRole] = useState<'manager' | 'sdr' | 'client'>(type);
   const [iframeError, setIframeError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const sdrUrl = SDR_DEMO_URL;
-  const clientUrl = CLIENT_DEMO_URL;
 
   // Prevent iframe from affecting parent window via postMessage
   useEffect(() => {
@@ -34,8 +23,18 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
       
       // Block any navigation attempts from iframe
       if (event.data && typeof event.data === 'object') {
-        if (event.data.type === 'navigation' || event.data.action === 'navigate' || event.data.type === 'redirect') {
-          console.warn('Navigation attempt blocked in demo mode');
+        const data: any = event.data;
+        const dataType = data?.type;
+        const action = data?.action;
+
+        if (dataType === 'navigation' || action === 'navigate' || dataType === 'redirect') {
+          try {
+            console.warn('[DemoViewer] Navigation attempt blocked in demo mode', {
+              origin: event.origin,
+              dataType,
+              action,
+            });
+          } catch {}
           return;
         }
       }
@@ -48,7 +47,25 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
     };
   }, []);
 
+  // Initial debug log so we can see how the viewer was opened in production.
+  useEffect(() => {
+    try {
+      console.debug('[DemoViewer] Mounted', {
+        initialType: type,
+        activeRole,
+        location: window.location.href,
+      });
+    } catch {}
+  }, [type, activeRole]);
+
   const toggleFullscreen = () => {
+    try {
+      console.debug('[DemoViewer] Toggling fullscreen', {
+        from: isFullscreen,
+        to: !isFullscreen,
+      });
+    } catch {}
+
     if (!isFullscreen) {
       document.documentElement.requestFullscreen?.();
     } else {
@@ -58,17 +75,45 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
   };
 
   const currentUrl = activeRole === 'sdr' ? sdrUrl : clientUrl;
-
   const handleRoleChange = (role: 'manager' | 'sdr' | 'client') => {
+    try {
+      const targetUrl =
+        role === 'sdr'
+          ? currentUrl
+          : role === 'client'
+          ? currentUrl
+          : null;
+      console.debug('[DemoViewer] Switching role', {
+        from: activeRole,
+        to: role,
+        targetUrl,
+      });
+    } catch {}
+
     setActiveRole(role);
     setIframeError(false);
   };
 
   const handleIframeLoad = () => {
+    try {
+      console.debug('[DemoViewer] Iframe loaded', {
+        activeRole,
+        src: iframeRef.current?.src,
+      });
+    } catch {}
+
     setIframeError(false);
   };
 
-  const handleIframeError = () => {
+  const handleIframeError = (event: React.SyntheticEvent<HTMLIFrameElement, Event>) => {
+    try {
+      console.error('[DemoViewer] Iframe load error', {
+        activeRole,
+        src: iframeRef.current?.src,
+        eventType: event.type,
+      });
+    } catch {}
+
     setIframeError(true);
   };
 
