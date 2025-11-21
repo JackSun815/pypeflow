@@ -42,6 +42,11 @@ export default function MeetingsHistory({
   );
   const [searchTerm, setSearchTerm] = useState('');
   const [goalType, setGoalType] = useState<'set' | 'held'>('set'); // Toggle for % to Goal
+  // Filter, sort, and group state
+  const [filterBy, setFilterBy] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'client' | 'contact'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [groupBy, setGroupBy] = useState<'none' | 'client'>('none');
   // Export modal state
   const [showExport, setShowExport] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([
@@ -349,11 +354,67 @@ export default function MeetingsHistory({
     }
   });
 
-  // Filter meetings based on search term
-  const filteredMeetings = allMonthMeetings.filter(meeting => {
-    const searchString = `${(meeting as any).clients?.name || ''} ${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''}`.toLowerCase();
-    return searchString.includes(searchTerm.toLowerCase());
-  });
+  // Get unique clients for filter dropdown
+  const uniqueClients = Array.from(new Set(
+    allMonthMeetings.map(m => (m as any).clients?.name).filter(Boolean)
+  )) as string[];
+
+  // Process meetings: filter, sort, and group
+  const processMeetings = (meetings: Meeting[]) => {
+    // Step 1: Search filter
+    let filtered = meetings.filter(meeting => {
+      const searchString = `${(meeting as any).clients?.name || ''} ${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''}`.toLowerCase();
+      return searchString.includes(searchTerm.toLowerCase());
+    });
+
+    // Step 2: Client filter
+    if (filterBy !== 'all') {
+      const clientName = filterBy.replace('client_', '');
+      filtered = filtered.filter(meeting => (meeting as any).clients?.name === clientName);
+    }
+
+    // Step 3: Sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortBy === 'date') {
+        const dateA = new Date(a.scheduled_date).getTime();
+        const dateB = new Date(b.scheduled_date).getTime();
+        comparison = dateA - dateB;
+      } else if (sortBy === 'client') {
+        const clientA = ((a as any).clients?.name || '').toLowerCase();
+        const clientB = ((b as any).clients?.name || '').toLowerCase();
+        comparison = clientA.localeCompare(clientB);
+      } else if (sortBy === 'contact') {
+        const contactA = (a.contact_full_name || '').toLowerCase();
+        const contactB = (b.contact_full_name || '').toLowerCase();
+        comparison = contactA.localeCompare(contactB);
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    // Step 4: Group
+    if (groupBy === 'client') {
+      const grouped: Record<string, Meeting[]> = {};
+      filtered.forEach(meeting => {
+        const clientName = (meeting as any).clients?.name || 'No Client';
+        if (!grouped[clientName]) {
+          grouped[clientName] = [];
+        }
+        grouped[clientName].push(meeting);
+      });
+      return { grouped, ungrouped: null };
+    }
+
+    return { grouped: null, ungrouped: filtered };
+  };
+
+  const processedMeetings = processMeetings(allMonthMeetings);
+  
+  // For backward compatibility, create a flat array for the existing rendering
+  const filteredMeetings = processedMeetings.ungrouped || 
+    Object.values(processedMeetings.grouped || {}).flat();
 
   const allTimeStats = calculateAllTimeStats();
   const monthlyStats = calculateMonthlyStats();
@@ -644,33 +705,123 @@ export default function MeetingsHistory({
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <input
-            type="text"
-            placeholder="Search meetings..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
-          />
-          <Search className={`absolute left-3 top-2.5 w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
+        {/* Search Bar and Controls */}
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            {/* Search Bar */}
+            <div className="relative flex-1 w-full lg:w-auto min-w-[300px]">
+              <input
+                type="text"
+                placeholder="Search meetings..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+              />
+              <Search className={`absolute left-3 top-2.5 w-4 h-4 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
+            </div>
+            
+            {/* Filter, Sort, Group Controls - Inline */}
+            <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
+              <div className="flex-1 lg:flex-initial min-w-[140px]">
+                <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Filter</label>
+                <select
+                  value={filterBy}
+                  onChange={(e) => setFilterBy(e.target.value)}
+                  className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                    darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="all">All Clients</option>
+                  {uniqueClients.map(clientName => (
+                    <option key={clientName} value={`client_${clientName}`}>
+                      {clientName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 lg:flex-initial min-w-[120px]">
+                <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Sort By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'date' | 'client' | 'contact')}
+                  className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                    darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="date">Date</option>
+                  <option value="client">Client</option>
+                  <option value="contact">Contact</option>
+                </select>
+              </div>
+              <div className="flex-1 lg:flex-initial min-w-[120px]">
+                <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Order</label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                  className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                    darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="asc">Ascending</option>
+                  <option value="desc">Descending</option>
+                </select>
+              </div>
+              <div className="flex-1 lg:flex-initial min-w-[120px]">
+                <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Group By</label>
+                <select
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(e.target.value as 'none' | 'client')}
+                  className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                    darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="none">None</option>
+                  <option value="client">Client</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Meetings List */}
         <div className="space-y-4">
-          {filteredMeetings.map((meeting) => (
-            <MeetingCard
-              key={meeting.id}
-              meeting={meeting}
-              onUpdateHeldDate={onUpdateHeldDate}
-              onUpdateConfirmedDate={onUpdateConfirmedDate}
-              showDateControls={true}
-              darkTheme={darkTheme}
-            />
-          ))}
+          {groupBy === 'client' && processedMeetings.grouped ? (
+            // Render grouped by client
+            Object.entries(processedMeetings.grouped).map(([clientName, clientMeetings]) => (
+              <div key={clientName} className="mb-6">
+                <h4 className={`text-sm font-semibold mb-3 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                  {clientName} ({clientMeetings.length})
+                </h4>
+                <div className="space-y-4">
+                  {clientMeetings.map((meeting) => (
+                    <MeetingCard
+                      key={meeting.id}
+                      meeting={meeting}
+                      onUpdateHeldDate={onUpdateHeldDate}
+                      onUpdateConfirmedDate={onUpdateConfirmedDate}
+                      showDateControls={true}
+                      darkTheme={darkTheme}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            // Render ungrouped
+            filteredMeetings.map((meeting) => (
+              <MeetingCard
+                key={meeting.id}
+                meeting={meeting}
+                onUpdateHeldDate={onUpdateHeldDate}
+                onUpdateConfirmedDate={onUpdateConfirmedDate}
+                showDateControls={true}
+                darkTheme={darkTheme}
+              />
+            ))
+          )}
           {filteredMeetings.length === 0 && (
             <p className={`text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
-              {searchTerm ? 'No meetings found matching your search' : 'No meetings for this month'}
+              {searchTerm || filterBy !== 'all' ? 'No meetings found matching your filters' : 'No meetings for this month'}
             </p>
           )}
         </div>

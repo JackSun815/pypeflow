@@ -53,6 +53,12 @@ export default function UnifiedMeetingLists({
     notIcp: true,
     noLongerInterested: true,
   });
+  
+  // Filter, sort, and group state
+  const [filterBy, setFilterBy] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'client' | 'contact'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [groupBy, setGroupBy] = useState<'none' | 'client'>('none');
   const toggleSection = (key: keyof typeof openSections) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -85,21 +91,172 @@ export default function UnifiedMeetingLists({
     setDragOverSection(null);
   };
 
-  const filterMeetings = (meetings: Meeting[]) => {
-    return meetings.filter(meeting => {
+  // Get all unique clients from all meetings for filter dropdown
+  const allMeetings = [
+    ...pendingMeetings,
+    ...confirmedMeetings,
+    ...heldMeetings,
+    ...noShowMeetings,
+    ...notIcpQualifiedMeetings,
+    ...noLongerInterestedMeetings,
+    ...pastDuePendingMeetings,
+  ];
+  const uniqueClients = Array.from(new Set(
+    allMeetings.map(m => (m as any).clients?.name).filter(Boolean)
+  )) as string[];
+
+  // Process meetings: filter, sort, and group
+  const processMeetings = (meetings: Meeting[]) => {
+    // Step 1: Search filter
+    let filtered = meetings.filter(meeting => {
       const searchString = `${(meeting as any).clients?.name || ''} ${meeting.contact_full_name || ''} ${meeting.contact_email || ''} ${meeting.contact_phone || ''}`.toLowerCase();
       return searchString.includes(searchTerm.toLowerCase());
     });
+
+    // Step 2: Client filter
+    if (filterBy !== 'all') {
+      const clientName = filterBy.replace('client_', '');
+      filtered = filtered.filter(meeting => (meeting as any).clients?.name === clientName);
+    }
+
+    // Step 3: Sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortBy === 'date') {
+        const dateA = new Date(a.scheduled_date).getTime();
+        const dateB = new Date(b.scheduled_date).getTime();
+        comparison = dateA - dateB;
+      } else if (sortBy === 'client') {
+        const clientA = ((a as any).clients?.name || '').toLowerCase();
+        const clientB = ((b as any).clients?.name || '').toLowerCase();
+        comparison = clientA.localeCompare(clientB);
+      } else if (sortBy === 'contact') {
+        const contactA = (a.contact_full_name || '').toLowerCase();
+        const contactB = (b.contact_full_name || '').toLowerCase();
+        comparison = contactA.localeCompare(contactB);
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    // Step 4: Group
+    if (groupBy === 'client') {
+      const grouped: Record<string, Meeting[]> = {};
+      filtered.forEach(meeting => {
+        const clientName = (meeting as any).clients?.name || 'No Client';
+        if (!grouped[clientName]) {
+          grouped[clientName] = [];
+        }
+        grouped[clientName].push(meeting);
+      });
+      return { grouped, ungrouped: null };
+    }
+
+    return { grouped: null, ungrouped: filtered };
   };
 
-  const filteredPendingMeetings = filterMeetings(pendingMeetings);
-  const filteredConfirmedMeetings = filterMeetings(confirmedMeetings);
-  const filteredHeldMeetings = filterMeetings(heldMeetings);
-  const filteredNoShowMeetings = filterMeetings(noShowMeetings);
-  const filteredNotIcpQualifiedMeetings = filterMeetings(notIcpQualifiedMeetings);
-  const filteredNoLongerInterestedMeetings = filterMeetings(noLongerInterestedMeetings);
-  // Add filteredPastDuePendingMeetings
-  const filteredPastDuePendingMeetings = filterMeetings(pastDuePendingMeetings);
+  const processMeetingList = (meetings: Meeting[]) => {
+    const result = processMeetings(meetings);
+    return result;
+  };
+
+  const filteredPendingMeetings = processMeetingList(pendingMeetings);
+  const filteredConfirmedMeetings = processMeetingList(confirmedMeetings);
+  const filteredHeldMeetings = processMeetingList(heldMeetings);
+  const filteredNoShowMeetings = processMeetingList(noShowMeetings);
+  const filteredNotIcpQualifiedMeetings = processMeetingList(notIcpQualifiedMeetings);
+  const filteredNoLongerInterestedMeetings = processMeetingList(noLongerInterestedMeetings);
+  const filteredPastDuePendingMeetings = processMeetingList(pastDuePendingMeetings);
+
+  // Helper function to get meeting count from processed result
+  const getMeetingCount = (result: { grouped: Record<string, Meeting[]> | null; ungrouped: Meeting[] | null }) => {
+    if (result.grouped) {
+      return Object.values(result.grouped).reduce((sum, meetings) => sum + meetings.length, 0);
+    }
+    return result.ungrouped?.length || 0;
+  };
+
+  // Helper function to render meetings (handles both grouped and ungrouped)
+  const renderMeetings = (
+    result: { grouped: Record<string, Meeting[]> | null; ungrouped: Meeting[] | null },
+    sectionType: string,
+    borderColor: string
+  ) => {
+    if (result.grouped) {
+      // Render grouped by client
+      return Object.entries(result.grouped).map(([clientName, clientMeetings]) => (
+        <div key={clientName} className="mb-6">
+          <h4 className={`text-sm font-semibold mb-3 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+            {clientName} ({clientMeetings.length})
+          </h4>
+          <div className="space-y-3">
+            {clientMeetings.map((meeting) => (
+              <div 
+                key={meeting.id} 
+                className={`border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? `${borderColor} bg-[#1d1f24]` : `${borderColor} bg-white`}`}
+              >
+                <div
+                  draggable
+                  onDragStart={() => handleDragStart(meeting)}
+                  onDragEnd={handleDragEnd}
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  title="Drag to move"
+                >
+                  <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
+                </div>
+                <MeetingCard
+                  meeting={meeting}
+                  onDelete={onDelete}
+                  onUpdateHeldDate={onUpdateHeldDate}
+                  onUpdateConfirmedDate={onUpdateConfirmedDate}
+                  editable={editable}
+                  editingMeetingId={editingMeetingId}
+                  onEdit={onEdit}
+                  onSave={onSave}
+                  onCancel={onCancel}
+                  showDateControls={true}
+                  darkTheme={darkTheme}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
+    } else if (result.ungrouped) {
+      // Render ungrouped
+      return result.ungrouped.map((meeting) => (
+        <div 
+          key={meeting.id} 
+          className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? `${borderColor} bg-[#1d1f24]` : `${borderColor} bg-white`}`}
+        >
+          <div
+            draggable
+            onDragStart={() => handleDragStart(meeting)}
+            onDragEnd={handleDragEnd}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
+            title="Drag to move"
+          >
+            <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
+          </div>
+          <MeetingCard
+            meeting={meeting}
+            onDelete={onDelete}
+            onUpdateHeldDate={onUpdateHeldDate}
+            onUpdateConfirmedDate={onUpdateConfirmedDate}
+            editable={editable}
+            editingMeetingId={editingMeetingId}
+            onEdit={onEdit}
+            onSave={onSave}
+            onCancel={onCancel}
+            showDateControls={true}
+            darkTheme={darkTheme}
+          />
+        </div>
+      ));
+    }
+    return null;
+  };
 
   const MeetingList = ({ title, meetings }: { title: string; meetings: Meeting[] }) => (
     <div className={`rounded-lg shadow-md ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
@@ -139,17 +296,81 @@ export default function UnifiedMeetingLists({
   return (
     <div className="space-y-8">
       <div className={`rounded-lg shadow-md p-4 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
-        <div className="relative max-w-2xl mx-auto">
-          <input
-            type="text"
-            placeholder="Search all meetings..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-              darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'
-            }`}
-          />
-          <Search className={`absolute left-3 top-3.5 w-5 h-5 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          {/* Search Bar */}
+          <div className="relative flex-1 w-full lg:w-auto min-w-[300px]">
+            <input
+              type="text"
+              placeholder="Search all meetings..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'
+              }`}
+            />
+            <Search className={`absolute left-3 top-3.5 w-5 h-5 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`} />
+          </div>
+          
+          {/* Filter, Sort, Group Controls - Inline */}
+          <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
+            <div className="flex-1 lg:flex-initial min-w-[140px]">
+              <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Filter</label>
+              <select
+                value={filterBy}
+                onChange={(e) => setFilterBy(e.target.value)}
+                className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                  darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                }`}
+              >
+                <option value="all">All Clients</option>
+                {uniqueClients.map(clientName => (
+                  <option key={clientName} value={`client_${clientName}`}>
+                    {clientName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 lg:flex-initial min-w-[120px]">
+              <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Sort By</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'date' | 'client' | 'contact')}
+                className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                  darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                }`}
+              >
+                <option value="date">Date</option>
+                <option value="client">Client</option>
+                <option value="contact">Contact</option>
+              </select>
+            </div>
+            <div className="flex-1 lg:flex-initial min-w-[120px]">
+              <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Order</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                  darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                }`}
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+            <div className="flex-1 lg:flex-initial min-w-[120px]">
+              <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Group By</label>
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value as 'none' | 'client')}
+                className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                  darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                }`}
+              >
+                <option value="none">None</option>
+                <option value="client">Client</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -165,41 +386,13 @@ export default function UnifiedMeetingLists({
           <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-yellow-900/10' : 'border-gray-200 bg-yellow-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('pending')}>
             <Clock className="w-5 h-5 text-yellow-500" />
             <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-yellow-200' : 'text-yellow-800'}`}>Pending Meetings</h3>
-            <span className={`text-sm ${darkTheme ? 'text-yellow-300' : 'text-yellow-600'}`}>{filteredPendingMeetings.length}</span>
+            <span className={`text-sm ${darkTheme ? 'text-yellow-300' : 'text-yellow-600'}`}>{getMeetingCount(filteredPendingMeetings)}</span>
             <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-yellow-300' : ''} ${openSections.pending ? '' : 'rotate-180'}`} />
           </div>
           {openSections.pending && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredPendingMeetings.length > 0 ? (
-                filteredPendingMeetings.map((meeting) => (
-                  <div 
-                    key={meeting.id} 
-                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-yellow-800/30 bg-[#1d1f24]' : 'border-yellow-100 bg-white'}`}
-                  >
-                    <div
-                      draggable
-                      onDragStart={() => handleDragStart(meeting)}
-                      onDragEnd={handleDragEnd}
-                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
-                      title="Drag to move"
-                    >
-                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
-                    </div>
-                    <MeetingCard
-                      meeting={meeting}
-                      onDelete={onDelete}
-                      onUpdateHeldDate={onUpdateHeldDate}
-                      onUpdateConfirmedDate={onUpdateConfirmedDate}
-                      editable={editable}
-                      editingMeetingId={editingMeetingId}
-                      onEdit={onEdit}
-                      onSave={onSave}
-                      onCancel={onCancel}
-                      showDateControls={true}
-                      darkTheme={darkTheme}
-                    />
-                  </div>
-                ))
+              {getMeetingCount(filteredPendingMeetings) > 0 ? (
+                renderMeetings(filteredPendingMeetings, 'pending', 'border-yellow-800/30')
               ) : (
                 <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'pending' ? 'Drop here to mark as Pending' : 'No meetings to display'}
@@ -218,41 +411,13 @@ export default function UnifiedMeetingLists({
           <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-blue-900/10' : 'border-gray-200 bg-blue-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('confirmed')}>
             <CheckCircle className="w-5 h-5 text-blue-500" />
             <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-blue-200' : 'text-blue-800'}`}>Confirmed Meetings</h3>
-            <span className={`text-sm ${darkTheme ? 'text-blue-300' : 'text-blue-600'}`}>{filteredConfirmedMeetings.length}</span>
+            <span className={`text-sm ${darkTheme ? 'text-blue-300' : 'text-blue-600'}`}>{getMeetingCount(filteredConfirmedMeetings)}</span>
             <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-blue-300' : ''} ${openSections.confirmed ? '' : 'rotate-180'}`} />
           </div>
           {openSections.confirmed && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredConfirmedMeetings.length > 0 ? (
-                filteredConfirmedMeetings.map((meeting) => (
-                  <div 
-                    key={meeting.id} 
-                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-blue-800/30 bg-[#1d1f24]' : 'border-blue-100 bg-white'}`}
-                  >
-                    <div
-                      draggable
-                      onDragStart={() => handleDragStart(meeting)}
-                      onDragEnd={handleDragEnd}
-                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
-                      title="Drag to move"
-                    >
-                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
-                    </div>
-                    <MeetingCard
-                      meeting={meeting}
-                      onDelete={onDelete}
-                      onUpdateHeldDate={onUpdateHeldDate}
-                      onUpdateConfirmedDate={onUpdateConfirmedDate}
-                      editable={editable}
-                      editingMeetingId={editingMeetingId}
-                      onEdit={onEdit}
-                      onSave={onSave}
-                      onCancel={onCancel}
-                      showDateControls={true}
-                      darkTheme={darkTheme}
-                    />
-                  </div>
-                ))
+              {getMeetingCount(filteredConfirmedMeetings) > 0 ? (
+                renderMeetings(filteredConfirmedMeetings, 'confirmed', 'border-blue-800/30')
               ) : (
                 <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'confirmed' ? 'Drop here to mark as Confirmed' : 'No meetings to display'}
@@ -266,29 +431,13 @@ export default function UnifiedMeetingLists({
           <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-orange-900/10' : 'border-gray-200 bg-orange-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('pastDue')}>
             <AlertCircle className="w-5 h-5 text-orange-500" />
             <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-orange-200' : 'text-orange-800'}`}>Past Due Pending</h3>
-            <span className={`text-sm ${darkTheme ? 'text-orange-300' : 'text-orange-600'}`}>{filteredPastDuePendingMeetings.length}</span>
+            <span className={`text-sm ${darkTheme ? 'text-orange-300' : 'text-orange-600'}`}>{getMeetingCount(filteredPastDuePendingMeetings)}</span>
             <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-orange-300' : ''} ${openSections.pastDue ? '' : 'rotate-180'}`} />
           </div>
           {openSections.pastDue && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredPastDuePendingMeetings.length > 0 ? (
-                filteredPastDuePendingMeetings.map((meeting) => (
-                  <div key={meeting.id} className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-shadow ${darkTheme ? 'border-orange-800/30 bg-[#1d1f24]' : 'border-orange-100 bg-white'}`}>
-                    <MeetingCard
-                      meeting={meeting}
-                      onDelete={onDelete}
-                      onUpdateHeldDate={onUpdateHeldDate}
-                      onUpdateConfirmedDate={onUpdateConfirmedDate}
-                      editable={editable}
-                      editingMeetingId={editingMeetingId}
-                      onEdit={onEdit}
-                      onSave={onSave}
-                      onCancel={onCancel}
-                      showDateControls={true}
-                      darkTheme={darkTheme}
-                    />
-                  </div>
-                ))
+              {getMeetingCount(filteredPastDuePendingMeetings) > 0 ? (
+                renderMeetings(filteredPastDuePendingMeetings, 'pastDue', 'border-orange-800/30')
               ) : (
                 <p className={`text-sm text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings to display</p>
               )}
@@ -308,41 +457,13 @@ export default function UnifiedMeetingLists({
           <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-green-900/10' : 'border-gray-200 bg-green-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('held')}>
             <CheckCircle className="w-5 h-5 text-green-500" />
             <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-green-200' : 'text-green-800'}`}>Held Meetings</h3>
-            <span className={`text-sm ${darkTheme ? 'text-green-300' : 'text-green-600'}`}>{filteredHeldMeetings.length}</span>
+            <span className={`text-sm ${darkTheme ? 'text-green-300' : 'text-green-600'}`}>{getMeetingCount(filteredHeldMeetings)}</span>
             <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-green-300' : ''} ${openSections.held ? '' : 'rotate-180'}`} />
           </div>
           {openSections.held && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredHeldMeetings.length > 0 ? (
-                filteredHeldMeetings.map((meeting) => (
-                  <div 
-                    key={meeting.id} 
-                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-green-800/30 bg-[#1d1f24]' : 'border-green-100 bg-white'}`}
-                  >
-                    <div
-                      draggable
-                      onDragStart={() => handleDragStart(meeting)}
-                      onDragEnd={handleDragEnd}
-                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
-                      title="Drag to move"
-                    >
-                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
-                    </div>
-                    <MeetingCard
-                      meeting={meeting}
-                      onDelete={onDelete}
-                      onUpdateHeldDate={onUpdateHeldDate}
-                      onUpdateConfirmedDate={onUpdateConfirmedDate}
-                      editable={editable}
-                      editingMeetingId={editingMeetingId}
-                      onEdit={onEdit}
-                      onSave={onSave}
-                      onCancel={onCancel}
-                      showDateControls={true}
-                      darkTheme={darkTheme}
-                    />
-                  </div>
-                ))
+              {getMeetingCount(filteredHeldMeetings) > 0 ? (
+                renderMeetings(filteredHeldMeetings, 'held', 'border-green-800/30')
               ) : (
                 <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'held' ? 'Drop here to mark as Held' : 'No meetings to display'}
@@ -361,41 +482,13 @@ export default function UnifiedMeetingLists({
           <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-red-900/10' : 'border-gray-200 bg-red-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('noShow')}>
             <XCircle className="w-5 h-5 text-red-500" />
             <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-red-200' : 'text-red-800'}`}>No Shows</h3>
-            <span className={`text-sm ${darkTheme ? 'text-red-300' : 'text-red-600'}`}>{filteredNoShowMeetings.length}</span>
+            <span className={`text-sm ${darkTheme ? 'text-red-300' : 'text-red-600'}`}>{getMeetingCount(filteredNoShowMeetings)}</span>
             <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-red-300' : ''} ${openSections.noShow ? '' : 'rotate-180'}`} />
           </div>
           {openSections.noShow && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredNoShowMeetings.length > 0 ? (
-                filteredNoShowMeetings.map((meeting) => (
-                  <div 
-                    key={meeting.id} 
-                    className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-all relative group ${draggedMeeting?.id === meeting.id ? 'opacity-50' : ''} ${darkTheme ? 'border-red-800/30 bg-[#1d1f24]' : 'border-red-100 bg-white'}`}
-                  >
-                    <div
-                      draggable
-                      onDragStart={() => handleDragStart(meeting)}
-                      onDragEnd={handleDragEnd}
-                      className={`absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move p-1 rounded-r z-10 ${darkTheme ? 'bg-[#2d3139] hover:bg-[#3a3f47]' : 'bg-gray-100 hover:bg-gray-200'}`}
-                      title="Drag to move"
-                    >
-                      <GripVertical className={`w-3 h-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
-                    </div>
-                    <MeetingCard
-                      meeting={meeting}
-                      onDelete={onDelete}
-                      onUpdateHeldDate={onUpdateHeldDate}
-                      onUpdateConfirmedDate={onUpdateConfirmedDate}
-                      editable={editable}
-                      editingMeetingId={editingMeetingId}
-                      onEdit={onEdit}
-                      onSave={onSave}
-                      onCancel={onCancel}
-                      showDateControls={true}
-                      darkTheme={darkTheme}
-                    />
-                  </div>
-                ))
+              {getMeetingCount(filteredNoShowMeetings) > 0 ? (
+                renderMeetings(filteredNoShowMeetings, 'noShow', 'border-red-800/30')
               ) : (
                 <p className={`text-sm text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                   {dragOverSection === 'noShow' ? 'Drop here to mark as No Show' : 'No meetings to display'}
@@ -412,29 +505,13 @@ export default function UnifiedMeetingLists({
           <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-purple-900/10' : 'border-gray-200 bg-purple-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('noLongerInterested')}>
             <UserX className="w-5 h-5 text-purple-500" />
             <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-purple-200' : 'text-purple-800'}`}>No Longer Interested</h3>
-            <span className={`text-sm ${darkTheme ? 'text-purple-300' : 'text-purple-600'}`}>{filteredNoLongerInterestedMeetings.length}</span>
+            <span className={`text-sm ${darkTheme ? 'text-purple-300' : 'text-purple-600'}`}>{getMeetingCount(filteredNoLongerInterestedMeetings)}</span>
             <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-purple-300' : ''} ${openSections.noLongerInterested ? '' : 'rotate-180'}`} />
           </div>
           {openSections.noLongerInterested && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredNoLongerInterestedMeetings.length > 0 ? (
-                filteredNoLongerInterestedMeetings.map((meeting) => (
-                  <div key={meeting.id} className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-shadow ${darkTheme ? 'border-purple-800/30 bg-[#1d1f24]' : 'border-purple-100 bg-white'}`}>
-                    <MeetingCard
-                      meeting={meeting}
-                      onDelete={onDelete}
-                      onUpdateHeldDate={onUpdateHeldDate}
-                      onUpdateConfirmedDate={onUpdateConfirmedDate}
-                      editable={editable}
-                      editingMeetingId={editingMeetingId}
-                      onEdit={onEdit}
-                      onSave={onSave}
-                      onCancel={onCancel}
-                      showDateControls={true}
-                      darkTheme={darkTheme}
-                    />
-                  </div>
-                ))
+              {getMeetingCount(filteredNoLongerInterestedMeetings) > 0 ? (
+                renderMeetings(filteredNoLongerInterestedMeetings, 'noLongerInterested', 'border-purple-800/30')
               ) : (
                 <p className={`text-sm text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings to display</p>
               )}
@@ -446,29 +523,13 @@ export default function UnifiedMeetingLists({
           <div className={`p-4 border-b ${darkTheme ? 'border-[#2d3139] bg-slate-800/50' : 'border-gray-200 bg-gray-50'} flex items-center gap-2 cursor-pointer select-none`} onClick={() => toggleSection('notIcp')}>
             <Ban className={`w-5 h-5 ${darkTheme ? 'text-slate-400' : 'text-gray-700'}`} />
             <h3 className={`text-lg font-semibold flex-1 ${darkTheme ? 'text-slate-200' : 'text-gray-800'}`}>Not ICP Qualified</h3>
-            <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{filteredNotIcpQualifiedMeetings.length}</span>
+            <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{getMeetingCount(filteredNotIcpQualifiedMeetings)}</span>
             <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${darkTheme ? 'text-slate-400' : ''} ${openSections.notIcp ? '' : 'rotate-180'}`} />
           </div>
           {openSections.notIcp && (
             <div className="p-4 max-h-[600px] overflow-y-auto">
-              {filteredNotIcpQualifiedMeetings.length > 0 ? (
-                filteredNotIcpQualifiedMeetings.map((meeting) => (
-                  <div key={meeting.id} className={`mb-4 border rounded-lg shadow-sm hover:shadow-lg transition-shadow ${darkTheme ? 'border-[#2d3139] bg-[#1d1f24]' : 'border-gray-200 bg-white'}`}>
-                    <MeetingCard
-                      meeting={meeting}
-                      onDelete={onDelete}
-                      onUpdateHeldDate={onUpdateHeldDate}
-                      onUpdateConfirmedDate={onUpdateConfirmedDate}
-                      editable={editable}
-                      editingMeetingId={editingMeetingId}
-                      onEdit={onEdit}
-                      onSave={onSave}
-                      onCancel={onCancel}
-                      showDateControls={true}
-                      darkTheme={darkTheme}
-                    />
-                  </div>
-                ))
+              {getMeetingCount(filteredNotIcpQualifiedMeetings) > 0 ? (
+                renderMeetings(filteredNotIcpQualifiedMeetings, 'notIcp', 'border-[#2d3139]')
               ) : (
                 <p className={`text-sm text-center ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings to display</p>
               )}
