@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AgencyProvider, useAgency } from './contexts/AgencyContext';
 import { DemoProvider } from './contexts/DemoContext';
@@ -168,52 +168,9 @@ function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const isIframeDemo = isInIframe || urlParams.get('iframe') === 'true';
   
-  // If we're in an iframe, prevent any top-level navigation attempts
   React.useEffect(() => {
     if (isIframeDemo) {
-      console.log('[App] Iframe demo mode detected, installing navigation blockers');
-      
-      // Override window.top to prevent access
-      try {
-        Object.defineProperty(window, 'top', {
-          get: () => window.self,
-          configurable: false,
-          enumerable: true
-        });
-        Object.defineProperty(window, 'parent', {
-          get: () => window.self,
-          configurable: false,
-          enumerable: true
-        });
-        console.log('[App] Successfully overrode window.top and window.parent');
-      } catch (e) {
-        console.warn('[App] Could not override window.top/parent:', e);
-      }
-      
-      // Prevent React Router from trying to navigate the parent
-      const originalPushState = window.history.pushState;
-      const originalReplaceState = window.history.replaceState;
-      
-      window.history.pushState = function(...args) {
-        try {
-          return originalPushState.apply(window.history, args);
-        } catch (e) {
-          console.warn('[App] Navigation blocked in iframe', e);
-        }
-      };
-      
-      window.history.replaceState = function(...args) {
-        try {
-          return originalReplaceState.apply(window.history, args);
-        } catch (e) {
-          console.warn('[App] Navigation blocked in iframe', e);
-        }
-      };
-      
-      return () => {
-        window.history.pushState = originalPushState;
-        window.history.replaceState = originalReplaceState;
-      };
+      console.log('[App] Iframe demo mode detected - using hash routing');
     }
   }, [isIframeDemo]);
 
@@ -287,30 +244,16 @@ function App() {
     );
   }
 
-  // Create a custom window object for iframe mode to prevent parent navigation
-  const routerWindow = React.useMemo(() => {
-    if (isIframeDemo) {
-      // Return a proxied window that blocks parent access
-      return new Proxy(window, {
-        get(target, prop) {
-          if (prop === 'top' || prop === 'parent') {
-            return window.self;
-          }
-          return target[prop as keyof Window];
-        }
-      });
-    }
-    return window;
-  }, [isIframeDemo]);
+  const RouterComponent = isIframeDemo ? HashRouter : BrowserRouter;
 
   return (
     <HelmetProvider>
       <AgencyProvider>
         <DemoProvider>
-          <Router window={routerWindow as any}>
+          <RouterComponent>
             <GoogleAnalytics />
             <AppRoutes />
-          </Router>
+          </RouterComponent>
         </DemoProvider>
       </AgencyProvider>
     </HelmetProvider>

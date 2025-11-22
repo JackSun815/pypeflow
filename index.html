@@ -6,60 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SDR Meeting Tracker</title>
     
-    <!-- Iframe Navigation Protection - MUST run before any other scripts -->
-    <script>
-      (function() {
-        // Detect if we're in an iframe
-        if (window.self !== window.top) {
-          console.log('[IframeProtection] Detected iframe context, installing navigation guards');
-          
-          // Check for iframe parameter
-          var urlParams = new URLSearchParams(window.location.search);
-          var isIframeDemo = urlParams.get('iframe') === 'true';
-          
-          if (isIframeDemo) {
-            console.log('[IframeProtection] iframe=true detected, preventing parent navigation');
-            
-            // Prevent top-level navigation by overriding window.top
-            try {
-              Object.defineProperty(window, 'top', {
-                get: function() { return window.self; },
-                configurable: false
-              });
-            } catch (e) {
-              console.warn('[IframeProtection] Could not override window.top:', e);
-            }
-            
-            // Intercept any location changes
-            var originalLocationSetter = Object.getOwnPropertyDescriptor(window.Document.prototype, 'location').set;
-            Object.defineProperty(document, 'location', {
-              set: function(value) {
-                console.warn('[IframeProtection] Blocked document.location change to:', value);
-                return;
-              }
-            });
-            
-            // Block window.location changes
-            ['href', 'pathname', 'search', 'hash'].forEach(function(prop) {
-              try {
-                var descriptor = Object.getOwnPropertyDescriptor(window.Location.prototype, prop);
-                if (descriptor && descriptor.set) {
-                  Object.defineProperty(window.location, prop, {
-                    set: function(value) {
-                      console.warn('[IframeProtection] Blocked window.location.' + prop + ' change to:', value);
-                    },
-                    get: descriptor.get
-                  });
-                }
-              } catch (e) {
-                // Some properties can't be overridden, that's ok
-              }
-            });
-          }
-        }
-      })();
-    </script>
-    
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-B1DJBPY5Y3"></script>
     <script>

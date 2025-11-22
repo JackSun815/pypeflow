@@ -237,7 +237,7 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
                   src={currentUrl}
                   title="PypeFlow Demo Dashboard"
                   className="w-full h-full border-0 bg-white"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                  sandbox="allow-scripts allow-forms allow-popups allow-modals"
                   referrerPolicy="no-referrer-when-downgrade"
                   onLoad={handleIframeLoad}
                   onError={handleIframeError}

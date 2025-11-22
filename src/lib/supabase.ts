@@ -79,14 +79,19 @@ const customFetch = async (url: string, options: RequestInit = {}): Promise<Resp
   }
 };
 
+const isBrowser = typeof window !== 'undefined';
+const isIframeContext = isBrowser && window.self !== window.top;
+const supabaseStorageKey = isIframeContext ? 'supabase.auth.token.iframe' : 'supabase.auth.token';
+const supabaseStorage = isBrowser ? window.localStorage : undefined;
+
 // Create Supabase client with retry and error handling
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+const baseClientOptions: any = {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    storageKey: 'supabase.auth.token',
-    storage: window.localStorage
+    autoRefreshToken: !isIframeContext,
+    persistSession: !isIframeContext,
+    detectSessionInUrl: !isIframeContext,
+    storageKey: supabaseStorageKey,
+    storage: isIframeContext ? undefined : supabaseStorage
   },
   global: {
     headers: {
@@ -94,7 +99,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     }
   },
   // Use custom fetch implementation with retry
-  fetch: (url, options) => withRetry(
+  fetch: (url: string, options?: RequestInit) => withRetry(
     () => customFetch(url, options),
     3,
     1000,
@@ -102,10 +107,12 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       console.warn(`Retrying failed request (attempt ${attempt}/3):`, error.message);
     }
   )
-});
+};
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, baseClientOptions);
 
 // Stateless, sessionless Supabase client for public SDR dashboard
-export const supabasePublic = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+const publicClientOptions: any = {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
@@ -117,7 +124,7 @@ export const supabasePublic = createClient<Database>(supabaseUrl, supabaseAnonKe
       'apikey': supabaseAnonKey
     }
   },
-  fetch: (url, options) => withRetry(
+  fetch: (url: string, options?: RequestInit) => withRetry(
     () => customFetch(url, options),
     3,
     1000,
@@ -125,7 +132,9 @@ export const supabasePublic = createClient<Database>(supabaseUrl, supabaseAnonKe
       console.warn(`[Public] Retrying failed request (attempt ${attempt}/3):`, error.message);
     }
   )
-});
+};
+
+export const supabasePublic = createClient<Database>(supabaseUrl, supabaseAnonKey, publicClientOptions);
 
 // Note: Agency-aware client is now handled in useAgencyClient hook
 
