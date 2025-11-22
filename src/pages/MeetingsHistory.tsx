@@ -44,6 +44,7 @@ export default function MeetingsHistory({
   const [goalType, setGoalType] = useState<'set' | 'held'>('set'); // Toggle for % to Goal
   // Filter, sort, and group state
   const [filterBy, setFilterBy] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'booked' | 'held' | 'no-show' | 'pending'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'client' | 'contact'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [groupBy, setGroupBy] = useState<'none' | 'client'>('none');
@@ -359,6 +360,50 @@ export default function MeetingsHistory({
     allMonthMeetings.map(m => (m as any).clients?.name).filter(Boolean)
   )) as string[];
 
+  // Helper function to determine meeting status for filtering
+  // This should match the logic used in the stats calculations
+  const getMeetingStatus = (meeting: Meeting): 'booked' | 'held' | 'no-show' | 'pending' => {
+    // Held meetings: have held_at, not no-show, not cancelled
+    if (meeting.held_at && !meeting.no_show && !meeting.no_longer_interested) {
+      return 'held';
+    }
+    // No-show meetings
+    if (meeting.no_show) {
+      return 'no-show';
+    }
+    // Check if meeting is finalized (held, no-show, or cancelled)
+    const isFinalized = !!(meeting.held_at || meeting.no_show || meeting.no_longer_interested);
+    
+    // If finalized, we've already handled it above, so this shouldn't happen
+    if (isFinalized) {
+      return 'pending'; // fallback
+    }
+    
+    // Pending: specifically meetings with status='pending' that haven't been finalized
+    if (meeting.status === 'pending') {
+      return 'pending';
+    }
+    
+    // Booked: any non-finalized meeting (includes confirmed and other statuses)
+    return 'booked';
+  };
+  
+  // Helper to check if meeting matches status filter
+  // Special handling: "booked" should show ALL meetings that were booked in the selected month
+  // (from monthMeetingsSet), regardless of their current status, to match the "Meetings Booked" stat
+  const matchesStatusFilter = (meeting: Meeting, filter: string): boolean => {
+    if (filter === 'all') return true;
+    
+    // For "booked" filter, check if meeting is in monthMeetingsSet (all meetings booked in the month)
+    if (filter === 'booked') {
+      return monthMeetingsSet.some(m => m.id === meeting.id);
+    }
+    
+    // For other filters, use the current status
+    const status = getMeetingStatus(meeting);
+    return status === filter;
+  };
+
   // Process meetings: filter, sort, and group
   const processMeetings = (meetings: Meeting[]) => {
     // Step 1: Search filter
@@ -367,13 +412,18 @@ export default function MeetingsHistory({
       return searchString.includes(searchTerm.toLowerCase());
     });
 
-    // Step 2: Client filter
+    // Step 2: Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(meeting => matchesStatusFilter(meeting, statusFilter));
+    }
+
+    // Step 3: Client filter
     if (filterBy !== 'all') {
       const clientName = filterBy.replace('client_', '');
       filtered = filtered.filter(meeting => (meeting as any).clients?.name === clientName);
     }
 
-    // Step 3: Sort
+    // Step 4: Sort
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       
@@ -394,7 +444,7 @@ export default function MeetingsHistory({
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-    // Step 4: Group
+    // Step 5: Group
     if (groupBy === 'client') {
       const grouped: Record<string, Meeting[]> = {};
       filtered.forEach(meeting => {
@@ -722,6 +772,22 @@ export default function MeetingsHistory({
             
             {/* Filter, Sort, Group Controls - Inline */}
             <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
+              <div className="flex-1 lg:flex-initial min-w-[140px]">
+                <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'booked' | 'held' | 'no-show' | 'pending')}
+                  className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                    darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="booked">Booked</option>
+                  <option value="held">Held</option>
+                  <option value="no-show">No Shows</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
               <div className="flex-1 lg:flex-initial min-w-[140px]">
                 <label className={`block text-xs font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Filter</label>
                 <select

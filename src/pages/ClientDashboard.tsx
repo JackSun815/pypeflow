@@ -329,6 +329,7 @@ export default function ClientDashboard() {
   // Filter, sort, and group state for meetings
   const [meetingSearchTerm, setMeetingSearchTerm] = useState('');
   const [meetingFilterBy, setMeetingFilterBy] = useState<string>('all');
+  const [meetingStatusFilter, setMeetingStatusFilter] = useState<'all' | 'booked' | 'held' | 'no-show' | 'pending'>('all');
   const [meetingSortBy, setMeetingSortBy] = useState<'date' | 'contact' | 'sdr'>('date');
   const [meetingSortOrder, setMeetingSortOrder] = useState<'asc' | 'desc'>('desc');
   const [meetingGroupBy, setMeetingGroupBy] = useState<'none' | 'sdr'>('none');
@@ -1465,20 +1466,39 @@ export default function ClientDashboard() {
     return !!(meeting.held_at || meeting.no_show || meeting.no_longer_interested);
   };
   
+  // Helper function to determine meeting status for filtering
+  const getMeetingStatus = (meeting: Meeting): 'booked' | 'held' | 'no-show' | 'pending' => {
+    if (meeting.held_at && !meeting.no_show && !meeting.no_longer_interested) {
+      return 'held';
+    }
+    if (meeting.no_show) {
+      return 'no-show';
+    }
+    if (meeting.status === 'confirmed' && !isMeetingFinalized(meeting)) {
+      return 'booked';
+    }
+    return 'pending';
+  };
+  
   // Base meeting arrays (before filtering/sorting/grouping)
-  const basePastDueMeetings = meetings
+  // Apply status filter first if not 'all'
+  const statusFilteredMeetings = meetingStatusFilter === 'all' 
+    ? meetings 
+    : meetings.filter(meeting => getMeetingStatus(meeting) === meetingStatusFilter);
+  
+  const basePastDueMeetings = statusFilteredMeetings
     .filter(meeting => {
       const meetingDate = new Date(meeting.scheduled_date);
       return meetingDate < now && !isMeetingFinalized(meeting);
     });
 
-  const baseUpcomingMeetings = meetings
+  const baseUpcomingMeetings = statusFilteredMeetings
     .filter(meeting => {
       const meetingDate = new Date(meeting.scheduled_date);
       return meetingDate >= now && !isMeetingFinalized(meeting);
     });
 
-  const baseCompletedMeetings = meetings
+  const baseCompletedMeetings = statusFilteredMeetings
     .filter(meeting => isMeetingFinalized(meeting));
 
   const baseHeldMeetingsHistory = baseCompletedMeetings.filter(
@@ -1572,7 +1592,7 @@ export default function ClientDashboard() {
   const totalFinalizedMeetings =
     heldMeetingsHistory.length + noShowMeetingsHistory.length + cancelledMeetingsHistory.length;
 
-  const confirmedMeetings = meetings.filter(meeting => 
+  const confirmedMeetings = statusFilteredMeetings.filter(meeting => 
     meeting.status === 'confirmed'
   );
 
@@ -2253,6 +2273,22 @@ export default function ClientDashboard() {
                 
                 {/* Filter, Sort, Group Controls - Inline */}
                 <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
+                  <div className="flex-1 lg:flex-initial min-w-[140px]">
+                    <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Status</label>
+                    <select
+                      value={meetingStatusFilter}
+                      onChange={(e) => setMeetingStatusFilter(e.target.value as 'all' | 'booked' | 'held' | 'no-show' | 'pending')}
+                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                        isDarkMode ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'
+                      }`}
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="booked">Booked</option>
+                      <option value="held">Held</option>
+                      <option value="no-show">No Shows</option>
+                      <option value="pending">Pending</option>
+                    </select>
+                  </div>
                   <div className="flex-1 lg:flex-initial min-w-[140px]">
                     <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Filter</label>
                     <select
