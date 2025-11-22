@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2, Search } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2, Search, Briefcase } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
 
@@ -1563,7 +1563,7 @@ export default function ClientDashboard() {
   const textTertiary = isDarkMode ? 'text-slate-400' : 'text-gray-500';
 
   const outcomeStyles: Record<
-    'held' | 'no-show' | 'cancelled',
+    'held' | 'no-show' | 'cancelled' | 'confirmed' | 'pending',
     {
       cardLight: string;
       cardDark: string;
@@ -1625,6 +1625,36 @@ export default function ClientDashboard() {
       emptyTitle: 'No cancellations yet',
       emptyDescription: 'Cancelled meetings will appear here once they are updated in the dashboard.',
     },
+    confirmed: {
+      cardLight: 'bg-gradient-to-r from-blue-50/40 to-white hover:border-blue-300',
+      cardDark: 'bg-[#1d1f24] hover:border-blue-400',
+      iconBgLight: 'bg-blue-100',
+      iconBgDark: 'bg-blue-900/30',
+      iconColor: 'text-blue-600',
+      badgeClass: 'bg-blue-100 text-blue-800 border border-blue-200',
+      badgeIcon: CheckCircle,
+      badgeLabel: 'Confirmed',
+      headerIconBgLight: 'bg-blue-50',
+      headerIconBgDark: 'bg-blue-900/40',
+      headerIconColor: 'text-blue-600',
+      emptyTitle: 'No confirmed meetings yet',
+      emptyDescription: 'Confirmed meetings will appear here once they are updated in the dashboard.',
+    },
+    pending: {
+      cardLight: 'bg-gradient-to-r from-yellow-50/40 to-white hover:border-yellow-300',
+      cardDark: 'bg-[#1d1f24] hover:border-yellow-400',
+      iconBgLight: 'bg-yellow-100',
+      iconBgDark: 'bg-yellow-900/30',
+      iconColor: 'text-yellow-600',
+      badgeClass: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      badgeIcon: AlertTriangle,
+      badgeLabel: 'Pending',
+      headerIconBgLight: 'bg-yellow-50',
+      headerIconBgDark: 'bg-yellow-900/40',
+      headerIconColor: 'text-yellow-600',
+      emptyTitle: 'No pending meetings yet',
+      emptyDescription: 'Pending meetings will appear here once they are updated in the dashboard.',
+    },
   };
 
   const renderOutcomeMeetingCard = (
@@ -1684,6 +1714,34 @@ export default function ClientDashboard() {
                   <Building className="w-4 h-4 text-gray-400" />
                   <span className="font-medium">Company:</span>
                   <span>{meeting.company}</span>
+                </div>
+              )}
+              {meeting.title && (
+                <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                  <Briefcase className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium">Title:</span>
+                  <span>{meeting.title}</span>
+                </div>
+              )}
+              {meeting.contact_phone && (
+                <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                  <Phone className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium">Phone:</span>
+                  <span>{meeting.contact_phone}</span>
+                </div>
+              )}
+              {meeting.linkedin_page && (
+                <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
+                  <Linkedin className="w-4 h-4 text-[#0A66C2]" />
+                  <span className="font-medium">LinkedIn:</span>
+                  <a
+                    href={meeting.linkedin_page.startsWith('http') ? meeting.linkedin_page : `https://${meeting.linkedin_page}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={isDarkMode ? 'text-blue-300 hover:text-blue-200 underline' : 'text-blue-600 hover:text-blue-700 underline'}
+                  >
+                    View profile
+                  </a>
                 </div>
               )}
               <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
@@ -2116,7 +2174,7 @@ export default function ClientDashboard() {
               </div>
             </div>
 
-            {/* Recent Meetings - SDR Style */}
+            {/* Recent Meetings - reuse outcome-style meeting cards with dynamic status */}
             <div className={`${cardBg} rounded-lg shadow-md`}>
               <div className={`p-4 border-b ${cardBorder}`}>
                 <div className="flex items-center justify-between">
@@ -2125,48 +2183,27 @@ export default function ClientDashboard() {
                 </div>
               </div>
               <div className="p-4 max-h-[400px] overflow-y-auto">
-                <div className="space-y-3">
-                  {meetings.slice(0, 5).length > 0 ? (
-                    meetings.slice(0, 5).map((meeting) => (
-                      <div
-                        key={meeting.id}
-                        className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
-                      >
-                        <div>
-                          <p className={`text-sm font-medium ${textPrimary}`}>
-                            {meeting.contact_full_name || 'Meeting'}
-                          </p>
-                          <p className={`text-xs ${textSecondary}`}>
-                            {new Date(meeting.scheduled_date).toLocaleDateString()} at{' '}
-                            {new Date(meeting.scheduled_date).toLocaleTimeString([], { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
-                          <p className={`text-xs ${textTertiary}`}>
-                            SDR: {meeting.sdr_name}
-                          </p>
-                          {meeting.company && (
-                            <p className={`text-xs ${textTertiary}`}>
-                              Company: {meeting.company}
-                            </p>
-                          )}
-                        </div>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            meeting.status === 'confirmed'
-                              ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'
-                              : isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-700'
-                          }`}
-                        >
-                          {meeting.status}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className={`${textSecondary} text-sm text-center`}>No meetings to display</p>
-                  )}
-                </div>
+                {meetings.slice(0, 5).length === 0 ? (
+                  <p className={`${textSecondary} text-sm text-center`}>No meetings to display</p>
+                ) : (
+                  <div className="space-y-3">
+                    {meetings.slice(0, 5).map((meeting) => {
+                      // Map meeting status to outcome card variant
+                      const variant: keyof typeof outcomeStyles =
+                        meeting.no_longer_interested || (meeting as any).status === 'cancelled'
+                          ? 'cancelled'
+                          : meeting.no_show
+                          ? 'no-show'
+                          : meeting.held_at
+                          ? 'held'
+                          : meeting.status === 'confirmed'
+                          ? 'confirmed'
+                          : 'pending';
+
+                      return renderOutcomeMeetingCard(meeting as any, variant);
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
