@@ -89,9 +89,9 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
     try {
       const targetUrl =
         role === 'sdr'
-          ? currentUrl
+          ? sdrUrl
           : role === 'client'
-          ? currentUrl
+          ? clientUrl
           : null;
       console.debug('[DemoViewer] Switching role', {
         from: activeRole,
