@@ -165,10 +165,31 @@ function App() {
 
   // Detect if we're running inside an iframe to prevent navigation escapes
   const isInIframe = window.self !== window.top;
+  const urlParams = new URLSearchParams(window.location.search);
+  const isIframeDemo = isInIframe || urlParams.get('iframe') === 'true';
   
   // If we're in an iframe, prevent any top-level navigation attempts
   React.useEffect(() => {
-    if (isInIframe) {
+    if (isIframeDemo) {
+      console.log('[App] Iframe demo mode detected, installing navigation blockers');
+      
+      // Override window.top to prevent access
+      try {
+        Object.defineProperty(window, 'top', {
+          get: () => window.self,
+          configurable: false,
+          enumerable: true
+        });
+        Object.defineProperty(window, 'parent', {
+          get: () => window.self,
+          configurable: false,
+          enumerable: true
+        });
+        console.log('[App] Successfully overrode window.top and window.parent');
+      } catch (e) {
+        console.warn('[App] Could not override window.top/parent:', e);
+      }
+      
       // Prevent React Router from trying to navigate the parent
       const originalPushState = window.history.pushState;
       const originalReplaceState = window.history.replaceState;
@@ -194,7 +215,7 @@ function App() {
         window.history.replaceState = originalReplaceState;
       };
     }
-  }, [isInIframe]);
+  }, [isIframeDemo]);
 
   // Determine if we're on a public, token-based dashboard route or the public landing page.
   // These routes should NOT be blocked by the global auth loading/error states, because they
@@ -266,11 +287,27 @@ function App() {
     );
   }
 
+  // Create a custom window object for iframe mode to prevent parent navigation
+  const routerWindow = React.useMemo(() => {
+    if (isIframeDemo) {
+      // Return a proxied window that blocks parent access
+      return new Proxy(window, {
+        get(target, prop) {
+          if (prop === 'top' || prop === 'parent') {
+            return window.self;
+          }
+          return target[prop as keyof Window];
+        }
+      });
+    }
+    return window;
+  }, [isIframeDemo]);
+
   return (
     <HelmetProvider>
       <AgencyProvider>
         <DemoProvider>
-          <Router>
+          <Router window={routerWindow as any}>
             <GoogleAnalytics />
             <AppRoutes />
           </Router>
