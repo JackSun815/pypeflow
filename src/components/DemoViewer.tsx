@@ -82,8 +82,9 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
   };
 
   // Current URL for the iframe based on active role
-  const sdrUrl = SDR_DEMO_URL;
-  const clientUrl = CLIENT_DEMO_URL;
+  // Add iframe=true parameter to signal demo mode
+  const sdrUrl = SDR_DEMO_URL + (SDR_DEMO_URL.includes('?') ? '&' : '?') + 'iframe=true';
+  const clientUrl = CLIENT_DEMO_URL + (CLIENT_DEMO_URL.includes('?') ? '&' : '?') + 'iframe=true';
   const currentUrl = activeRole === 'sdr' ? sdrUrl : clientUrl;
   const handleRoleChange = (role: 'manager' | 'sdr' | 'client') => {
     try {

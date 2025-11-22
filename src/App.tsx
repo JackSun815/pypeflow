@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AgencyProvider, useAgency } from './contexts/AgencyContext';
@@ -161,6 +162,39 @@ function AppRoutes() {
 
 function App() {
   const { loading, error } = useAuth();
+
+  // Detect if we're running inside an iframe to prevent navigation escapes
+  const isInIframe = window.self !== window.top;
+  
+  // If we're in an iframe, prevent any top-level navigation attempts
+  React.useEffect(() => {
+    if (isInIframe) {
+      // Prevent React Router from trying to navigate the parent
+      const originalPushState = window.history.pushState;
+      const originalReplaceState = window.history.replaceState;
+      
+      window.history.pushState = function(...args) {
+        try {
+          return originalPushState.apply(window.history, args);
+        } catch (e) {
+          console.warn('[App] Navigation blocked in iframe', e);
+        }
+      };
+      
+      window.history.replaceState = function(...args) {
+        try {
+          return originalReplaceState.apply(window.history, args);
+        } catch (e) {
+          console.warn('[App] Navigation blocked in iframe', e);
+        }
+      };
+      
+      return () => {
+        window.history.pushState = originalPushState;
+        window.history.replaceState = originalReplaceState;
+      };
+    }
+  }, [isInIframe]);
 
   // Determine if we're on a public, token-based dashboard route or the public landing page.
   // These routes should NOT be blocked by the global auth loading/error states, because they

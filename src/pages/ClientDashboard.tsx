@@ -181,6 +181,29 @@ export default function ClientDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'lead-sample' | 'email' | 'linkedin' | 'analytics' | 'cold-calling'>('overview');
   
+  // Detect if we're in an iframe (demo viewer) and prevent navigation escapes
+  const isInIframe = window.self !== window.top;
+  const urlParams = new URLSearchParams(window.location.search);
+  const isIframeDemo = isInIframe || urlParams.get('iframe') === 'true';
+
+  useEffect(() => {
+    if (isIframeDemo) {
+      console.log('[ClientDashboard] Running in iframe demo mode, navigation restricted');
+      // Override any attempts to navigate the parent
+      if (window.top && window.top !== window.self) {
+        try {
+          // Prevent access to parent
+          Object.defineProperty(window, 'top', {
+            get: () => window.self,
+            configurable: false
+          });
+        } catch (e) {
+          // Silently fail if already defined
+        }
+      }
+    }
+  }, [isIframeDemo]);
+  
   // Modal state for clickable metrics
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
@@ -1716,11 +1739,11 @@ export default function ClientDashboard() {
                   <span>{meeting.company}</span>
                 </div>
               )}
-              {meeting.title && (
+              {(meeting as any).title && (
                 <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                   <Briefcase className="w-4 h-4 text-gray-400" />
                   <span className="font-medium">Title:</span>
-                  <span>{meeting.title}</span>
+                  <span>{(meeting as any).title}</span>
                 </div>
               )}
               {meeting.contact_phone && (
@@ -1730,12 +1753,12 @@ export default function ClientDashboard() {
                   <span>{meeting.contact_phone}</span>
                 </div>
               )}
-              {meeting.linkedin_page && (
+              {(meeting as any).linkedin_page && (
                 <div className={`flex items-center gap-2 text-sm ${textSecondary}`}>
                   <Linkedin className="w-4 h-4 text-[#0A66C2]" />
                   <span className="font-medium">LinkedIn:</span>
                   <a
-                    href={meeting.linkedin_page.startsWith('http') ? meeting.linkedin_page : `https://${meeting.linkedin_page}`}
+                    href={(meeting as any).linkedin_page.startsWith('http') ? (meeting as any).linkedin_page : `https://${(meeting as any).linkedin_page}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={isDarkMode ? 'text-blue-300 hover:text-blue-200 underline' : 'text-blue-600 hover:text-blue-700 underline'}

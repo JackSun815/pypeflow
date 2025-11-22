@@ -87,6 +87,29 @@ function SDRDashboardContent() {
   const [sdrName, setSdrName] = useState<string | null>(null);
   const [sdrAgencyId, setSdrAgencyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Detect if we're in an iframe (demo viewer) and prevent navigation escapes
+  const isInIframe = window.self !== window.top;
+  const urlParams = new URLSearchParams(window.location.search);
+  const isIframeDemo = isInIframe || urlParams.get('iframe') === 'true';
+
+  useEffect(() => {
+    if (isIframeDemo) {
+      console.log('[SDRDashboard] Running in iframe demo mode, navigation restricted');
+      // Override any attempts to navigate the parent
+      if (window.top && window.top !== window.self) {
+        try {
+          // Prevent access to parent
+          Object.defineProperty(window, 'top', {
+            get: () => window.self,
+            configurable: false
+          });
+        } catch (e) {
+          // Silently fail if already defined
+        }
+      }
+    }
+  }, [isIframeDemo]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [addMeetingError, setAddMeetingError] = useState<string | null>(null);
   const [editingMeeting, setEditingMeeting] = useState<string | null>(null);
