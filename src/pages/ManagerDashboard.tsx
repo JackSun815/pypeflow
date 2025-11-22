@@ -2383,76 +2383,46 @@ export default function ManagerDashboard() {
 
             {/* Today's Activity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Meetings Booked Today - use new MeetingCard UI */}
               <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
                 <h3 className={`text-lg font-semibold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                   Meetings Booked Today ({todayMeetings.length})
                 </h3>
-                <div className="space-y-3">
-                  {todayMeetings.map((meeting) => (
-                    <div
-                      key={meeting.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${
-                        meeting.status === 'pending' ? 'animate-glow-orange ring-2 ring-orange-400' : ''
-                      } ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
-                    >
-                      <div>
-                        <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
-                          {(meeting as any).clients?.name}
-                        </p>
-                        <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
-                          {new Date(meeting.scheduled_date).toLocaleDateString()}
-                        </p>
-                        <p className={`text-xs ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`}>
-                          Booked by {meeting.sdr_name}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          meeting.status === 'confirmed'
-                            ? darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
-                            : darkTheme ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                      >
-                        {meeting.status}
-                      </span>
-                    </div>
-                  ))}
-                  {todayMeetings.length === 0 && (
-                    <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings booked today</p>
-                  )}
-                </div>
+                {todayMeetings.length === 0 ? (
+                  <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings booked today</p>
+                ) : (
+                  <div className="space-y-3">
+                    {todayMeetings.map(meeting => (
+                      <MeetingCard
+                        key={meeting.id}
+                        meeting={meeting as any}
+                        darkTheme={darkTheme}
+                        showSDR={true}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
+              {/* Meetings Confirmed Today - use new MeetingCard UI */}
               <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
                 <h3 className={`text-lg font-semibold mb-4 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                   Meetings Confirmed Today ({confirmedToday.length})
                 </h3>
-                <div className="space-y-3">
-                  {confirmedToday.map((meeting) => (
-                    <div
-                      key={meeting.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
-                    >
-                      <div>
-                        <p className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
-                          {(meeting as any).clients?.name}
-                        </p>
-                        <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
-                          {new Date(meeting.scheduled_date).toLocaleDateString()}
-                        </p>
-                        <p className={`text-xs ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`}>
-                          Booked by {meeting.sdr_name}
-                        </p>
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}>
-                        confirmed
-                      </span>
-                    </div>
-                  ))}
-                  {confirmedToday.length === 0 && (
-                    <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings confirmed today</p>
-                  )}
-                </div>
+                {confirmedToday.length === 0 ? (
+                  <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings confirmed today</p>
+                ) : (
+                  <div className="space-y-3">
+                    {confirmedToday.map(meeting => (
+                      <MeetingCard
+                        key={meeting.id}
+                        meeting={meeting as any}
+                        darkTheme={darkTheme}
+                        showSDR={true}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
