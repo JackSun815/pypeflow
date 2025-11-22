@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AgencyProvider, useAgency } from './contexts/AgencyContext';
 import { DemoProvider } from './contexts/DemoContext';
@@ -163,17 +162,6 @@ function AppRoutes() {
 function App() {
   const { loading, error } = useAuth();
 
-  // Detect if we're running inside an iframe to prevent navigation escapes
-  const isInIframe = window.self !== window.top;
-  const urlParams = new URLSearchParams(window.location.search);
-  const isIframeDemo = isInIframe || urlParams.get('iframe') === 'true';
-  
-  React.useEffect(() => {
-    if (isIframeDemo) {
-      console.log('[App] Iframe demo mode detected - using hash routing');
-    }
-  }, [isIframeDemo]);
-
   // Determine if we're on a public, token-based dashboard route or the public landing page.
   // These routes should NOT be blocked by the global auth loading/error states, because they
   // rely on token-based access instead of a signed-in Supabase session.
@@ -244,16 +232,14 @@ function App() {
     );
   }
 
-  const RouterComponent = isIframeDemo ? HashRouter : BrowserRouter;
-
   return (
     <HelmetProvider>
       <AgencyProvider>
         <DemoProvider>
-          <RouterComponent>
+          <Router>
             <GoogleAnalytics />
             <AppRoutes />
-          </RouterComponent>
+          </Router>
         </DemoProvider>
       </AgencyProvider>
     </HelmetProvider>

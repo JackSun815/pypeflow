@@ -1,70 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { X, Maximize2, Minimize2, Briefcase, Users, User } from 'lucide-react';
 import ManagerDemoPreview from '../pages/ManagerDemoPreview';
+import StaticSDRDemo from '../pages/StaticSDRDemo';
+import StaticClientDemo from '../pages/StaticClientDemo';
 
 interface DemoViewerProps {
   type: 'manager' | 'sdr' | 'client';
   onClose: () => void;
 }
 
-// Static production token URLs that are validated by the backend.
-// These point directly at the hosted demo dashboards on pypeflow.com.
-const SDR_DEMO_URL =
-  'https://www.pypeflow.com/dashboard/sdr/eyJpZCI6IjRhNWRlNzYzLTQ1MDAtNDYzOS1hMWY3LTA5MDA4MGI2Y2YxMCIsInRpbWVzdGFtcCI6MTc2Mzg0MjM0NTY4MywidHlwZSI6InNkcl9hY2Nlc3MifQ==';
-const CLIENT_DEMO_URL =
-  'https://www.pypeflow.com/dashboard/client/eyJpZCI6Ijc2OTMxMjBkLTgyYTYtNDE1Ni1hZGQ4LTQ1MTdmMTIyZGViMyIsInRpbWVzdGFtcCI6MTc2Mzg0MjM4Nzc3OCwidHlwZSI6ImNsaWVudF9hY2Nlc3MiLCJleHAiOjE3OTUzNzgzODc3Nzh9';
-
 export default function DemoViewer({ type, onClose }: DemoViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeRole, setActiveRole] = useState<'manager' | 'sdr' | 'client'>(type);
-  const [iframeError, setIframeError] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  // Prevent iframe from affecting parent window via postMessage
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from pypeflow.com
-      if (event.origin !== 'https://www.pypeflow.com' && event.origin !== 'https://pypeflow.com') {
-        return;
-      }
-      
-      // Block any navigation attempts from iframe
-      if (event.data && typeof event.data === 'object') {
-        const data: any = event.data;
-        const dataType = data?.type;
-        const action = data?.action;
-
-        if (dataType === 'navigation' || action === 'navigate' || dataType === 'redirect') {
-          try {
-            console.warn('[DemoViewer] Navigation attempt blocked in demo mode', {
-              origin: event.origin,
-              dataType,
-              action,
-            });
-          } catch {}
-          return;
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, []);
-
-  // Initial debug log so we can see how the viewer was opened in production.
-  useEffect(() => {
-    try {
-      console.debug('[DemoViewer] Mounted', {
-        initialType: type,
-        activeRole,
-        location: window.location.href,
-      });
-    } catch {}
-  }, [type, activeRole]);
-
   const toggleFullscreen = () => {
     try {
       console.debug('[DemoViewer] Toggling fullscreen', {
@@ -81,51 +28,8 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
     setIsFullscreen(!isFullscreen);
   };
 
-  // Current URL for the iframe based on active role
-  // Add iframe=true parameter to signal demo mode
-  const sdrUrl = SDR_DEMO_URL + (SDR_DEMO_URL.includes('?') ? '&' : '?') + 'iframe=true';
-  const clientUrl = CLIENT_DEMO_URL + (CLIENT_DEMO_URL.includes('?') ? '&' : '?') + 'iframe=true';
-  const currentUrl = activeRole === 'sdr' ? sdrUrl : clientUrl;
   const handleRoleChange = (role: 'manager' | 'sdr' | 'client') => {
-    try {
-      const targetUrl =
-        role === 'sdr'
-          ? sdrUrl
-          : role === 'client'
-          ? clientUrl
-          : null;
-      console.debug('[DemoViewer] Switching role', {
-        from: activeRole,
-        to: role,
-        targetUrl,
-      });
-    } catch {}
-
     setActiveRole(role);
-    setIframeError(false);
-  };
-
-  const handleIframeLoad = () => {
-    try {
-      console.debug('[DemoViewer] Iframe loaded', {
-        activeRole,
-        src: iframeRef.current?.src,
-      });
-    } catch {}
-
-    setIframeError(false);
-  };
-
-  const handleIframeError = (event: React.SyntheticEvent<HTMLIFrameElement, Event>) => {
-    try {
-      console.error('[DemoViewer] Iframe load error', {
-        activeRole,
-        src: iframeRef.current?.src,
-        eventType: event.type,
-      });
-    } catch {}
-
-    setIframeError(true);
   };
 
   const roleButtons = [
@@ -205,47 +109,11 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
 
         {/* Dashboard Content */}
         <div className="flex-1 overflow-hidden bg-gray-100 border-t border-gray-200">
-          {activeRole === 'manager' ? (
-            <div className="h-full overflow-auto">
-              <ManagerDemoPreview />
-            </div>
-          ) : (
-            <div className="relative w-full h-full">
-              {iframeError ? (
-                <div className="flex items-center justify-center h-full bg-white">
-                  <div className="text-center p-8">
-                    <p className="text-gray-600 mb-4">Unable to load demo dashboard.</p>
-                    <button
-                      onClick={() => {
-                        setIframeError(false);
-                        // Force iframe reload by changing key
-                        const iframe = document.querySelector('iframe[title="PypeFlow Demo Dashboard"]') as HTMLIFrameElement;
-                        if (iframe) {
-                          iframe.src = iframe.src;
-                        }
-                      }}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <iframe
-                  ref={iframeRef}
-                  key={`${activeRole}-${currentUrl}`}
-                  src={currentUrl}
-                  title="PypeFlow Demo Dashboard"
-                  className="w-full h-full border-0 bg-white"
-                  sandbox="allow-scripts allow-forms allow-popups allow-modals"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  onLoad={handleIframeLoad}
-                  onError={handleIframeError}
-                  allow="clipboard-read; clipboard-write"
-                />
-              )}
-            </div>
-          )}
+          <div className="h-full overflow-auto bg-white">
+            {activeRole === 'manager' && <ManagerDemoPreview />}
+            {activeRole === 'sdr' && <StaticSDRDemo />}
+            {activeRole === 'client' && <StaticClientDemo />}
+          </div>
         </div>
       </div>
     </div>

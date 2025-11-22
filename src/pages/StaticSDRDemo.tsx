@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Calendar as CalendarIcon, History, DollarSign, Target } from 'lucide-react';
 import CalendarView from '../components/CalendarView';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
@@ -184,9 +184,199 @@ const SDR_MEETINGS: Meeting[] = [
     icp_checked_by: SDR_ID,
     icp_notes: null,
   },
+  {
+    id: 'grace-7',
+    sdr_id: SDR_ID,
+    client_id: CLIENTS[2].id,
+    scheduled_date: makeDate(11, 13, 14),
+    booked_at: makeDate(11, 4, 10),
+    status: 'confirmed',
+    confirmed_at: makeDate(11, 5, 9),
+    held_at: null,
+    no_show: false,
+    no_longer_interested: false,
+    contact_full_name: 'Riley Chen',
+    contact_email: 'riley.chen@example.com',
+    contact_phone: null,
+    company: 'CrestBridge Biotech',
+    title: 'Sales Manager',
+    linkedin_page: null,
+    notes: 'Follow-up on pricing discussion.',
+    source: 'referral',
+    created_at: makeDate(11, 4, 10),
+    updated_at: makeDate(11, 5, 9),
+    timezone: 'America/New_York',
+    icp_status: 'approved',
+    icp_checked_at: makeDate(11, 5, 9),
+    icp_checked_by: SDR_ID,
+    icp_notes: null,
+  },
+  {
+    id: 'grace-8',
+    sdr_id: SDR_ID,
+    client_id: CLIENTS[0].id,
+    scheduled_date: makeDate(11, 14, 10),
+    booked_at: makeDate(11, 6, 14),
+    status: 'confirmed',
+    confirmed_at: makeDate(11, 7, 11),
+    held_at: null,
+    no_show: false,
+    no_longer_interested: false,
+    contact_full_name: 'Jamie Park',
+    contact_email: 'jamie.park@example.com',
+    contact_phone: null,
+    company: 'CircuitBay Labs',
+    title: 'Director of Operations',
+    linkedin_page: null,
+    notes: 'Technical deep dive requested.',
+    source: 'cold_email',
+    created_at: makeDate(11, 6, 14),
+    updated_at: makeDate(11, 7, 11),
+    timezone: 'America/New_York',
+    icp_status: 'approved',
+    icp_checked_at: makeDate(11, 7, 11),
+    icp_checked_by: SDR_ID,
+    icp_notes: null,
+  },
+  {
+    id: 'grace-9',
+    sdr_id: SDR_ID,
+    client_id: CLIENTS[3].id,
+    scheduled_date: makeDate(11, 15, 13),
+    booked_at: makeDate(11, 8, 15),
+    status: 'pending',
+    confirmed_at: null,
+    held_at: null,
+    no_show: false,
+    no_longer_interested: false,
+    contact_full_name: 'Pat Kim',
+    contact_email: 'pat.kim@example.com',
+    contact_phone: null,
+    company: 'bluecrest Analytics',
+    title: 'VP of Marketing',
+    linkedin_page: null,
+    notes: 'Awaiting confirmation from calendar.',
+    source: 'inbound',
+    created_at: makeDate(11, 8, 15),
+    updated_at: makeDate(11, 8, 15),
+    timezone: 'America/New_York',
+    icp_status: 'approved',
+    icp_checked_at: makeDate(11, 9, 10),
+    icp_checked_by: SDR_ID,
+    icp_notes: null,
+  },
+  {
+    id: 'grace-10',
+    sdr_id: SDR_ID,
+    client_id: CLIENTS[1].id,
+    scheduled_date: makeDate(11, 19, 11),
+    booked_at: makeDate(11, 10, 12),
+    status: 'confirmed',
+    confirmed_at: makeDate(11, 11, 9),
+    held_at: null,
+    no_show: false,
+    no_longer_interested: false,
+    contact_full_name: 'Drew Martinez',
+    contact_email: 'drew.martinez@example.com',
+    contact_phone: null,
+    company: 'Harrington Consulting',
+    title: 'Head of Sales',
+    linkedin_page: null,
+    notes: 'Strategic partnership discussion.',
+    source: 'linkedin',
+    created_at: makeDate(11, 10, 12),
+    updated_at: makeDate(11, 11, 9),
+    timezone: 'America/New_York',
+    icp_status: 'approved',
+    icp_checked_at: makeDate(11, 11, 9),
+    icp_checked_by: SDR_ID,
+    icp_notes: null,
+  },
+  {
+    id: 'grace-11',
+    sdr_id: SDR_ID,
+    client_id: CLIENTS[2].id,
+    scheduled_date: makeDate(11, 21, 15),
+    booked_at: makeDate(11, 11, 16),
+    status: 'confirmed',
+    confirmed_at: makeDate(11, 12, 10),
+    held_at: null,
+    no_show: false,
+    no_longer_interested: false,
+    contact_full_name: 'Quinn Taylor',
+    contact_email: 'quinn.taylor@example.com',
+    contact_phone: null,
+    company: 'CrestBridge Biotech',
+    title: 'Sales Director',
+    linkedin_page: null,
+    notes: 'Product demo scheduled.',
+    source: 'referral',
+    created_at: makeDate(11, 11, 16),
+    updated_at: makeDate(11, 12, 10),
+    timezone: 'America/New_York',
+    icp_status: 'approved',
+    icp_checked_at: makeDate(11, 12, 10),
+    icp_checked_by: SDR_ID,
+    icp_notes: null,
+  },
+  {
+    id: 'grace-12',
+    sdr_id: SDR_ID,
+    client_id: CLIENTS[0].id,
+    scheduled_date: makeDate(11, 25, 9),
+    booked_at: makeDate(11, 13, 14),
+    status: 'confirmed',
+    confirmed_at: makeDate(11, 14, 9),
+    held_at: null,
+    no_show: false,
+    no_longer_interested: false,
+    contact_full_name: 'Avery Brown',
+    contact_email: 'avery.brown@example.com',
+    contact_phone: null,
+    company: 'CircuitBay Labs',
+    title: 'CTO',
+    linkedin_page: null,
+    notes: 'Technical evaluation call.',
+    source: 'cold_email',
+    created_at: makeDate(11, 13, 14),
+    updated_at: makeDate(11, 14, 9),
+    timezone: 'America/New_York',
+    icp_status: 'approved',
+    icp_checked_at: makeDate(11, 14, 9),
+    icp_checked_by: SDR_ID,
+    icp_notes: null,
+  },
+  {
+    id: 'grace-13',
+    sdr_id: SDR_ID,
+    client_id: CLIENTS[3].id,
+    scheduled_date: makeDate(11, 26, 14),
+    booked_at: makeDate(11, 15, 11),
+    status: 'pending',
+    confirmed_at: null,
+    held_at: null,
+    no_show: false,
+    no_longer_interested: false,
+    contact_full_name: 'Blake Wilson',
+    contact_email: 'blake.wilson@example.com',
+    contact_phone: null,
+    company: 'bluecrest Analytics',
+    title: 'Director of Revenue',
+    linkedin_page: null,
+    notes: 'Pending calendar confirmation.',
+    source: 'inbound',
+    created_at: makeDate(11, 15, 11),
+    updated_at: makeDate(11, 15, 11),
+    timezone: 'America/New_York',
+    icp_status: 'approved',
+    icp_checked_at: makeDate(11, 16, 9),
+    icp_checked_by: SDR_ID,
+    icp_notes: null,
+  },
 ];
 
 export default function StaticSDRDemo() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar'>('dashboard');
   // Lock "today" for demo to Nov 12, 2025
   const now = useMemo(() => new Date(2025, 10, 12, 12, 0, 0), []);
   const nowDate = now;
@@ -275,19 +465,33 @@ export default function StaticSDRDemo() {
             </div>
           </div>
 
-          {/* Tabs: Dashboard & Meetings unlocked, others greyed */}
+          {/* Tabs: Dashboard & Calendar unlocked, others greyed */}
           <div className="border-b border-gray-200 mt-2">
             <nav className="-mb-px flex space-x-8">
-              <button className="border-blue-500 text-blue-600 group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors">
+              <button
+                className={`group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'dashboard'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                }`}
+                onClick={() => setActiveTab('dashboard')}
+              >
                 <span className="flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4" />
                   Dashboard
                 </span>
               </button>
-              <button className="border-blue-500 text-blue-600 group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors">
+              <button
+                className={`group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'calendar'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+                }`}
+                onClick={() => setActiveTab('calendar')}
+              >
                 <span className="flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4" />
-                  Meetings
+                  Calendar
                 </span>
               </button>
               <button
@@ -310,73 +514,66 @@ export default function StaticSDRDemo() {
                   Commissions
                 </span>
               </button>
-              <button
-                className="border-transparent text-gray-400 group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors cursor-not-allowed"
-                title="Locked in demo"
-                disabled
-              >
-                <span className="flex items-center gap-2">
-                  <CalendarIcon className="w-4 h-4" />
-                  Calendar
-                </span>
-              </button>
             </nav>
           </div>
         </div>
       </header>
 
-      {/* Main content: simple dashboard summary + meetings */}
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex-1 w-full">
-        {/* Simple cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Meetings Set (Nov)</h3>
-              <CalendarIcon className="w-6 h-6 text-blue-600" />
+        {activeTab === 'dashboard' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Meetings Set (Nov)</h3>
+                  <CalendarIcon className="w-6 h-6 text-blue-600" />
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{monthlySet}</p>
+                <p className="text-sm text-gray-500 mt-2">Total meetings on Grace&apos;s calendar</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Meetings Held (Nov)</h3>
+                  <Target className="w-6 h-6 text-green-600" />
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{monthlyHeld}</p>
+                <p className="text-sm text-gray-500 mt-2">Completed meetings this month</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">No-Shows (Nov)</h3>
+                  <History className="w-6 h-6 text-red-500" />
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{noShowMeetings.length}</p>
+                <p className="text-sm text-gray-500 mt-2">Meetings marked as no-show</p>
+              </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{monthlySet}</p>
-            <p className="text-sm text-gray-500 mt-2">Total meetings on Grace&apos;s calendar</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Meetings Held (Nov)</h3>
-              <Target className="w-6 h-6 text-green-600" />
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{monthlyHeld}</p>
-            <p className="text-sm text-gray-500 mt-2">Completed meetings this month</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">No-Shows (Nov)</h3>
-              <History className="w-6 h-6 text-red-500" />
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{noShowMeetings.length}</p>
-            <p className="text-sm text-gray-500 mt-2">Meetings marked as no-show</p>
-          </div>
-        </div>
 
-        {/* Calendar + Unified lists */}
-        <div className="mb-10">
-          <CalendarView
-            meetings={enhancedMeetings as any}
-            defaultDate={new Date(2025, 10, 12, 12, 0, 0)}
-          />
-        </div>
+            <UnifiedMeetingLists
+              pendingMeetings={pendingMeetings as any}
+              confirmedMeetings={confirmedMeetings as any}
+              heldMeetings={heldMeetings as any}
+              noShowMeetings={noShowMeetings as any}
+              pastDuePendingMeetings={pastDuePendingMeetings as any}
+              editable={false}
+              editingMeetingId={null}
+              onEdit={() => {}}
+              onDelete={() => {}}
+              onSave={() => {}}
+              onCancel={() => {}}
+              onMeetingStatusChange={() => {}}
+            />
+          </>
+        )}
 
-        <UnifiedMeetingLists
-          pendingMeetings={pendingMeetings as any}
-          confirmedMeetings={confirmedMeetings as any}
-          heldMeetings={heldMeetings as any}
-          noShowMeetings={noShowMeetings as any}
-          pastDuePendingMeetings={pastDuePendingMeetings as any}
-          editable={false}
-          editingMeetingId={null}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          onSave={() => {}}
-          onCancel={() => {}}
-          onMeetingStatusChange={() => {}}
-        />
+        {activeTab === 'calendar' && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <CalendarView
+              meetings={enhancedMeetings as any}
+              defaultDate={new Date(2025, 10, 12, 12, 0, 0)}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
