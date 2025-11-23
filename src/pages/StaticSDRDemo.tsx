@@ -430,7 +430,7 @@ export default function StaticSDRDemo() {
   const monthlySet = enhancedMeetings.length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+    <div className="flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       {/* Header / Tabs */}
       <header className="shadow-lg border-b bg-gradient-to-r from-white via-blue-50/30 to-white border-blue-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -108,11 +108,23 @@ export default function DemoViewer({ type, onClose }: DemoViewerProps) {
         </div>
 
         {/* Dashboard Content */}
-        <div className="flex-1 overflow-hidden bg-gray-100 border-t border-gray-200">
-          <div className="h-full overflow-auto bg-white">
-            {activeRole === 'manager' && <ManagerDemoPreview />}
-            {activeRole === 'sdr' && <StaticSDRDemo />}
-            {activeRole === 'client' && <StaticClientDemo />}
+        <div className="flex-1 overflow-hidden bg-gray-100 border-t border-gray-200" style={{ minHeight: 0 }}>
+          <div className="h-full w-full overflow-auto bg-white">
+            {activeRole === 'manager' && (
+              <div className="h-full w-full">
+                <ManagerDemoPreview />
+              </div>
+            )}
+            {activeRole === 'sdr' && (
+              <div className="h-full w-full">
+                <StaticSDRDemo />
+              </div>
+            )}
+            {activeRole === 'client' && (
+              <div className="h-full w-full">
+                <StaticClientDemo />
+              </div>
+            )}
           </div>
         </div>
       </div>

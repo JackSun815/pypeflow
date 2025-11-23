@@ -101,7 +101,7 @@ export default function StaticClientDemo() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-cyan-50">
+    <div className="flex flex-col bg-gradient-to-br from-emerald-50 via-white to-cyan-50">
       <header className="shadow-lg border-b bg-gradient-to-r from-white via-emerald-50/30 to-white border-emerald-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 py-4">
