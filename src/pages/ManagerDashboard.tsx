@@ -1001,7 +1001,7 @@ export default function ManagerDashboard() {
   // Meetings HELD: Filter by scheduled_date (month it was scheduled for) AND exclude non-ICP-qualified
   // This matches the SDR Dashboard logic
   const monthlyMeetingsHeld = meetings.filter(meeting => {
-    // Must be actually held
+    // Must be actually held and not a no-show
     if (!meeting.held_at || meeting.no_show) return false;
     
     const scheduledDate = new Date(meeting.scheduled_date);
@@ -1795,9 +1795,10 @@ export default function ManagerDashboard() {
                         (sum, assignment) => sum + (assignment.monthly_hold_target || 0),
                         0
                       );
-                      // Use pre-calculated values from useSDRs hook (already filtered by created_at and held_at)
-                      const sdrMeetingsSet = sdr.totalMeetingsSet || 0;
-                      const sdrHeldMeetings = sdr.totalHeldMeetings || 0;
+                      // Calculate directly from monthlyMeetingsSet and monthlyMeetingsHeld to ensure consistency
+                      // This matches the calculation used in the client assignments and modal views
+                      const sdrMeetingsSet = monthlyMeetingsSet.filter(m => m.sdr_id === sdr.id).length;
+                      const sdrHeldMeetings = monthlyMeetingsHeld.filter(m => m.sdr_id === sdr.id).length;
 
                       const setProgress = totalSetTarget > 0 ? (sdrMeetingsSet / totalSetTarget) * 100 : 0;
                       const heldProgress = totalHeldTarget > 0 ? (sdrHeldMeetings / totalHeldTarget) * 100 : 0;
@@ -1952,10 +1953,14 @@ export default function ManagerDashboard() {
                                       
                                       return (() => {
                                     
-                                    // Use pre-calculated values from useSDRs hook (already filtered by created_at and scheduled_date)
-                                    const clientData = sdr.clients.find(c => c.id === client.id);
-                                    const clientMeetingsSet = clientData?.meetingsSet || 0;
-                                    const clientHeldMeetings = clientData?.meetingsHeld || 0;
+                                    // Calculate directly from monthlyMeetingsSet and monthlyMeetingsHeld to match modal calculation
+                                    // This ensures consistency with the modal view when clicking into a client
+                                    const clientMeetingsSet = monthlyMeetingsSet.filter(m => 
+                                      m.sdr_id === sdr.id && m.client_id === client.id
+                                    ).length;
+                                    const clientHeldMeetings = monthlyMeetingsHeld.filter(m => 
+                                      m.sdr_id === sdr.id && m.client_id === client.id
+                                    ).length;
                                     
                                     const clientSetProgress = (assignment.monthly_set_target || 0) > 0 ? 
                                       (clientMeetingsSet / (assignment.monthly_set_target || 0)) * 100 : 0;
@@ -2023,6 +2028,70 @@ export default function ManagerDashboard() {
                                       No active clients assigned for {monthOptions.find(m => m.value === selectedMonth)?.label}
                                     </p>
                                   )}
+                                  
+                                  {/* Other Held Meetings - from clients not in current month's assignments */}
+                                  {(() => {
+                                    // Get list of client IDs from current assignments
+                                    const assignedClientIds = sdrAssignments
+                                      .filter(a => a.clients && !a.clients.archived_at)
+                                      .map(a => a.clients.id);
+                                    
+                                    // Find held meetings for this SDR that belong to clients NOT in current assignments
+                                    const otherHeldMeetings = monthlyMeetingsHeld.filter(m => 
+                                      m.sdr_id === sdr.id && 
+                                      !assignedClientIds.includes(m.client_id)
+                                    );
+                                    
+                                    if (otherHeldMeetings.length === 0) {
+                                      return null;
+                                    }
+                                    
+                                    // Group by client
+                                    const meetingsByClient = otherHeldMeetings.reduce((acc, meeting) => {
+                                      const clientId = meeting.client_id;
+                                      if (!acc[clientId]) {
+                                        acc[clientId] = [];
+                                      }
+                                      acc[clientId].push(meeting);
+                                      return acc;
+                                    }, {} as Record<string, typeof otherHeldMeetings>);
+                                    
+                                    return (
+                                      <div className={`mt-4 pt-4 border-t ${darkTheme ? 'border-slate-600' : 'border-gray-300'}`}>
+                                        <h5 className={`text-xs font-semibold mb-2 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                                          Other Held Meetings ({otherHeldMeetings.length})
+                                        </h5>
+                                        <p className={`text-xs mb-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                                          Meetings held this month for clients not in current assignments
+                                        </p>
+                                        <div className="space-y-2">
+                                          {Object.entries(meetingsByClient).map(([clientId, clientMeetings]) => {
+                                            const client = clients.find(c => c.id === clientId);
+                                            const clientName = client?.name || 'Unknown Client';
+                                            
+                                            return (
+                                              <div
+                                                key={clientId}
+                                                className={`flex items-center justify-between p-2 rounded-md ${darkTheme ? 'bg-[#2d3139]' : 'bg-gray-100'}`}
+                                              >
+                                                <div>
+                                                  <p className={`text-xs font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
+                                                    {clientName}
+                                                  </p>
+                                                  <p className={`text-xs mt-0.5 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                                                    {clientMeetings.length} meeting{clientMeetings.length !== 1 ? 's' : ''} held
+                                                  </p>
+                                                </div>
+                                                <span className={`text-xs font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                  {clientMeetings.length}
+                                                </span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </td>
                             </tr>

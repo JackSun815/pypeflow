@@ -149,13 +149,21 @@ export function useSDRs(selectedMonth?: string) {
             return isInMonth && !isICPDisqualified;
           });
 
-          // Meetings HELD: filter by scheduled_date (month it was scheduled for) - matches SDRDashboard logic
+          // Meetings HELD: filter by scheduled_date (month it was scheduled for) - matches SDRDashboard and ManagerDashboard logic
+          // IMPORTANT: This must match the exact logic in ManagerDashboard.tsx monthlyMeetingsHeld calculation
           const clientMeetingsHeld = clientMeetings.filter((meeting: any) => {
+            // Must be actually held and not a no-show (matches ManagerDashboard line 1005)
             if (!meeting.held_at || meeting.no_show) return false;
+            
+            // Use the same date comparison as ManagerDashboard (scheduledDate >= monthStart && scheduledDate < monthEnd)
+            // monthEnd is already calculated as nextMonthStart in useSDRs, so this matches
             const scheduledDate = new Date(meeting.scheduled_date);
             const isInMonth = scheduledDate >= monthStart && scheduledDate < monthEnd;
+            
+            // Exclude non-ICP-qualified meetings (matches ManagerDashboard line 1011-1012)
             const icpStatus = meeting.icp_status;
             const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+            
             return isInMonth && !isICPDisqualified;
           });
 

@@ -391,6 +391,8 @@ export default function MeetingsHistory({
   // Helper to check if meeting matches status filter
   // Special handling: "booked" should show ALL meetings that were booked in the selected month
   // (from monthMeetingsSet), regardless of their current status, to match the "Meetings Booked" stat
+  // "held" should only show meetings from monthMeetingsHeld (held in the selected month)
+  // "no-show" and "pending" should only show meetings from monthMeetingsSet that match the status
   const matchesStatusFilter = (meeting: Meeting, filter: string): boolean => {
     if (filter === 'all') return true;
     
@@ -399,7 +401,20 @@ export default function MeetingsHistory({
       return monthMeetingsSet.some(m => m.id === meeting.id);
     }
     
-    // For other filters, use the current status
+    // For "held" filter, check if meeting is in monthMeetingsHeld (held in the selected month)
+    if (filter === 'held') {
+      return monthMeetingsHeld.some(m => m.id === meeting.id);
+    }
+    
+    // For "no-show" and "pending", check if meeting is in monthMeetingsSet and matches the status
+    if (filter === 'no-show' || filter === 'pending') {
+      const isInMonthSet = monthMeetingsSet.some(m => m.id === meeting.id);
+      if (!isInMonthSet) return false;
+      const status = getMeetingStatus(meeting);
+      return status === filter;
+    }
+    
+    // Fallback: use the current status
     const status = getMeetingStatus(meeting);
     return status === filter;
   };
