@@ -147,6 +147,7 @@ export default function Documentation() {
       { id: 'dashboard', title: 'Dashboard Overview', icon: BarChart2 },
       { id: 'goals', title: 'Goal Tracking', icon: Target },
       { id: 'meetings', title: 'Meeting Management', icon: Calendar },
+      { id: 'calendar', title: 'Calendar View', icon: Clock },
       { id: 'analytics', title: 'Performance Analytics', icon: TrendingUp },
       { id: 'commissions', title: 'Commissions', icon: CheckCircle },
       { id: 'history', title: 'Meeting History', icon: History },
@@ -315,111 +316,285 @@ export default function Documentation() {
       dashboard: {
         title: 'SDR Dashboard Overview',
         description: 'Your personal command center for managing meetings, tracking goals, and monitoring performance.',
+        videoPath: 'sdr-dashboard-1.webm',
         sections: [
           {
-            title: 'Personal Performance Hub',
-            content: 'The SDR Dashboard provides a focused view of your individual performance, assigned clients, and meeting activity. Track your progress against monthly goals and manage all your meetings in one place.',
+            title: 'Dashboard Tab - Overview',
+            content: 'The Dashboard tab is your main workspace, providing a comprehensive view of your performance metrics, client assignments, and meeting activity. All data updates in real-time as you book and manage meetings.',
+          },
+          {
+            title: 'Meeting Cards - Monthly Targets',
+            content: 'At the top of your dashboard, you\'ll see key metric cards displaying your monthly set target and monthly held target. These targets are assigned by your manager and update monthly based on your client assignments. Click on either card to see a detailed breakdown by client, showing how your targets are distributed across all your assigned clients.',
+            videoPath: 'sdr-dashboard-1.webm',
+          },
+          {
+            title: 'Meeting Cards - Actual Performance',
+            content: 'The "Meetings Set" and "Meetings Held" cards show your actual performance for the current month. These reflect the real meetings you\'ve booked and completed. Click on either card to view all meetings in that category with detailed information. The cards also display your progress percentage toward your monthly targets, giving you instant visibility into whether you\'re on track.',
+            videoPath: 'sdr-dashboard-2.webm',
             features: [
-              'Real-time goal progress tracking',
-              'Client-specific performance metrics',
-              'Meeting management and scheduling',
-              'Performance analytics and insights',
-              'Commission tracking',
+              'Filter: Narrow down meetings by client name to focus on specific accounts',
+              'Sort By: Organize meetings by date, client name, or contact name for easier navigation',
+              'Order: Choose ascending (oldest first) or descending (newest first) order',
+              'Group By: Group meetings by client to see all meetings for each account together, or leave ungrouped for a chronological view',
             ],
           },
           {
-            title: 'Goal Tracking',
-            content: 'Monitor your monthly targets for meetings set and meetings held. View progress bars showing your current status against goals for each assigned client and overall totals.',
+            title: 'Pending and No-Show Meetings',
+            content: 'The "Pending" card shows all meetings scheduled for this month that are awaiting confirmation. The "No Shows" card displays meetings where the prospect didn\'t attend. Both cards are clickable to view detailed meeting lists with the same filtering, sorting, and grouping options available.',
+            videoPath: 'sdr-dashboard-3.webm',
           },
           {
             title: 'Client Cards',
-            content: 'Each assigned client has a dedicated card showing your performance metrics, upcoming meetings, and goal progress. Quickly see which clients need attention and track your success rate.',
+            content: 'Each client assignment appears as a dedicated card on your dashboard. Each card displays:',
+            features: [
+              'Client name',
+              'Actual set / Target set ratio (e.g., "15 / 18")',
+              'Actual held / Target held ratio (e.g., "12 / 15")',
+              'Number of pending meetings',
+              'Visual progress indicator that you can toggle between "Set" and "Held" progress',
+            ],
+          },
+          {
+            title: 'Client Card Details',
+            content: 'Clicking on any client card opens a detailed view showing all meetings for that specific client, organized into three sections:',
+            features: [
+              'Meetings Set: All meetings you\'ve booked for this client this month',
+              'Meetings Held: All meetings that have been completed for this client',
+              'Pending Meetings: Meetings awaiting confirmation or completion',
+            ],
+            videoPath: 'sdr-dashboard-4.webm',
+            additionalContent: 'Each meeting in these sections can be previewed by clicking on it, and you can expand the meeting card to see full details including contact information, notes, and status.',
+          },
+          {
+            title: 'Add Meeting Button',
+            content: 'The "Add Meeting" button allows you to book new meetings directly from your dashboard. When clicked, it opens a form with the following fields:',
+            features: [
+              'Meeting Booked Date: Automatically defaults to today\'s date (optional)',
+              'Meeting Date: The scheduled date for the meeting (required)',
+              'Meeting Time: The scheduled time (required)',
+              'Contact Full Name: The prospect\'s full name (required)',
+              'Contact Email: Email address (optional)',
+              'Contact Phone: Phone number (optional)',
+              'Title: The prospect\'s job title (optional)',
+              'Company: Company name (optional)',
+              'LinkedIn Page: LinkedIn profile URL (optional)',
+              'Prospect\'s Timezone: Select from EST, CST, MST, PST, MST (Arizona), AKST, or HST (required)',
+              'Notes: Additional information about the meeting or prospect (optional)',
+            ],
+            videoPath: 'sdr-dashboard-5.webm',
+          },
+          {
+            title: 'Meeting Cards Section',
+            content: 'Below the metric cards, you\'ll find organized meeting lists grouped by status. When you book a new meeting, it automatically appears in the "Pending" section. The dashboard organizes meetings into the following sections:',
+            features: [
+              'Pending: Meetings awaiting confirmation from the prospect',
+              'Confirmed: Meetings that have been confirmed by the prospect',
+              'Past Due Pending: Meetings where the scheduled date and time have passed but haven\'t been marked as held or no-show yet. These require your action to update the status',
+              'Held: Meetings that have been successfully completed',
+              'No Shows: Meetings where the prospect didn\'t attend',
+              'No Longer Interested: Meetings where the prospect has requested to stop contact, but no-show meetings can still be rescheduled',
+              'Not ICP Qualified: Meetings that were booked but don\'t match the client\'s Ideal Customer Profile criteria (company size, industry, etc.)',
+            ],
+            videoPath: 'sdr-dashboard-6.webm',
+            additionalContent: 'Pending meetings with a scheduled time within 24 hours will flash yellow, alerting you that confirmation is needed. To change a meeting\'s status, click the pencil (edit) button on the meeting card, select the correct status from the dropdown, and click save. You can also delete meetings using the trash can button. Alternatively, you can drag and drop meeting cards between sections to quickly update their status.',
+          },
+          {
+            title: 'Performance Visualizations',
+            content: 'The dashboard includes three interactive charts that help you visualize your performance:',
+            features: [
+              'Monthly Performance: Shows your progress toward monthly goals over time',
+              'Meeting Status Distribution: A pie chart showing the breakdown of your meetings by status',
+              'Client Performance: Compares your performance across different client assignments',
+            ],
+            videoPath: 'sdr-dashboard-7.webm',
+            additionalContent: 'You can toggle the visibility of each chart on or off using the dropdown menu in the top-right corner of the name card. This allows you to customize your dashboard view to focus on the metrics most important to you.',
           },
         ],
       },
       goals: {
         title: 'Goal Tracking',
-        description: 'Set and track monthly targets for meetings set and held.',
+        description: 'Monitor your monthly targets and track progress across all client assignments.',
         sections: [
           {
             title: 'Monthly Targets',
-            content: 'Each client has specific monthly targets for meetings set and meetings held. Track your progress with visual progress bars and percentage indicators.',
+            content: 'Your monthly targets for meetings set and meetings held are assigned by your manager and are based on your client assignments. These targets update monthly and are visible on both the metric cards at the top of your dashboard and within each client card.',
           },
           {
-            title: 'Goal Progress',
-            content: 'Monitor your progress throughout the month. See at a glance which clients you\'re on track with and which need more attention.',
+            title: 'Progress Tracking',
+            content: 'Each client card displays your progress with visual progress bars and percentage indicators. You can toggle between viewing "Set" progress and "Held" progress to see which metric needs more attention. The overall progress is also shown on the main metric cards.',
           },
           {
-            title: 'Performance Metrics',
-            content: 'View detailed metrics including total meetings set, held meetings, pending confirmations, and today\'s meetings for each client.',
+            title: 'Client-Specific Goals',
+            content: 'Click on any metric card (Monthly Set Target, Monthly Held Target, Meetings Set, or Meetings Held) to see a detailed breakdown by client. This view shows how your targets are distributed and your actual performance for each client assignment.',
           },
         ],
       },
       meetings: {
         title: 'Meeting Management',
-        description: 'Schedule, manage, and track all your meetings.',
+        description: 'Schedule, manage, and track all your meetings with comprehensive filtering and organization tools.',
         sections: [
           {
             title: 'Scheduling Meetings',
-            content: 'Add new meetings with full details including date, time, timezone, contact information, and notes. The system automatically tracks meeting status and sends reminders.',
+            content: 'Use the "Add Meeting" button to book new meetings. The form captures all necessary information including contact details, meeting time, timezone, and optional fields like LinkedIn profile and notes. Once saved, the meeting automatically appears in the appropriate section based on its status.',
           },
           {
-            title: 'Meeting Status',
-            content: 'Meetings progress through statuses: Pending → Confirmed → Held. Track no-shows and update meeting outcomes. All status changes are timestamped.',
+            title: 'Meeting Status Workflow',
+            content: 'Meetings progress through different statuses: Pending → Confirmed → Held. You can also mark meetings as No-Show or No Longer Interested. Past Due Pending meetings are those where the scheduled time has passed but haven\'t been updated yet. All status changes are timestamped for accurate tracking.',
           },
           {
-            title: 'Meeting Lists',
-            content: 'Organized lists show pending meetings, confirmed meetings, held meetings, and no-shows. Filter by client or date to find specific meetings quickly.',
+            title: 'Meeting Organization',
+            content: 'The dashboard organizes meetings into clear sections: Pending, Confirmed, Past Due Pending, Held, No Shows, No Longer Interested, and Not ICP Qualified. Each section can be expanded or collapsed, and you can use the search bar to quickly find specific meetings.',
           },
           {
-            title: 'Timezone Support',
-            content: 'Schedule meetings across different timezones with automatic conversion. Ensure prospects see meeting times in their local timezone.',
+            title: 'Filtering and Sorting',
+            content: 'When viewing meeting lists (by clicking on metric cards or client cards), you have powerful filtering and sorting options:',
+            features: [
+              'Filter by client to focus on specific accounts',
+              'Sort by date, client, or contact name',
+              'Choose ascending or descending order',
+              'Group by client to see all meetings for each account together',
+            ],
+          },
+          {
+            title: 'Editing and Updating Meetings',
+            content: 'Click the pencil icon on any meeting card to edit its details. You can update the status, modify contact information, add notes, or change the scheduled date and time. Changes are saved immediately and reflected across the dashboard.',
+          },
+          {
+            title: 'Drag and Drop',
+            content: 'You can quickly update meeting status by dragging meeting cards between sections. For example, drag a meeting from "Pending" to "Held" to mark it as completed. This provides a fast, visual way to manage your meetings.',
+          },
+        ],
+      },
+      calendar: {
+        title: 'Calendar View',
+        description: 'View and manage all your meetings in a visual calendar format with multiple view options.',
+        videoPath: 'sdr-dashboard-8.webm',
+        sections: [
+          {
+            title: 'Calendar Views',
+            content: 'The Calendar tab provides four different ways to view your meetings:',
+            features: [
+              'Month View: See all meetings for the entire month in a traditional calendar grid',
+              'Week View: Focus on a single week with detailed time slots',
+              'Day View: View a single day with hourly breakdown',
+              'Agenda View: List view showing all meetings in chronological order',
+            ],
+          },
+          {
+            title: 'Color-Coded Meetings',
+            content: 'Meeting cards are color-coded by status to help you quickly identify meeting types:',
+            features: [
+              'Pending: Yellow/orange color',
+              'Confirmed: Blue color',
+              'Held: Green color',
+              'No Show: Red color',
+            ],
+          },
+          {
+            title: 'Meeting Preview and Details',
+            content: 'In calendar view, meeting cards show the prospect\'s name by default. Click on any meeting to see a preview with key information. You can expand the preview to view full meeting details including contact information, company, LinkedIn profile, notes, and timezone.',
+          },
+          {
+            title: 'Navigation',
+            content: 'Use the navigation controls to move between months, weeks, or days. The calendar automatically scrolls to show meetings near the current time in week and day views.',
           },
         ],
       },
       analytics: {
         title: 'Performance Analytics',
-        description: 'Analyze your performance with detailed charts and metrics.',
+        description: 'Visualize your performance with interactive charts and metrics that update in real-time.',
         sections: [
           {
-            title: 'Performance Charts',
-            content: 'View visualizations of your meeting distribution, client performance comparisons, monthly progress trends, and goal completion rates.',
+            title: 'Chart Types',
+            content: 'The dashboard includes three customizable charts:',
+            features: [
+              'Monthly Performance: Line chart showing your progress toward monthly goals over time',
+              'Meeting Status Distribution: Pie chart displaying the breakdown of your meetings by status (Pending, Confirmed, Held, No-Show, etc.)',
+              'Client Performance: Bar chart comparing your performance metrics across different client assignments',
+            ],
           },
           {
-            title: 'Client Performance',
-            content: 'Compare your performance across different clients. Identify which clients you\'re most successful with and where you can improve.',
+            title: 'Chart Visibility Controls',
+            content: 'Use the dropdown menu in the top-right corner of your dashboard to toggle each chart on or off. This allows you to customize your view and focus on the metrics most relevant to your workflow.',
           },
           {
-            title: 'Trend Analysis',
-            content: 'Track your performance over time to identify trends, improvements, and areas for growth.',
+            title: 'Real-Time Updates',
+            content: 'All charts update automatically as you book meetings, update statuses, and complete meetings. This gives you instant visual feedback on your performance trends.',
           },
         ],
       },
       commissions: {
         title: 'Commissions',
-        description: 'Track your commission earnings and performance-based compensation.',
+        description: 'Track your commission earnings and calculate potential compensation based on your performance.',
+        videoPath: 'sdr-dashboard-10.webm',
         sections: [
           {
-            title: 'Commission Tracking',
-            content: 'View your commission structure and earnings based on meetings held and other performance metrics.',
+            title: 'Commission Structure',
+            content: 'Your manager sets how your commission is calculated. The system supports two commission types:',
+            features: [
+              'Per Meeting: You receive a base amount per meeting booked, and an additional amount per meeting held. When you exceed your monthly held goal, meetings beyond the goal earn the full rate (base + additional)',
+              'Goal Based: You earn bonuses based on achieving specific percentage milestones of your monthly held goal (e.g., 100%, 110%, 120% of goal)',
+            ],
           },
           {
-            title: 'Performance-Based Pay',
-            content: 'Understand how your performance directly impacts your compensation. Track progress toward commission goals.',
+            title: 'Current Commission Display',
+            content: 'The Commissions tab shows your current month\'s commission based on held meetings, your monthly held goal, and your progress percentage. If your manager has set a commission goal override, it will be displayed with a badge indicating it differs from your calculated goal.',
+          },
+          {
+            title: 'Commission Calculator',
+            content: 'Use the commission calculator to project your earnings. Enter a number of meetings to see how much commission you would earn at that level. This helps you plan and understand the financial impact of your performance.',
+          },
+          {
+            title: 'Commission History',
+            content: 'Click "Show History" to view your commission earnings for the past 12 months. Each month shows your held goal, actual held meetings, goal progress percentage, and commission earned. This historical view helps you track trends and identify your best performing months.',
           },
         ],
       },
       history: {
         title: 'Meeting History',
-        description: 'Review your past meetings and performance history.',
+        description: 'Review your all-time performance and historical meeting data with advanced filtering options.',
+        videoPath: 'sdr-dashboard-9.webm',
         sections: [
           {
-            title: 'Historical Records',
-            content: 'Access complete records of all your past meetings including dates, outcomes, and associated clients.',
+            title: 'All-Time Performance Metrics',
+            content: 'At the top of the Meeting History page, you\'ll see comprehensive statistics:',
+            features: [
+              'Total Meetings Booked: All meetings you\'ve ever created',
+              'Total Meetings Held: All meetings that have been successfully completed',
+              'Total No Shows: All meetings where the prospect didn\'t attend',
+              'Total Pending: Currently pending meetings across all time',
+              'Held Rate: Percentage of booked meetings that resulted in held meetings (Held / (Held + No Shows))',
+              'No Show Rate: Percentage of booked meetings that resulted in no-shows (No Shows / (Held + No Shows))',
+            ],
           },
           {
-            title: 'Performance Review',
-            content: 'Review your historical performance to identify patterns, successes, and areas for improvement.',
+            title: 'Monthly Performance View',
+            content: 'Use the month dropdown selector to view historical data for any past month. The page displays monthly targets, actual performance, and progress percentages for the selected month. You can also export the meeting data for that month to CSV.',
+          },
+          {
+            title: 'Status Filtering',
+            content: 'Filter meetings by status to focus on specific types:',
+            features: [
+              'All: Shows all meetings for the selected month',
+              'Booked: Shows all meetings that were booked in the selected month (regardless of current status)',
+              'Held: Shows only meetings that were held in the selected month',
+              'No-Show: Shows only no-show meetings',
+              'Pending: Shows only pending meetings',
+            ],
+          },
+          {
+            title: 'Advanced Filtering and Organization',
+            content: 'The Meeting History page includes the same powerful filtering, sorting, and grouping options as the dashboard:',
+            features: [
+              'Filter: Narrow down by client name',
+              'Sort By: Organize by date, client, or contact name',
+              'Order: Ascending or descending',
+              'Group By: Group by client or view ungrouped',
+            ],
+          },
+          {
+            title: 'Export Functionality',
+            content: 'Export your meeting history to CSV format. You can select which columns to include in the export (client, contact, email, phone, date, status, notes) and download the data for analysis or reporting purposes.',
           },
         ],
       },
@@ -539,10 +714,13 @@ export default function Documentation() {
 
   const currentContent = getCurrentContent();
   
-  // Get video path for current subsection
+  // Get video path for current subsection - check content object first, then videoPaths
   const videoPath = useMemo(() => {
+    if (currentContent && 'videoPath' in currentContent && currentContent.videoPath) {
+      return currentContent.videoPath as string;
+    }
     return getVideoPath(activeSection, activeSubsection);
-  }, [activeSection, activeSubsection]);
+  }, [activeSection, activeSubsection, currentContent]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -728,6 +906,16 @@ export default function Documentation() {
                             <li key={idx}>{feature}</li>
                           ))}
                         </ul>
+                      )}
+                      {/* Support for video in sections */}
+                      {section.videoPath && (
+                        <div className="my-6">
+                          <VideoPlayer src={section.videoPath} title={section.title} />
+                        </div>
+                      )}
+                      {/* Support for additionalContent in sections */}
+                      {section.additionalContent && (
+                        <p className="text-gray-700 mb-4 leading-relaxed mt-4">{section.additionalContent}</p>
                       )}
                       {/* Support for images in sections */}
                       {section.images && section.images.map((img: any, imgIdx: number) => {

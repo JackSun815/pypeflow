@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { DollarSign, Plus, Trash2, AlertCircle, Target } from 'lucide-react';
 import { useAgency } from '../contexts/AgencyContext';
@@ -22,6 +22,8 @@ interface CompensationManagementProps {
 
 export default function CompensationManagement({ sdrId, fullName, onUpdate, onHide }: CompensationManagementProps) {
   const { agency } = useAgency();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [agencyId, setAgencyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -50,6 +52,48 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
   const [commissionGoalOverride, setCommissionGoalOverride] = useState<number>(0);
   const [hasOverride, setHasOverride] = useState<boolean>(false);
   const [calculatedGoal, setCalculatedGoal] = useState<number>(0);
+
+  // Load agency_id - try from context first, then fetch from SDR profile
+  useEffect(() => {
+    async function loadAgencyId() {
+      // Try to get agency_id from context
+      if (agency?.id) {
+        setAgencyId(agency.id);
+        return;
+      }
+
+      // If not available from context, fetch from SDR's profile
+      if (sdrId) {
+        try {
+          const { data: sdrProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('agency_id')
+            .eq('id', sdrId)
+            .single();
+
+          if (profileError) {
+            console.error('[DEBUG] Error fetching SDR agency_id:', profileError);
+          } else if (sdrProfile?.agency_id) {
+            setAgencyId(sdrProfile.agency_id);
+            console.log('[DEBUG] Fetched agency_id from SDR profile:', sdrProfile.agency_id);
+          }
+        } catch (err) {
+          console.error('[DEBUG] Error loading agency_id:', err);
+        }
+      }
+    }
+
+    loadAgencyId();
+  }, [sdrId, agency?.id]);
+
+  // Scroll into view when component mounts
+  useEffect(() => {
+    if (containerRef.current) {
+      setTimeout(() => {
+        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, []);
 
   // Load existing compensation structure and commission goal override
   useEffect(() => {
@@ -130,9 +174,31 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
     setSuccess(null);
 
     try {
-      if (!agency?.id) {
-        throw new Error('Agency information not available. Please refresh the page and try again.');
+      // Get agency_id - use state if available, otherwise try context, otherwise fetch from SDR
+      let agencyIdToUse = agencyId;
+      
+      if (!agencyIdToUse) {
+        if (agency?.id) {
+          agencyIdToUse = agency.id;
+        } else if (sdrId) {
+          // Fetch from SDR profile as last resort
+          const { data: sdrProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('agency_id')
+            .eq('id', sdrId)
+            .single();
+
+          if (profileError || !sdrProfile?.agency_id) {
+            throw new Error('Agency information not available. Please refresh the page and try again.');
+          }
+          
+          agencyIdToUse = sdrProfile.agency_id;
+        } else {
+          throw new Error('Agency information not available. Please refresh the page and try again.');
+        }
       }
+
+      console.log('[DEBUG] Using agency_id for compensation structure:', agencyIdToUse);
 
       // Delete existing structure first to avoid conflicts
       console.log('[DEBUG] Deleting existing compensation structure for SDR:', sdrId);
@@ -176,7 +242,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           .from('compensation_structures')
           .insert({
             sdr_id: sdrId,
-            agency_id: agency.id,
+            agency_id: agencyIdToUse,
             commission_type: 'goal_based',
             goal_tiers: sortedTiers,
             meeting_rates: { booked: 0, held: 0 }
@@ -205,7 +271,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           .from('compensation_structures')
           .insert({
             sdr_id: sdrId,
-            agency_id: agency.id,
+            agency_id: agencyIdToUse,
             commission_type: 'per_meeting',
             meeting_rates: meetingRates,
             goal_tiers: []
@@ -262,7 +328,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
             .from('commission_goal_overrides')
             .insert({
               sdr_id: sdrId,
-              agency_id: agency.id,
+              agency_id: agencyIdToUse,
               commission_goal: commissionGoalOverride
             });
 
@@ -290,6 +356,13 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
 
       setSuccess('Compensation structure updated successfully');
       onUpdate();
+      
+      // Auto-collapse after successful save
+      setTimeout(() => {
+        if (onHide) {
+          onHide();
+        }
+      }, 1500);
     } catch (err) {
       console.error('Save compensation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save compensation structure');
@@ -299,7 +372,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div ref={containerRef} className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-6 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">
           Compensation Structure for {fullName}

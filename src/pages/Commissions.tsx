@@ -176,8 +176,8 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
           sum + (assignment.monthly_hold_target || 0), 0
         );
         
-        // Calculate commission for this month
-        const commission = calculateCommission(heldMeetings);
+        // Calculate commission for this month using the correct goal for that month
+        const commission = calculateCommission(heldMeetings, heldGoal);
         
         // Calculate progress percentage
         const progressPercentage = heldGoal > 0 ? (heldMeetings / heldGoal) * 100 : 0;
@@ -240,11 +240,25 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
     );
   }
 
-  const calculateCommission = (meetingsCount: number) => {
+  const calculateCommission = (meetingsCount: number, goalOverride?: number) => {
+    // Use provided goal override, or fall back to component's heldGoal
+    const goal = goalOverride !== undefined ? goalOverride : heldGoal;
+    
     if (structure.commission_type === 'per_meeting') {
-      const bookedCommission = meetingsCount * structure.meeting_rates.booked;
-      const heldCommission = meetingsCount * structure.meeting_rates.held;
-      return bookedCommission + heldCommission;
+      // For per-meeting commission:
+      // - Meetings up to the goal get only the "booked" rate ($25)
+      // - Meetings beyond the goal get both "booked" + "held" rates ($25 + $75 = $100)
+      if (goal > 0 && meetingsCount > goal) {
+        // Some meetings are beyond the goal
+        const meetingsUpToGoal = goal;
+        const meetingsBeyondGoal = meetingsCount - goal;
+        const commissionUpToGoal = meetingsUpToGoal * structure.meeting_rates.booked;
+        const commissionBeyondGoal = meetingsBeyondGoal * (structure.meeting_rates.booked + structure.meeting_rates.held);
+        return commissionUpToGoal + commissionBeyondGoal;
+      } else {
+        // All meetings are within the goal, only get "booked" rate
+        return meetingsCount * structure.meeting_rates.booked;
+      }
     } else {
       // Calculate progress based on input meetings vs held goal
       const percentageAchieved = heldGoal > 0 
