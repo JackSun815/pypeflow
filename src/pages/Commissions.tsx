@@ -44,18 +44,26 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
   const calculatedGoal = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
   const heldGoal = commissionGoalOverride ? commissionGoalOverride.commission_goal : calculatedGoal;
   
-  // Filter meetings to current month only
+  // Filter meetings to current month only - using scheduled_date (month it was scheduled for)
+  // This matches the logic used in SDRDashboard, ManagerDashboard, and useClients hook
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
   
-  const heldMeetings = meetings.filter(m => 
-    m.status === 'confirmed' && 
-    !m.no_show && 
-    m.held_at !== null &&
-    new Date(m.held_at) >= monthStart &&
-    new Date(m.held_at) <= monthEnd
-  ).length;
+  const heldMeetings = meetings.filter(m => {
+    // Must be actually held and not a no-show, and not no_longer_interested
+    if (!m.held_at || m.no_show || (m as any).no_longer_interested) return false;
+    
+    // Filter by scheduled_date (month it was scheduled for)
+    const scheduledDate = new Date(m.scheduled_date);
+    const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+    
+    // Exclude non-ICP-qualified meetings
+    const icpStatus = (m as any).icp_status;
+    const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+    
+    return isInMonth && !isICPDisqualified;
+  }).length;
 
   useEffect(() => {
     async function loadCompensation() {
@@ -129,8 +137,8 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
       
       for (let i = 1; i <= 12; i++) {
         const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-        const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+        const monthStart = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), 1));
+        const nextMonthStart = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth() + 1, 1));
         const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
         
         // Fetch assignments for this month
@@ -140,20 +148,28 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
           .eq('sdr_id', sdrId as any)
           .eq('month', monthKey as any);
         
-        // Fetch meetings for this month
+        // Fetch meetings for this month - we'll filter by scheduled_date in JS
         const { data: monthMeetings } = await supabase
           .from('meetings')
           .select('*')
-          .eq('sdr_id', sdrId as any)
-          .gte('held_at', monthStart.toISOString())
-          .lte('held_at', monthEnd.toISOString());
+          .eq('sdr_id', sdrId as any);
         
-        // Calculate held meetings (confirmed, not no-show, with held_at)
-        const heldMeetings = (monthMeetings || []).filter((m: any) => 
-          m.status === 'confirmed' && 
-          !m.no_show && 
-          m.held_at !== null
-        ).length;
+        // Calculate held meetings using scheduled_date (month it was scheduled for)
+        // This matches the logic used elsewhere in the app
+        const heldMeetings = (monthMeetings || []).filter((m: any) => {
+          // Must be actually held and not a no-show, and not no_longer_interested
+          if (!m.held_at || m.no_show || m.no_longer_interested) return false;
+          
+          // Filter by scheduled_date (month it was scheduled for)
+          const scheduledDate = new Date(m.scheduled_date);
+          const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+          
+          // Exclude non-ICP-qualified meetings
+          const icpStatus = m.icp_status;
+          const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+          
+          return isInMonth && !isICPDisqualified;
+        }).length;
         
         // Calculate held goal
         const heldGoal = (assignments || []).reduce((sum, assignment: any) => 

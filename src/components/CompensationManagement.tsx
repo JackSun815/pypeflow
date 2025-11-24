@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { DollarSign, Plus, Trash2, AlertCircle, Target } from 'lucide-react';
-import type { CommissionGoalOverride } from '../types/database';
+import { useAgency } from '../contexts/AgencyContext';
 
 interface MeetingRates {
   booked: number;
@@ -21,6 +21,7 @@ interface CompensationManagementProps {
 }
 
 export default function CompensationManagement({ sdrId, fullName, onUpdate, onHide }: CompensationManagementProps) {
+  const { agency } = useAgency();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -129,18 +130,22 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
     setSuccess(null);
 
     try {
-              // Delete existing structure first to avoid conflicts
-        console.log('[DEBUG] Deleting existing compensation structure for SDR:', sdrId);
-        
-        const { error: deleteError } = await supabase
-          .from('compensation_structures')
-          .delete()
-          .eq('sdr_id', sdrId);
+      if (!agency?.id) {
+        throw new Error('Agency information not available. Please refresh the page and try again.');
+      }
 
-        if (deleteError) {
-          console.error('[DEBUG] Delete existing structure error:', deleteError);
-          // Don't throw here as it might not exist
-        }
+      // Delete existing structure first to avoid conflicts
+      console.log('[DEBUG] Deleting existing compensation structure for SDR:', sdrId);
+      
+      const { error: deleteError } = await supabase
+        .from('compensation_structures')
+        .delete()
+        .eq('sdr_id', sdrId);
+
+      if (deleteError) {
+        console.error('[DEBUG] Delete existing structure error:', deleteError);
+        // Don't throw here as it might not exist
+      }
 
       if (commissionType === 'goal_based') {
         // Validate goal tiers
@@ -171,6 +176,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           .from('compensation_structures')
           .insert({
             sdr_id: sdrId,
+            agency_id: agency.id,
             commission_type: 'goal_based',
             goal_tiers: sortedTiers,
             meeting_rates: { booked: 0, held: 0 }
@@ -199,6 +205,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           .from('compensation_structures')
           .insert({
             sdr_id: sdrId,
+            agency_id: agency.id,
             commission_type: 'per_meeting',
             meeting_rates: meetingRates,
             goal_tiers: []
@@ -255,6 +262,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
             .from('commission_goal_overrides')
             .insert({
               sdr_id: sdrId,
+              agency_id: agency.id,
               commission_goal: commissionGoalOverride
             });
 
