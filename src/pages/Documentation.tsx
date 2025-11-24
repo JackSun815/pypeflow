@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -19,14 +19,23 @@ import {
   Building,
   ArrowLeft,
   Phone,
-  Play
+  Play,
+  AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type Section = 'manager' | 'sdr' | 'client';
 
 // Video paths - add imports here as you create videos
-// Example: import managerOverviewVideo from '../demo-video/manager/overview.webm';
+// SDR Dashboard videos
+import sdrDashboard1 from '../demo-video/sdr/sdr-dashboard-1.mp4';
+import sdrDashboard2 from '../demo-video/sdr/sdr-dashboard-2.mp4';
+import sdrDashboard3 from '../demo-video/sdr/sdr-dashboard-3.mp4';
+import sdrDashboard4 from '../demo-video/sdr/sdr-dashboard-4.mp4';
+import sdrDashboard5 from '../demo-video/sdr/sdr-dashboard-5.mp4';
+import sdrDashboard6 from '../demo-video/sdr/sdr-dashboard-6.mp4';
+import importMeetings from '../demo-video/sdr/import-meetings.mp4';
+
 const videoPaths: Record<string, string> = {
   // Manager videos
   'manager-overview': '', // Add: import from '../demo-video/manager/overview.webm'
@@ -76,24 +85,90 @@ function getImagePath(section: Section, subsection: string, imageName: string): 
 // Video Player Component
 function VideoPlayer({ src, title }: { src: string; title: string }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Ensure src is a string (Vite imports return URLs as strings)
+  const videoSrc = typeof src === 'string' ? src : String(src);
+  
+  // Log the video source for debugging
+  useMemo(() => {
+    console.log('VideoPlayer initialized:', { src: videoSrc, title });
+  }, [videoSrc, title]);
+  
+  const handleError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const video = e.currentTarget;
+    const error = video.error;
+    console.error('Video playback error:', {
+      src: videoSrc,
+      error: error ? {
+        code: error.code,
+        message: error.message
+      } : null,
+      networkState: video.networkState,
+      readyState: video.readyState
+    });
+    setHasError(true);
+    setIsLoading(false);
+  };
+  
+  const handleLoadedData = () => {
+    setIsLoading(false);
+    setHasError(false);
+    console.log('Video loaded successfully:', videoSrc);
+  };
   
   return (
     <div className="my-8 rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-black">
       <div className="relative" style={{ aspectRatio: '16/9' }}>
-        <video
-          src={src}
-          controls
-          className="w-full h-full object-contain"
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-        />
-        {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <div className="text-center">
-              <Play className="w-16 h-16 text-white mx-auto mb-2 opacity-80" />
-              <p className="text-white text-sm font-medium">{title}</p>
+        {hasError ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+            <div className="text-center p-4">
+              <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-2" />
+              <p className="text-white text-sm font-medium">Unable to load video</p>
+              <p className="text-gray-400 text-xs mt-1">{title}</p>
+              <p className="text-gray-500 text-xs mt-2 break-all">Path: {videoSrc.substring(0, 100)}...</p>
             </div>
           </div>
+        ) : (
+          <>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                  <p className="text-white text-xs">Loading video...</p>
+                </div>
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              src={videoSrc}
+              controls
+              preload="auto"
+              playsInline
+              className="w-full h-full object-contain"
+              onPlay={() => {
+                setIsPlaying(true);
+                setIsLoading(false);
+              }}
+              onPause={() => setIsPlaying(false)}
+              onError={handleError}
+              onLoadedData={handleLoadedData}
+              onCanPlay={() => setIsLoading(false)}
+            >
+              <source src={videoSrc} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            {!isPlaying && !isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
+                <div className="text-center">
+                  <Play className="w-16 h-16 text-white mx-auto mb-2 opacity-80" />
+                  <p className="text-white text-sm font-medium">{title}</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -316,21 +391,19 @@ export default function Documentation() {
       dashboard: {
         title: 'SDR Dashboard Overview',
         description: 'Your personal command center for managing meetings, tracking goals, and monitoring performance.',
-        videoPath: 'sdr-dashboard-1.webm',
         sections: [
           {
-            title: 'Dashboard Tab - Overview',
+            title: 'Dashboard Tab',
             content: 'The Dashboard tab is your main workspace, providing a comprehensive view of your performance metrics, client assignments, and meeting activity. All data updates in real-time as you book and manage meetings.',
           },
           {
             title: 'Meeting Cards - Monthly Targets',
             content: 'At the top of your dashboard, you\'ll see key metric cards displaying your monthly set target and monthly held target. These targets are assigned by your manager and update monthly based on your client assignments. Click on either card to see a detailed breakdown by client, showing how your targets are distributed across all your assigned clients.',
-            videoPath: 'sdr-dashboard-1.webm',
+            videoPath: sdrDashboard1,
           },
           {
             title: 'Meeting Cards - Actual Performance',
             content: 'The "Meetings Set" and "Meetings Held" cards show your actual performance for the current month. These reflect the real meetings you\'ve booked and completed. Click on either card to view all meetings in that category with detailed information. The cards also display your progress percentage toward your monthly targets, giving you instant visibility into whether you\'re on track.',
-            videoPath: 'sdr-dashboard-2.webm',
             features: [
               'Filter: Narrow down meetings by client name to focus on specific accounts',
               'Sort By: Organize meetings by date, client name, or contact name for easier navigation',
@@ -341,35 +414,22 @@ export default function Documentation() {
           {
             title: 'Pending and No-Show Meetings',
             content: 'The "Pending" card shows all meetings scheduled for this month that are awaiting confirmation. The "No Shows" card displays meetings where the prospect didn\'t attend. Both cards are clickable to view detailed meeting lists with the same filtering, sorting, and grouping options available.',
-            videoPath: 'sdr-dashboard-3.webm',
+            videoPath: sdrDashboard2,
           },
           {
             title: 'Client Cards',
-            content: 'Each client assignment appears as a dedicated card on your dashboard. Each card displays:',
-            features: [
-              'Client name',
-              'Actual set / Target set ratio (e.g., "15 / 18")',
-              'Actual held / Target held ratio (e.g., "12 / 15")',
-              'Number of pending meetings',
-              'Visual progress indicator that you can toggle between "Set" and "Held" progress',
-            ],
+            content: 'Each client assignment appears as a dedicated card on your dashboard. Each card displays the client name, actual set / target set ratio, actual held / target held ratio for the current month, number of pending meetings, and a visual progress indicator. You can click to toggle between viewing "Set" and "Held" progress.',
           },
           {
             title: 'Client Card Details',
-            content: 'Clicking on any client card opens a detailed view showing all meetings for that specific client, organized into three sections:',
-            features: [
-              'Meetings Set: All meetings you\'ve booked for this client this month',
-              'Meetings Held: All meetings that have been completed for this client',
-              'Pending Meetings: Meetings awaiting confirmation or completion',
-            ],
-            videoPath: 'sdr-dashboard-4.webm',
-            additionalContent: 'Each meeting in these sections can be previewed by clicking on it, and you can expand the meeting card to see full details including contact information, notes, and status.',
+            content: 'Clicking on any client card opens a detailed view showing all meetings for that specific client, organized into three sections: Meetings Set, Meetings Held, and Pending. You can preview the meeting info by clicking on a meeting, and expand it to see full details including contact information, notes, and status.',
+            videoPath: sdrDashboard3,
           },
           {
             title: 'Add Meeting Button',
             content: 'The "Add Meeting" button allows you to book new meetings directly from your dashboard. When clicked, it opens a form with the following fields:',
             features: [
-              'Meeting Booked Date: Automatically defaults to today\'s date (optional)',
+              'Meeting Booked Date: Automatically defaults to the current day (optional)',
               'Meeting Date: The scheduled date for the meeting (required)',
               'Meeting Time: The scheduled time (required)',
               'Contact Full Name: The prospect\'s full name (required)',
@@ -378,10 +438,15 @@ export default function Documentation() {
               'Title: The prospect\'s job title (optional)',
               'Company: Company name (optional)',
               'LinkedIn Page: LinkedIn profile URL (optional)',
-              'Prospect\'s Timezone: Select from EST, CST, MST, PST, MST (Arizona), AKST, or HST (required)',
+              'Prospect\'s Timezone: Select from EST (Eastern), CST (Central), MST (Mountain), PST (Pacific), MST (Arizona), AKST (Alaska), or HST (Hawaii) (required)',
               'Notes: Additional information about the meeting or prospect (optional)',
             ],
-            videoPath: 'sdr-dashboard-5.webm',
+            videoPath: sdrDashboard4,
+          },
+          {
+            title: 'Batch Import Meetings',
+            content: 'In addition to adding meetings one at a time, you can import multiple meetings at once using the batch import feature. Import meetings from a spreadsheet (CSV format) to quickly add multiple meetings. This is especially useful when you have a list of meetings to book from a spreadsheet or exported data.',
+            videoPath: importMeetings,
           },
           {
             title: 'Meeting Cards Section',
@@ -389,25 +454,24 @@ export default function Documentation() {
             features: [
               'Pending: Meetings awaiting confirmation from the prospect',
               'Confirmed: Meetings that have been confirmed by the prospect',
-              'Past Due Pending: Meetings where the scheduled date and time have passed but haven\'t been marked as held or no-show yet. These require your action to update the status',
+              'Past Due Pending: When the meeting date and time has passed, it automatically moves into this section, awaiting for the SDR to confirm it was held, or it was a no show',
               'Held: Meetings that have been successfully completed',
               'No Shows: Meetings where the prospect didn\'t attend',
-              'No Longer Interested: Meetings where the prospect has requested to stop contact, but no-show meetings can still be rescheduled',
-              'Not ICP Qualified: Meetings that were booked but don\'t match the client\'s Ideal Customer Profile criteria (company size, industry, etc.)',
+              'No Longer Interested: This is when a prospect tells you to stop contacting, but no show meetings can still be rescheduled',
+              'Not ICP Qualified: When the meeting is booked, but doesn\'t match the client prospect criteria (company size, industry, etc.)',
             ],
-            videoPath: 'sdr-dashboard-6.webm',
-            additionalContent: 'Pending meetings with a scheduled time within 24 hours will flash yellow, alerting you that confirmation is needed. To change a meeting\'s status, click the pencil (edit) button on the meeting card, select the correct status from the dropdown, and click save. You can also delete meetings using the trash can button. Alternatively, you can drag and drop meeting cards between sections to quickly update their status.',
+            additionalContent: 'Pending meetings that have meeting time within 24 hours will need a confirmation, and will be flashing yellow. To change meeting status, click pencil button, select the correct meeting status dropdown, then click save. To delete a meeting, click the trash can button. Another option to change status is to drag and drop from the meeting card preview.',
+            videoPath: sdrDashboard5,
           },
           {
             title: 'Performance Visualizations',
-            content: 'The dashboard includes three interactive charts that help you visualize your performance:',
+            content: 'The dashboard includes three interactive charts that help you visualize your performance. You can toggle each chart on or off using the dropdown menu in the name card at the top:',
             features: [
               'Monthly Performance: Shows your progress toward monthly goals over time',
               'Meeting Status Distribution: A pie chart showing the breakdown of your meetings by status',
               'Client Performance: Compares your performance across different client assignments',
             ],
-            videoPath: 'sdr-dashboard-7.webm',
-            additionalContent: 'You can toggle the visibility of each chart on or off using the dropdown menu in the top-right corner of the name card. This allows you to customize your dashboard view to focus on the metrics most important to you.',
+            videoPath: sdrDashboard6,
           },
         ],
       },
@@ -910,7 +974,7 @@ export default function Documentation() {
                       {/* Support for video in sections */}
                       {section.videoPath && (
                         <div className="my-6">
-                          <VideoPlayer src={section.videoPath} title={section.title} />
+                          <VideoPlayer src={typeof section.videoPath === 'string' ? section.videoPath : section.videoPath} title={section.title} />
                         </div>
                       )}
                       {/* Support for additionalContent in sections */}
