@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -10,7 +10,6 @@ import {
   Calendar,
   Target,
   Settings,
-  FileText,
   Mail,
   Clock,
   CheckCircle,
@@ -19,11 +18,101 @@ import {
   History,
   Building,
   ArrowLeft,
-  Phone
+  Phone,
+  Play
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type Section = 'manager' | 'sdr' | 'client';
+
+// Video paths - add imports here as you create videos
+// Example: import managerOverviewVideo from '../demo-video/manager/overview.webm';
+const videoPaths: Record<string, string> = {
+  // Manager videos
+  'manager-overview': '', // Add: import from '../demo-video/manager/overview.webm'
+  'manager-team-management': '',
+  'manager-analytics': '',
+  'manager-meetings': '',
+  'manager-clients': '',
+  'manager-users': '',
+  'manager-history': '',
+  'manager-icp': '',
+  // SDR videos
+  'sdr-dashboard': '',
+  'sdr-goals': '',
+  'sdr-meetings': '',
+  'sdr-analytics': '',
+  'sdr-commissions': '',
+  'sdr-history': '',
+  // Client videos
+  'client-overview': '',
+  'client-meetings': '',
+  'client-calendar': '',
+  'client-linkedin': '',
+  'client-cold-calling': '',
+  'client-analytics': '',
+};
+
+// Helper function to get video path
+function getVideoPath(section: Section, subsection: string): string | null {
+  const key = `${section}-${subsection}`;
+  const path = videoPaths[key];
+  return path || null;
+}
+
+// Image paths - add imports here as you create images
+const imagePaths: Record<string, string> = {
+  // Add image paths here as needed
+  // Example: 'manager-overview-dashboard': imagePath
+};
+
+// Helper function to get image path
+function getImagePath(section: Section, subsection: string, imageName: string): string | null {
+  const key = `${section}-${subsection}-${imageName}`;
+  const path = imagePaths[key];
+  return path || null;
+}
+
+// Video Player Component
+function VideoPlayer({ src, title }: { src: string; title: string }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  return (
+    <div className="my-8 rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-black">
+      <div className="relative" style={{ aspectRatio: '16/9' }}>
+        <video
+          src={src}
+          controls
+          className="w-full h-full object-contain"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+        />
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="text-center">
+              <Play className="w-16 h-16 text-white mx-auto mb-2 opacity-80" />
+              <p className="text-white text-sm font-medium">{title}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Image Display Component
+function ImageDisplay({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+  return (
+    <div className="my-8">
+      <div className="rounded-lg overflow-hidden shadow-lg border border-gray-200">
+        <img src={src} alt={alt} className="w-full h-auto" />
+      </div>
+      {caption && (
+        <p className="text-sm text-gray-500 mt-2 text-center italic">{caption}</p>
+      )}
+    </div>
+  );
+}
 
 export default function Documentation() {
   const [activeSection, setActiveSection] = useState<Section>('manager');
@@ -449,6 +538,11 @@ export default function Documentation() {
   };
 
   const currentContent = getCurrentContent();
+  
+  // Get video path for current subsection
+  const videoPath = useMemo(() => {
+    return getVideoPath(activeSection, activeSubsection);
+  }, [activeSection, activeSubsection]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -612,18 +706,41 @@ export default function Documentation() {
                   <p className="text-xl text-gray-600">{currentContent.description}</p>
                 </div>
 
+                {/* Video Section - Show if video exists */}
+                {videoPath && (
+                  <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Play className="w-5 h-5 text-blue-600" />
+                      <h2 className="text-2xl font-semibold text-gray-900">Video Demo</h2>
+                    </div>
+                    <VideoPlayer src={videoPath} title={currentContent.title} />
+                  </div>
+                )}
+
                 <div className="prose prose-lg max-w-none">
-                  {currentContent.sections.map((section, index) => (
+                  {currentContent.sections.map((section: any, index: number) => (
                     <div key={index} className="mb-8">
                       <h2 className="text-2xl font-semibold text-gray-900 mb-4">{section.title}</h2>
                       <p className="text-gray-700 mb-4 leading-relaxed">{section.content}</p>
                       {section.features && (
                         <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-                          {section.features.map((feature, idx) => (
+                          {section.features.map((feature: string, idx: number) => (
                             <li key={idx}>{feature}</li>
                           ))}
                         </ul>
                       )}
+                      {/* Support for images in sections */}
+                      {section.images && section.images.map((img: any, imgIdx: number) => {
+                        const imgPath = getImagePath(activeSection, activeSubsection, img.name);
+                        return imgPath ? (
+                          <ImageDisplay
+                            key={imgIdx}
+                            src={imgPath}
+                            alt={img.alt || section.title}
+                            caption={img.caption}
+                          />
+                        ) : null;
+                      })}
                     </div>
                   ))}
                 </div>
