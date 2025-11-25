@@ -123,9 +123,9 @@ function VideoPlayer({ src, title }: { src: string; title: string }) {
   
   return (
     <div className="my-8 rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-black p-0">
-      <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+      <div className="relative w-full flex items-center justify-center">
         {hasError ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+          <div className="w-full py-16 flex items-center justify-center bg-black/80">
             <div className="text-center p-4">
               <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-2" />
               <p className="text-white text-sm font-medium">Unable to load video</p>
@@ -149,8 +149,8 @@ function VideoPlayer({ src, title }: { src: string; title: string }) {
               controls
               preload="auto"
               playsInline
-              className="w-full h-full"
-              style={{ display: 'block', objectFit: 'fill', margin: 0, padding: 0 }}
+              className="w-full max-w-full h-auto"
+              style={{ display: 'block', margin: 0, padding: 0 }}
               onPlay={() => {
                 setIsPlaying(true);
                 setIsLoading(false);
@@ -196,6 +196,7 @@ export default function Documentation() {
   const [activeSection, setActiveSection] = useState<Section>('manager');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['manager']));
   const [activeSubsection, setActiveSubsection] = useState<string>('overview');
+  const [activeH1, setActiveH1] = useState<string | null>(null);
 
   const toggleSection = (section: Section) => {
     const newExpanded = new Set(expandedSections);
@@ -287,16 +288,24 @@ export default function Documentation() {
         description: 'Comprehensive analytics and exportable reports for data-driven decision making.',
         sections: [
           {
-            title: 'Performance Visualizations',
-            content: 'Access customizable charts and graphs including cumulative performance trends, monthly performance comparisons, meeting status distributions, SDR performance breakdowns, and client progress visualizations.',
-          },
-          {
             title: 'Chart Visibility Controls',
             content: 'Toggle chart visibility from the dropdown menu to focus on specific metrics. Customize your dashboard view to highlight the data most relevant to your needs.',
           },
           {
             title: 'Data Export',
             content: 'Export meeting data, performance reports, and analytics to CSV format for further analysis or sharing with stakeholders. Access the export feature from the dropdown menu.',
+          },
+          {
+            title: 'Monthly Performance Visualization',
+            content: 'The Monthly Performance chart shows your team\'s progress toward monthly goals over time. This visualization helps you track trends and identify patterns in meeting booking and completion rates.',
+          },
+          {
+            title: 'Meeting Status Distribution',
+            content: 'The Meeting Status Distribution chart is a pie chart showing the breakdown of your meetings by status (Pending, Confirmed, Held, No-Show, etc.). This visualization provides a quick overview of your meeting pipeline health.',
+          },
+          {
+            title: 'Other Visualizations',
+            content: 'Access additional customizable charts and graphs including cumulative performance trends, SDR performance breakdowns, and client progress visualizations.',
           },
         ],
       },
@@ -391,87 +400,107 @@ export default function Documentation() {
       dashboard: {
         title: 'SDR Dashboard Overview',
         description: 'Your personal command center for managing meetings, tracking goals, and monitoring performance.',
-        sections: [
+        h1Sections: [
           {
-            title: 'Dashboard Tab',
-            content: 'The Dashboard tab is your main workspace, providing a comprehensive view of your performance metrics, client assignments, and meeting activity. All data updates in real-time as you book and manage meetings.',
-          },
-          {
-            title: 'Meeting Cards - Monthly Targets',
-            content: 'At the top of your dashboard, you\'ll see key metric cards displaying your monthly set target and monthly held target. These targets are assigned by your manager and update monthly based on your client assignments. Click on either card to see a detailed breakdown by client, showing how your targets are distributed across all your assigned clients.',
-            videoPath: sdrDashboard1,
-          },
-          {
-            title: 'Meeting Cards - Actual Performance',
-            content: 'The "Meetings Set" and "Meetings Held" cards show your actual performance for the current month. These reflect the real meetings you\'ve booked and completed. Click on either card to view all meetings in that category with detailed information. The cards also display your progress percentage toward your monthly targets, giving you instant visibility into whether you\'re on track.',
-            features: [
-              'Filter: Narrow down meetings by client name to focus on specific accounts',
-              'Sort By: Organize meetings by date, client name, or contact name for easier navigation',
-              'Order: Choose ascending (oldest first) or descending (newest first) order',
-              'Group By: Group meetings by client to see all meetings for each account together, or leave ungrouped for a chronological view',
+            id: 'key-metrics',
+            title: 'Key Metrics',
+            sections: [
+              {
+                title: 'Monthly Targets',
+                content: 'At the top of your dashboard, you\'ll see key metric cards displaying your monthly set target and monthly held target. These targets are assigned by your manager and update monthly based on your client assignments. Click on either card to see a detailed breakdown by client, showing how your targets are distributed across all your assigned clients.',
+                videoPath: sdrDashboard1,
+              },
+              {
+                title: 'Actual Performance',
+                content: 'The "Meetings Set" and "Meetings Held" cards show your actual performance for the current month. These reflect the real meetings you\'ve booked and completed. Click on either card to view all meetings in that category with detailed information. The cards also display your progress percentage toward your monthly targets, giving you instant visibility into whether you\'re on track.',
+                features: [
+                  'Filter: Narrow down meetings by client name to focus on specific accounts',
+                  'Sort By: Organize meetings by date, client name, or contact name for easier navigation',
+                  'Order: Choose ascending (oldest first) or descending (newest first) order',
+                  'Group By: Group meetings by client to see all meetings for each account together, or leave ungrouped for a chronological view',
+                ],
+              },
+              {
+                title: 'Pending and No-Show Meetings',
+                content: 'The "Pending" card shows all meetings scheduled for this month that are awaiting confirmation. The "No Shows" card displays meetings where the prospect didn\'t attend. Both cards are clickable to view detailed meeting lists with the same filtering, sorting, and grouping options available.',
+                videoPath: sdrDashboard2,
+              },
             ],
           },
           {
-            title: 'Pending and No-Show Meetings',
-            content: 'The "Pending" card shows all meetings scheduled for this month that are awaiting confirmation. The "No Shows" card displays meetings where the prospect didn\'t attend. Both cards are clickable to view detailed meeting lists with the same filtering, sorting, and grouping options available.',
-            videoPath: sdrDashboard2,
-          },
-          {
+            id: 'client-cards',
             title: 'Client Cards',
-            content: 'Each client assignment appears as a dedicated card on your dashboard. Each card displays the client name, actual set / target set ratio, actual held / target held ratio for the current month, number of pending meetings, and a visual progress indicator. You can click to toggle between viewing "Set" and "Held" progress.',
-          },
-          {
-            title: 'Client Card Details',
-            content: 'Clicking on any client card opens a detailed view showing all meetings for that specific client, organized into three sections: Meetings Set, Meetings Held, and Pending. You can preview the meeting info by clicking on a meeting, and expand it to see full details including contact information, notes, and status.',
-            videoPath: sdrDashboard3,
-          },
-          {
-            title: 'Add Meeting Button',
-            content: 'The "Add Meeting" button allows you to book new meetings directly from your dashboard. When clicked, it opens a form with the following fields:',
-            features: [
-              'Meeting Booked Date: Automatically defaults to the current day (optional)',
-              'Meeting Date: The scheduled date for the meeting (required)',
-              'Meeting Time: The scheduled time (required)',
-              'Contact Full Name: The prospect\'s full name (required)',
-              'Contact Email: Email address (optional)',
-              'Contact Phone: Phone number (optional)',
-              'Title: The prospect\'s job title (optional)',
-              'Company: Company name (optional)',
-              'LinkedIn Page: LinkedIn profile URL (optional)',
-              'Prospect\'s Timezone: Select from EST (Eastern), CST (Central), MST (Mountain), PST (Pacific), MST (Arizona), AKST (Alaska), or HST (Hawaii) (required)',
-              'Notes: Additional information about the meeting or prospect (optional)',
+            sections: [
+              {
+                title: 'Client Card Overview',
+                content: 'Each client assignment appears as a dedicated card on your dashboard. Each card displays the client name, actual set / target set ratio, actual held / target held ratio for the current month, number of pending meetings, and a visual progress indicator. You can click to toggle between viewing "Set" and "Held" progress.',
+              },
+              {
+                title: 'Client Card Details',
+                content: 'Clicking on any client card opens a detailed view showing all meetings for that specific client, organized into three sections: Meetings Set, Meetings Held, and Pending. You can preview the meeting info by clicking on a meeting, and expand it to see full details including contact information, notes, and status.',
+                videoPath: sdrDashboard3,
+              },
             ],
-            videoPath: sdrDashboard4,
           },
           {
-            title: 'Batch Import Meetings',
-            content: 'In addition to adding meetings one at a time, you can import multiple meetings at once using the batch import feature. Import meetings from a spreadsheet (CSV format) to quickly add multiple meetings. This is especially useful when you have a list of meetings to book from a spreadsheet or exported data.',
-            videoPath: importMeetings,
-          },
-          {
-            title: 'Meeting Cards Section',
-            content: 'Below the metric cards, you\'ll find organized meeting lists grouped by status. When you book a new meeting, it automatically appears in the "Pending" section. The dashboard organizes meetings into the following sections:',
-            features: [
-              'Pending: Meetings awaiting confirmation from the prospect',
-              'Confirmed: Meetings that have been confirmed by the prospect',
-              'Past Due Pending: When the meeting date and time has passed, it automatically moves into this section, awaiting for the SDR to confirm it was held, or it was a no show',
-              'Held: Meetings that have been successfully completed',
-              'No Shows: Meetings where the prospect didn\'t attend',
-              'No Longer Interested: This is when a prospect tells you to stop contacting, but no show meetings can still be rescheduled',
-              'Not ICP Qualified: When the meeting is booked, but doesn\'t match the client prospect criteria (company size, industry, etc.)',
+            id: 'meeting-cards',
+            title: 'Meeting Cards',
+            sections: [
+              {
+                title: 'Add Meeting',
+                content: 'The "Add Meeting" button allows you to book new meetings directly from your dashboard. When clicked, it opens a form with the following fields:',
+                features: [
+                  'Meeting Booked Date: Automatically defaults to the current day (optional)',
+                  'Meeting Date: The scheduled date for the meeting (required)',
+                  'Meeting Time: The scheduled time (required)',
+                  'Contact Full Name: The prospect\'s full name (required)',
+                  'Contact Email: Email address (optional)',
+                  'Contact Phone: Phone number (optional)',
+                  'Title: The prospect\'s job title (optional)',
+                  'Company: Company name (optional)',
+                  'LinkedIn Page: LinkedIn profile URL (optional)',
+                  'Prospect\'s Timezone: Select from EST (Eastern), CST (Central), MST (Mountain), PST (Pacific), MST (Arizona), AKST (Alaska), or HST (Hawaii) (required)',
+                  'Notes: Additional information about the meeting or prospect (optional)',
+                ],
+                videoPath: sdrDashboard4,
+              },
+              {
+                title: 'Batch Import Meetings',
+                content: 'In addition to adding meetings one at a time, you can import multiple meetings at once using the batch import feature. Import meetings from a spreadsheet (CSV format) to quickly add multiple meetings. This is especially useful when you have a list of meetings to book from a spreadsheet or exported data.',
+                videoPath: importMeetings,
+              },
+              {
+                title: 'Meeting Status Sections',
+                content: 'Below the metric cards, you\'ll find organized meeting lists grouped by status. When you book a new meeting, it automatically appears in the "Pending" section. The dashboard organizes meetings into the following sections:',
+                features: [
+                  'Pending: Meetings awaiting confirmation from the prospect',
+                  'Confirmed: Meetings that have been confirmed by the prospect',
+                  'Past Due Pending: When the meeting date and time has passed, it automatically moves into this section, awaiting for the SDR to confirm it was held, or it was a no show',
+                  'Held: Meetings that have been successfully completed',
+                  'No Shows: Meetings where the prospect didn\'t attend',
+                  'No Longer Interested: This is when a prospect tells you to stop contacting, but no show meetings can still be rescheduled',
+                  'Not ICP Qualified: When the meeting is booked, but doesn\'t match the client prospect criteria (company size, industry, etc.)',
+                ],
+                additionalContent: 'Pending meetings that have meeting time within 24 hours will need a confirmation, and will be flashing yellow. To change meeting status, click pencil button, select the correct meeting status dropdown, then click save. To delete a meeting, click the trash can button. Another option to change status is to drag and drop from the meeting card preview.',
+                videoPath: sdrDashboard5,
+              },
             ],
-            additionalContent: 'Pending meetings that have meeting time within 24 hours will need a confirmation, and will be flashing yellow. To change meeting status, click pencil button, select the correct meeting status dropdown, then click save. To delete a meeting, click the trash can button. Another option to change status is to drag and drop from the meeting card preview.',
-            videoPath: sdrDashboard5,
           },
           {
-            title: 'Performance Visualizations',
-            content: 'The dashboard includes three interactive charts that help you visualize your performance. You can toggle each chart on or off using the dropdown menu in the name card at the top:',
-            features: [
-              'Monthly Performance: Shows your progress toward monthly goals over time',
-              'Meeting Status Distribution: A pie chart showing the breakdown of your meetings by status',
-              'Client Performance: Compares your performance across different client assignments',
+            id: 'performance-visualization',
+            title: 'Visualization',
+            sections: [
+              {
+                title: 'Interactive Charts',
+                content: 'The dashboard includes three interactive charts that help you visualize your performance. You can toggle each chart on or off using the dropdown menu in the name card at the top:',
+                features: [
+                  'Monthly Performance: Shows your progress toward monthly goals over time',
+                  'Meeting Status Distribution: A pie chart showing the breakdown of your meetings by status',
+                  'Client Performance: Compares your performance across different client assignments',
+                ],
+                videoPath: sdrDashboard6,
+              },
             ],
-            videoPath: sdrDashboard6,
           },
         ],
       },
@@ -536,48 +565,60 @@ export default function Documentation() {
       history: {
         title: 'Meeting History',
         description: 'Review your all-time performance and historical meeting data with advanced filtering options.',
-        sections: [
+        h1Sections: [
           {
-            title: 'All-Time Performance Statistics',
-            content: 'At the top of the Meeting History page, you\'ll see comprehensive all-time statistics that give you an overview of your overall performance:',
-            features: [
-              'Total Meetings Booked: All meetings you\'ve ever created',
-              'Total Meetings Held: All meetings that have been successfully completed',
-              'Total No Shows: All meetings where the prospect didn\'t attend',
-              'Total Pending: Currently pending meetings across all time',
-              'Held Rate: Percentage of booked meetings that resulted in held meetings (Held / (Held + No Shows))',
-              'No Show Rate: Percentage of booked meetings that resulted in no-shows (No Shows / (Held + No Shows))',
+            id: 'all-time-performance',
+            title: 'All Time Performance',
+            sections: [
+              {
+                title: 'All-Time Performance Statistics',
+                content: 'At the top of the Meeting History page, you\'ll see comprehensive all-time statistics that give you an overview of your overall performance:',
+                features: [
+                  'Total Meetings Booked: All meetings you\'ve ever created',
+                  'Total Meetings Held: All meetings that have been successfully completed',
+                  'Total No Shows: All meetings where the prospect didn\'t attend',
+                  'Total Pending: Currently pending meetings across all time',
+                  'Held Rate: Percentage of booked meetings that resulted in held meetings (Held / (Held + No Shows))',
+                  'No Show Rate: Percentage of booked meetings that resulted in no-shows (No Shows / (Held + No Shows))',
+                ],
+              },
             ],
           },
           {
-            title: 'Monthly Performance Breakdown',
-            content: 'Below the all-time stats, you can view performance broken down by month. Use the month dropdown selector to view historical data for any past month. The page displays monthly targets, actual performance, and progress percentages for the selected month, giving you detailed insights into your performance trends over time.',
-            videoPath: sdrMeetingHistory1,
-          },
-          {
-            title: 'Status Filtering',
-            content: 'Filter meetings by status to focus on specific types. This helps you analyze different aspects of your meeting performance:',
-            features: [
-              'All: Shows all meetings for the selected month',
-              'Booked: Shows all meetings that were booked in the selected month (regardless of current status)',
-              'Held: Shows only meetings that were held in the selected month',
-              'No-Show: Shows only no-show meetings',
-              'Pending: Shows only pending meetings',
+            id: 'monthly-performance',
+            title: 'Monthly Performance',
+            sections: [
+              {
+                title: 'Monthly Performance Breakdown',
+                content: 'Below the all-time stats, you can view performance broken down by month. Use the month dropdown selector to view historical data for any past month. The page displays monthly targets, actual performance, and progress percentages for the selected month, giving you detailed insights into your performance trends over time.',
+                videoPath: sdrMeetingHistory1,
+              },
+              {
+                title: 'Status Filtering',
+                content: 'Filter meetings by status to focus on specific types. This helps you analyze different aspects of your meeting performance:',
+                features: [
+                  'All: Shows all meetings for the selected month',
+                  'Booked: Shows all meetings that were booked in the selected month (regardless of current status)',
+                  'Held: Shows only meetings that were held in the selected month',
+                  'No-Show: Shows only no-show meetings',
+                  'Pending: Shows only pending meetings',
+                ],
+              },
+              {
+                title: 'Advanced Filtering and Organization',
+                content: 'The Meeting History page includes powerful filtering, sorting, and grouping functions to help you find and analyze specific meetings:',
+                features: [
+                  'Filter: Narrow down by client name to focus on specific accounts',
+                  'Sort By: Organize by date, client, or contact name for easier navigation',
+                  'Order: Choose ascending (oldest first) or descending (newest first) order',
+                  'Group By: Group by client to see all meetings for each account together, or view ungrouped for a chronological view',
+                ],
+              },
+              {
+                title: 'Export Functionality',
+                content: 'Export your meeting history to CSV format for further analysis or reporting. You can select which columns to include in the export (client, contact, email, phone, date, status, notes) and download the data for use in spreadsheets or other tools.',
+              },
             ],
-          },
-          {
-            title: 'Advanced Filtering and Organization',
-            content: 'The Meeting History page includes powerful filtering, sorting, and grouping functions to help you find and analyze specific meetings:',
-            features: [
-              'Filter: Narrow down by client name to focus on specific accounts',
-              'Sort By: Organize by date, client, or contact name for easier navigation',
-              'Order: Choose ascending (oldest first) or descending (newest first) order',
-              'Group By: Group by client to see all meetings for each account together, or view ungrouped for a chronological view',
-            ],
-          },
-          {
-            title: 'Export Functionality',
-            content: 'Export your meeting history to CSV format for further analysis or reporting. You can select which columns to include in the export (client, contact, email, phone, date, status, notes) and download the data for use in spreadsheets or other tools.',
           },
         ],
       },
@@ -795,23 +836,55 @@ export default function Documentation() {
                   </button>
                   {expandedSections.has('sdr') && (
                     <div className="ml-6 mt-1 space-y-1">
-                      {sidebarItems.sdr.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setActiveSection('sdr');
-                            setActiveSubsection(item.id);
-                          }}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                            activeSection === 'sdr' && activeSubsection === item.id
-                              ? 'bg-blue-50 text-blue-700 font-medium'
-                              : 'text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          <item.icon className="w-4 h-4" />
-                          <span>{item.title}</span>
-                        </button>
-                      ))}
+                      {sidebarItems.sdr.map((item) => {
+                        const contentItem = (content as any).sdr[item.id];
+                        const hasH1Sections = contentItem && contentItem.h1Sections;
+                        const isActiveTab = activeSection === 'sdr' && activeSubsection === item.id;
+                        return (
+                          <div key={item.id}>
+                            <button
+                              onClick={() => {
+                                setActiveSection('sdr');
+                                setActiveSubsection(item.id);
+                                setActiveH1(null);
+                              }}
+                              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                                isActiveTab && !activeH1
+                                  ? 'bg-blue-50 text-blue-700 font-medium'
+                                  : 'text-gray-600 hover:bg-gray-50'
+                              }`}
+                            >
+                              <item.icon className="w-4 h-4" />
+                              <span>{item.title}</span>
+                            </button>
+                            {hasH1Sections && (
+                              <div className="ml-8 mt-1 space-y-1">
+                                {contentItem.h1Sections.map((h1Section: any) => (
+                                  <button
+                                    key={h1Section.id}
+                                    onClick={() => {
+                                      setActiveSection('sdr');
+                                      setActiveSubsection(item.id);
+                                      setActiveH1(h1Section.id);
+                                      const element = document.getElementById(h1Section.id);
+                                      if (element) {
+                                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      }
+                                    }}
+                                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                      isActiveTab && activeH1 === h1Section.id
+                                        ? 'bg-blue-100 text-blue-700 font-medium'
+                                        : 'text-gray-500 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <span>{h1Section.title}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -867,8 +940,8 @@ export default function Documentation() {
                   <p className="text-xl text-gray-600">{(currentContent as any).description}</p>
                 </div>
 
-                {/* Video Section - Show if video exists */}
-                {videoPath && (
+                {/* Video Section - Show if video exists (only if no h1Sections) */}
+                {videoPath && !(currentContent as any).h1Sections && (
                   <div className="mb-8">
                     <div className="flex items-center gap-2 mb-4">
                       <Play className="w-5 h-5 text-blue-600" />
@@ -879,41 +952,100 @@ export default function Documentation() {
                 )}
 
                 <div className="prose prose-lg max-w-none">
-                  {(currentContent as any).sections.map((section: any, index: number) => (
-                    <div key={index} className="mb-8">
-                      <h2 className="text-2xl font-semibold text-gray-900 mb-4">{section.title}</h2>
-                      <p className="text-gray-700 mb-4 leading-relaxed">{section.content}</p>
-                      {section.features && (
-                        <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-                          {section.features.map((feature: string, idx: number) => (
-                            <li key={idx}>{feature}</li>
-                          ))}
-                        </ul>
-                      )}
-                      {/* Support for video in sections */}
-                      {section.videoPath && (
-                        <div className="my-6">
-                          <VideoPlayer src={typeof section.videoPath === 'string' ? section.videoPath : section.videoPath} title={section.title} />
-                        </div>
-                      )}
-                      {/* Support for additionalContent in sections */}
-                      {section.additionalContent && (
-                        <p className="text-gray-700 mb-4 leading-relaxed mt-4">{section.additionalContent}</p>
-                      )}
-                      {/* Support for images in sections */}
-                      {section.images && section.images.map((img: any, imgIdx: number) => {
-                        const imgPath = getImagePath(activeSection, activeSubsection, img.name);
-                        return imgPath ? (
-                          <ImageDisplay
-                            key={imgIdx}
-                            src={imgPath}
-                            alt={img.alt || section.title}
-                            caption={img.caption}
-                          />
-                        ) : null;
-                      })}
-                    </div>
-                  ))}
+                  {(currentContent as any).h1Sections ? (
+                    // New structure with h1, h2, h3
+                    (currentContent as any).h1Sections.map((h1Section: any, h1Index: number) => (
+                      <div key={h1Index} id={h1Section.id} className="mb-12 scroll-mt-24">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-6 border-b border-gray-200 pb-3">{h1Section.title}</h1>
+                        {h1Section.sections.map((h2Section: any, h2Index: number) => (
+                          <div key={h2Index} className="mb-8">
+                            <h2 className="text-2xl font-semibold text-gray-900 mb-4">{h2Section.title}</h2>
+                            <p className="text-gray-700 mb-4 leading-relaxed">{h2Section.content}</p>
+                            {h2Section.features && (
+                              <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                                {h2Section.features.map((feature: string, idx: number) => (
+                                  <li key={idx}>{feature}</li>
+                                ))}
+                              </ul>
+                            )}
+                            {/* Support for video in sections */}
+                            {h2Section.videoPath && (
+                              <div className="my-6">
+                                <VideoPlayer src={typeof h2Section.videoPath === 'string' ? h2Section.videoPath : h2Section.videoPath} title={h2Section.title} />
+                              </div>
+                            )}
+                            {/* Support for additionalContent in sections */}
+                            {h2Section.additionalContent && (
+                              <p className="text-gray-700 mb-4 leading-relaxed mt-4">{h2Section.additionalContent}</p>
+                            )}
+                            {/* Support for images in sections */}
+                            {h2Section.images && h2Section.images.map((img: any, imgIdx: number) => {
+                              const imgPath = getImagePath(activeSection, activeSubsection, img.name);
+                              return imgPath ? (
+                                <ImageDisplay
+                                  key={imgIdx}
+                                  src={imgPath}
+                                  alt={img.alt || h2Section.title}
+                                  caption={img.caption}
+                                />
+                              ) : null;
+                            })}
+                            {/* Support for h3 subsections */}
+                            {h2Section.subsections && h2Section.subsections.map((h3Section: any, h3Index: number) => (
+                              <div key={h3Index} className="ml-4 mt-4">
+                                <h3 className="text-xl font-semibold text-gray-800 mb-3">{h3Section.title}</h3>
+                                <p className="text-gray-700 mb-3 leading-relaxed">{h3Section.content}</p>
+                                {h3Section.features && (
+                                  <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                                    {h3Section.features.map((feature: string, idx: number) => (
+                                      <li key={idx}>{feature}</li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  ) : (
+                    // Old structure (backward compatibility)
+                    (currentContent as any).sections && (currentContent as any).sections.map((section: any, index: number) => (
+                      <div key={index} className="mb-8">
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-4">{section.title}</h2>
+                        <p className="text-gray-700 mb-4 leading-relaxed">{section.content}</p>
+                        {section.features && (
+                          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                            {section.features.map((feature: string, idx: number) => (
+                              <li key={idx}>{feature}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {/* Support for video in sections */}
+                        {section.videoPath && (
+                          <div className="my-6">
+                            <VideoPlayer src={typeof section.videoPath === 'string' ? section.videoPath : section.videoPath} title={section.title} />
+                          </div>
+                        )}
+                        {/* Support for additionalContent in sections */}
+                        {section.additionalContent && (
+                          <p className="text-gray-700 mb-4 leading-relaxed mt-4">{section.additionalContent}</p>
+                        )}
+                        {/* Support for images in sections */}
+                        {section.images && section.images.map((img: any, imgIdx: number) => {
+                          const imgPath = getImagePath(activeSection, activeSubsection, img.name);
+                          return imgPath ? (
+                            <ImageDisplay
+                              key={imgIdx}
+                              src={imgPath}
+                              alt={img.alt || section.title}
+                              caption={img.caption}
+                            />
+                          ) : null;
+                        })}
+                      </div>
+                    ))
+                  )}
                 </div>
               </article>
             ) : (
