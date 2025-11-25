@@ -8,11 +8,9 @@ import {
   Briefcase,
   BarChart2,
   Calendar,
-  Target,
   Settings,
   Mail,
   Clock,
-  CheckCircle,
   TrendingUp,
   Shield,
   History,
@@ -20,7 +18,8 @@ import {
   ArrowLeft,
   Phone,
   Play,
-  AlertCircle
+  AlertCircle,
+  DollarSign
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -35,6 +34,9 @@ import sdrDashboard4 from '../demo-video/sdr/sdr-dashboard-4.mp4';
 import sdrDashboard5 from '../demo-video/sdr/sdr-dashboard-5.mp4';
 import sdrDashboard6 from '../demo-video/sdr/sdr-dashboard-6.mp4';
 import importMeetings from '../demo-video/sdr/import-meetings.mp4';
+import sdrCalendar1 from '../demo-video/sdr/sdr-calendar-1.mp4';
+import sdrMeetingHistory1 from '../demo-video/sdr/sdr-meetinghistory-1.mp4';
+import sdrCommissions1 from '../demo-video/sdr/sdr-commissions-1.mp4';
 
 const videoPaths: Record<string, string> = {
   // Manager videos
@@ -120,8 +122,8 @@ function VideoPlayer({ src, title }: { src: string; title: string }) {
   };
   
   return (
-    <div className="my-8 rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-black">
-      <div className="relative" style={{ aspectRatio: '16/9' }}>
+    <div className="my-8 rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-black p-0">
+      <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
         {hasError ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
             <div className="text-center p-4">
@@ -147,7 +149,8 @@ function VideoPlayer({ src, title }: { src: string; title: string }) {
               controls
               preload="auto"
               playsInline
-              className="w-full h-full object-contain"
+              className="w-full h-full"
+              style={{ display: 'block', objectFit: 'fill', margin: 0, padding: 0 }}
               onPlay={() => {
                 setIsPlaying(true);
                 setIsLoading(false);
@@ -219,13 +222,10 @@ export default function Documentation() {
       { id: 'icp', title: 'ICP Check', icon: Shield },
     ],
     sdr: [
-      { id: 'dashboard', title: 'Dashboard Overview', icon: BarChart2 },
-      { id: 'goals', title: 'Goal Tracking', icon: Target },
-      { id: 'meetings', title: 'Meeting Management', icon: Calendar },
-      { id: 'calendar', title: 'Calendar View', icon: Clock },
-      { id: 'analytics', title: 'Performance Analytics', icon: TrendingUp },
-      { id: 'commissions', title: 'Commissions', icon: CheckCircle },
+      { id: 'dashboard', title: 'Dashboard Overview', icon: Calendar },
+      { id: 'calendar', title: 'Calendar View', icon: Calendar },
       { id: 'history', title: 'Meeting History', icon: History },
+      { id: 'commissions', title: 'Commissions', icon: DollarSign },
     ],
     client: [
       { id: 'overview', title: 'Overview', icon: BarChart2 },
@@ -475,68 +475,14 @@ export default function Documentation() {
           },
         ],
       },
-      goals: {
-        title: 'Goal Tracking',
-        description: 'Monitor your monthly targets and track progress across all client assignments.',
-        sections: [
-          {
-            title: 'Monthly Targets',
-            content: 'Your monthly targets for meetings set and meetings held are assigned by your manager and are based on your client assignments. These targets update monthly and are visible on both the metric cards at the top of your dashboard and within each client card.',
-          },
-          {
-            title: 'Progress Tracking',
-            content: 'Each client card displays your progress with visual progress bars and percentage indicators. You can toggle between viewing "Set" progress and "Held" progress to see which metric needs more attention. The overall progress is also shown on the main metric cards.',
-          },
-          {
-            title: 'Client-Specific Goals',
-            content: 'Click on any metric card (Monthly Set Target, Monthly Held Target, Meetings Set, or Meetings Held) to see a detailed breakdown by client. This view shows how your targets are distributed and your actual performance for each client assignment.',
-          },
-        ],
-      },
-      meetings: {
-        title: 'Meeting Management',
-        description: 'Schedule, manage, and track all your meetings with comprehensive filtering and organization tools.',
-        sections: [
-          {
-            title: 'Scheduling Meetings',
-            content: 'Use the "Add Meeting" button to book new meetings. The form captures all necessary information including contact details, meeting time, timezone, and optional fields like LinkedIn profile and notes. Once saved, the meeting automatically appears in the appropriate section based on its status.',
-          },
-          {
-            title: 'Meeting Status Workflow',
-            content: 'Meetings progress through different statuses: Pending → Confirmed → Held. You can also mark meetings as No-Show or No Longer Interested. Past Due Pending meetings are those where the scheduled time has passed but haven\'t been updated yet. All status changes are timestamped for accurate tracking.',
-          },
-          {
-            title: 'Meeting Organization',
-            content: 'The dashboard organizes meetings into clear sections: Pending, Confirmed, Past Due Pending, Held, No Shows, No Longer Interested, and Not ICP Qualified. Each section can be expanded or collapsed, and you can use the search bar to quickly find specific meetings.',
-          },
-          {
-            title: 'Filtering and Sorting',
-            content: 'When viewing meeting lists (by clicking on metric cards or client cards), you have powerful filtering and sorting options:',
-            features: [
-              'Filter by client to focus on specific accounts',
-              'Sort by date, client, or contact name',
-              'Choose ascending or descending order',
-              'Group by client to see all meetings for each account together',
-            ],
-          },
-          {
-            title: 'Editing and Updating Meetings',
-            content: 'Click the pencil icon on any meeting card to edit its details. You can update the status, modify contact information, add notes, or change the scheduled date and time. Changes are saved immediately and reflected across the dashboard.',
-          },
-          {
-            title: 'Drag and Drop',
-            content: 'You can quickly update meeting status by dragging meeting cards between sections. For example, drag a meeting from "Pending" to "Held" to mark it as completed. This provides a fast, visual way to manage your meetings.',
-          },
-        ],
-      },
       calendar: {
         title: 'Calendar View',
         description: 'View and manage all your meetings in a visual calendar format with multiple view options.',
-        videoPath: 'sdr-dashboard-8.webm',
         sections: [
           {
             title: 'Calendar Views',
-            content: 'The Calendar tab provides four different ways to view your meetings:',
+            content: 'The Calendar tab provides four different ways to view your meetings: Month, Week, Day, and Agenda views. Each view offers a different perspective on your meeting schedule, allowing you to see your meetings in the format that works best for your workflow.',
+            videoPath: sdrCalendar1,
             features: [
               'Month View: See all meetings for the entire month in a traditional calendar grid',
               'Week View: Focus on a single week with detailed time slots',
@@ -546,7 +492,7 @@ export default function Documentation() {
           },
           {
             title: 'Color-Coded Meetings',
-            content: 'Meeting cards are color-coded by status to help you quickly identify meeting types:',
+            content: 'Meeting cards are color-coded by status to help you quickly identify meeting types at a glance. This visual coding makes it easy to see which meetings are pending, confirmed, held, or no-shows without having to read the details.',
             features: [
               'Pending: Yellow/orange color',
               'Confirmed: Blue color',
@@ -556,72 +502,44 @@ export default function Documentation() {
           },
           {
             title: 'Meeting Preview and Details',
-            content: 'In calendar view, meeting cards show the prospect\'s name by default. Click on any meeting to see a preview with key information. You can expand the preview to view full meeting details including contact information, company, LinkedIn profile, notes, and timezone.',
-          },
-          {
-            title: 'Navigation',
-            content: 'Use the navigation controls to move between months, weeks, or days. The calendar automatically scrolls to show meetings near the current time in week and day views.',
-          },
-        ],
-      },
-      analytics: {
-        title: 'Performance Analytics',
-        description: 'Visualize your performance with interactive charts and metrics that update in real-time.',
-        sections: [
-          {
-            title: 'Chart Types',
-            content: 'The dashboard includes three customizable charts:',
-            features: [
-              'Monthly Performance: Line chart showing your progress toward monthly goals over time',
-              'Meeting Status Distribution: Pie chart displaying the breakdown of your meetings by status (Pending, Confirmed, Held, No-Show, etc.)',
-              'Client Performance: Bar chart comparing your performance metrics across different client assignments',
-            ],
-          },
-          {
-            title: 'Chart Visibility Controls',
-            content: 'Use the dropdown menu in the top-right corner of your dashboard to toggle each chart on or off. This allows you to customize your view and focus on the metrics most relevant to your workflow.',
-          },
-          {
-            title: 'Real-Time Updates',
-            content: 'All charts update automatically as you book meetings, update statuses, and complete meetings. This gives you instant visual feedback on your performance trends.',
+            content: 'In any calendar view, you can click on a meeting to see expanded meeting information. The preview shows key details, and you can expand it further to view complete meeting information including contact details, company, LinkedIn profile, notes, and timezone.',
           },
         ],
       },
       commissions: {
         title: 'Commissions',
         description: 'Track your commission earnings and calculate potential compensation based on your performance.',
-        videoPath: 'sdr-dashboard-10.webm',
         sections: [
           {
-            title: 'Commission Structure',
-            content: 'Your manager sets how your commission is calculated. The system supports two commission types:',
+            title: 'Commission Types',
+            content: 'Your manager sets how your commission is calculated. The system supports two commission types. This documentation covers the Per Meeting commission type, which is demonstrated in the video.',
+            videoPath: sdrCommissions1,
             features: [
               'Per Meeting: You receive a base amount per meeting booked, and an additional amount per meeting held. When you exceed your monthly held goal, meetings beyond the goal earn the full rate (base + additional)',
               'Goal Based: You earn bonuses based on achieving specific percentage milestones of your monthly held goal (e.g., 100%, 110%, 120% of goal)',
             ],
           },
           {
-            title: 'Current Commission Display',
-            content: 'The Commissions tab shows your current month\'s commission based on held meetings, your monthly held goal, and your progress percentage. If your manager has set a commission goal override, it will be displayed with a badge indicating it differs from your calculated goal.',
+            title: 'Per Meeting Commission Overview',
+            content: 'For per-meeting commissions, you can see your held goal for the current month, your current progress toward that goal, and your current commission based on meetings held. The display shows both the goal and your actual progress, making it easy to understand how close you are to your commission targets.',
           },
           {
             title: 'Commission Calculator',
-            content: 'Use the commission calculator to project your earnings. Enter a number of meetings to see how much commission you would earn at that level. This helps you plan and understand the financial impact of your performance.',
+            content: 'Use the commission calculator to see how much commission you would earn based on a hypothetical number of meetings. Enter any number of meetings to calculate the projected commission at that level. This helps you plan and understand the financial impact of your performance, allowing you to set personal goals and track your progress.',
           },
           {
             title: 'Commission History',
-            content: 'Click "Show History" to view your commission earnings for the past 12 months. Each month shows your held goal, actual held meetings, goal progress percentage, and commission earned. This historical view helps you track trends and identify your best performing months.',
+            content: 'Click "Show History" to view your commission earnings for the past 12 months. Each month shows your held goal, actual held meetings, goal progress percentage, and commission earned. This historical view helps you track trends, identify your best performing months, and understand your commission patterns over time.',
           },
         ],
       },
       history: {
         title: 'Meeting History',
         description: 'Review your all-time performance and historical meeting data with advanced filtering options.',
-        videoPath: 'sdr-dashboard-9.webm',
         sections: [
           {
-            title: 'All-Time Performance Metrics',
-            content: 'At the top of the Meeting History page, you\'ll see comprehensive statistics:',
+            title: 'All-Time Performance Statistics',
+            content: 'At the top of the Meeting History page, you\'ll see comprehensive all-time statistics that give you an overview of your overall performance:',
             features: [
               'Total Meetings Booked: All meetings you\'ve ever created',
               'Total Meetings Held: All meetings that have been successfully completed',
@@ -632,12 +550,13 @@ export default function Documentation() {
             ],
           },
           {
-            title: 'Monthly Performance View',
-            content: 'Use the month dropdown selector to view historical data for any past month. The page displays monthly targets, actual performance, and progress percentages for the selected month. You can also export the meeting data for that month to CSV.',
+            title: 'Monthly Performance Breakdown',
+            content: 'Below the all-time stats, you can view performance broken down by month. Use the month dropdown selector to view historical data for any past month. The page displays monthly targets, actual performance, and progress percentages for the selected month, giving you detailed insights into your performance trends over time.',
+            videoPath: sdrMeetingHistory1,
           },
           {
             title: 'Status Filtering',
-            content: 'Filter meetings by status to focus on specific types:',
+            content: 'Filter meetings by status to focus on specific types. This helps you analyze different aspects of your meeting performance:',
             features: [
               'All: Shows all meetings for the selected month',
               'Booked: Shows all meetings that were booked in the selected month (regardless of current status)',
@@ -648,17 +567,17 @@ export default function Documentation() {
           },
           {
             title: 'Advanced Filtering and Organization',
-            content: 'The Meeting History page includes the same powerful filtering, sorting, and grouping options as the dashboard:',
+            content: 'The Meeting History page includes powerful filtering, sorting, and grouping functions to help you find and analyze specific meetings:',
             features: [
-              'Filter: Narrow down by client name',
-              'Sort By: Organize by date, client, or contact name',
-              'Order: Ascending or descending',
-              'Group By: Group by client or view ungrouped',
+              'Filter: Narrow down by client name to focus on specific accounts',
+              'Sort By: Organize by date, client, or contact name for easier navigation',
+              'Order: Choose ascending (oldest first) or descending (newest first) order',
+              'Group By: Group by client to see all meetings for each account together, or view ungrouped for a chronological view',
             ],
           },
           {
             title: 'Export Functionality',
-            content: 'Export your meeting history to CSV format. You can select which columns to include in the export (client, contact, email, phone, date, status, notes) and download the data for analysis or reporting purposes.',
+            content: 'Export your meeting history to CSV format for further analysis or reporting. You can select which columns to include in the export (client, contact, email, phone, date, status, notes) and download the data for use in spreadsheets or other tools.',
           },
         ],
       },
@@ -780,8 +699,8 @@ export default function Documentation() {
   
   // Get video path for current subsection - check content object first, then videoPaths
   const videoPath = useMemo(() => {
-    if (currentContent && 'videoPath' in currentContent && currentContent.videoPath) {
-      return currentContent.videoPath as string;
+    if (currentContent && 'videoPath' in currentContent && (currentContent as any).videoPath) {
+      return (currentContent as any).videoPath as string;
     }
     return getVideoPath(activeSection, activeSubsection);
   }, [activeSection, activeSubsection, currentContent]);
@@ -944,8 +863,8 @@ export default function Documentation() {
             {currentContent ? (
               <article className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
                 <div className="mb-8">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">{currentContent.title}</h1>
-                  <p className="text-xl text-gray-600">{currentContent.description}</p>
+                  <h1 className="text-4xl font-bold text-gray-900 mb-4">{(currentContent as any).title}</h1>
+                  <p className="text-xl text-gray-600">{(currentContent as any).description}</p>
                 </div>
 
                 {/* Video Section - Show if video exists */}
@@ -955,12 +874,12 @@ export default function Documentation() {
                       <Play className="w-5 h-5 text-blue-600" />
                       <h2 className="text-2xl font-semibold text-gray-900">Video Demo</h2>
                     </div>
-                    <VideoPlayer src={videoPath} title={currentContent.title} />
+                    <VideoPlayer src={videoPath} title={(currentContent as any).title} />
                   </div>
                 )}
 
                 <div className="prose prose-lg max-w-none">
-                  {currentContent.sections.map((section: any, index: number) => (
+                  {(currentContent as any).sections.map((section: any, index: number) => (
                     <div key={index} className="mb-8">
                       <h2 className="text-2xl font-semibold text-gray-900 mb-4">{section.title}</h2>
                       <p className="text-gray-700 mb-4 leading-relaxed">{section.content}</p>
