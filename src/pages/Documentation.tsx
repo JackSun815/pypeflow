@@ -3,7 +3,6 @@ import {
   ChevronDown, 
   ChevronRight, 
   Book, 
-  Users, 
   User, 
   Briefcase,
   BarChart2,
@@ -26,6 +25,14 @@ import { Link } from 'react-router-dom';
 type Section = 'manager' | 'sdr' | 'client';
 
 // Video paths - add imports here as you create videos
+// Manager Dashboard videos
+import managerOverview1 from '../demo-video/manager/manager-overview-1.mp4';
+import managerOverview2 from '../demo-video/manager/manager-overview-2.mp4';
+import managerOverview3 from '../demo-video/manager/manager-overview-3.mp4';
+import managerOverview4 from '../demo-video/manager/manager-overview-4.mp4';
+import managerOverview5 from '../demo-video/manager/manager-overview-5.mp4';
+import managerTeamsMeetings1 from '../demo-video/manager/manager-teamsmeetings-1.mp4';
+import managerTeamsMeetings2 from '../demo-video/manager/manager-teamsmeetings-2.mp4';
 // SDR Dashboard videos
 import sdrDashboard1 from '../demo-video/sdr/sdr-dashboard-1.mp4';
 import sdrDashboard2 from '../demo-video/sdr/sdr-dashboard-2.mp4';
@@ -214,8 +221,6 @@ export default function Documentation() {
   const sidebarItems = {
     manager: [
       { id: 'overview', title: 'Overview', icon: BarChart2 },
-      { id: 'team-management', title: 'Team Management', icon: Users },
-      { id: 'analytics', title: 'Analytics & Reports', icon: TrendingUp },
       { id: 'meetings', title: 'Team\'s Meetings', icon: Calendar },
       { id: 'clients', title: 'Client Management', icon: Building },
       { id: 'users', title: 'User Management', icon: Settings },
@@ -243,175 +248,542 @@ export default function Documentation() {
       overview: {
         title: 'Manager Dashboard Overview',
         description: 'Get complete visibility into your SDR team\'s performance, client assignments, and meeting activity.',
-        sections: [
+        h1Sections: [
           {
-            title: 'Centralized Command Center',
-            content: 'The Manager Dashboard provides a comprehensive view of your entire SDR operation. Monitor team performance, track goals, manage client assignments, and oversee all meetings from a single, unified interface.',
-            features: [
-              'Real-time team performance metrics',
-              'Individual SDR progress tracking',
-              'Client assignment management',
-              'Meeting oversight and coordination',
-              'Customizable analytics and visualizations',
+            id: 'key-metrics',
+            title: 'Key Metrics',
+            sections: [
+              {
+                title: 'Overview Cards',
+                content: 'At the top of the Overview tab, you\'ll see six key metric cards that provide a comprehensive view of your team\'s performance. Each card is clickable and expands to show detailed information. The first row displays three cards:',
+                features: [
+                  'Active SDRs: Shows the total number of active SDRs on your team. Click to view a detailed list of all SDRs with their status and basic information.',
+                  'Monthly Set Target: Displays the total monthly target for meetings set across all SDRs and clients. Shows the percentage of the month completed. Click to see a breakdown by client and SDR.',
+                  'Monthly Held Target: Shows the total monthly target for meetings held. Also displays month progress percentage. Click to view detailed held meeting targets by client and SDR.',
+                ],
+                videoPath: managerOverview1,
+              },
+              {
+                title: 'Meetings Performance Cards',
+                content: 'The second row of cards shows your actual meeting performance metrics:',
+                features: [
+                  'Meetings Set: Displays the total number of meetings set this month, the percentage of target achieved, and cumulative all-time meetings set. Click to view all meetings set with filtering, sorting, and grouping options.',
+                  'Meetings Held: Shows meetings held this month, percentage of held target, and cumulative held meetings. Click to see detailed held meetings with full filtering capabilities.',
+                  'Pending: Displays the number of meetings awaiting confirmation, with cumulative pending count. Click to view all pending meetings with detailed information.',
+                ],
+                additionalContent: 'All metric cards support filtering by client, sorting by date/client/contact, ordering (ascending/descending), and grouping by client or SDR. You can also search for specific meetings within each modal.',
+              },
             ],
           },
           {
-            title: 'Key Metrics at a Glance',
-            content: 'Your dashboard displays critical KPIs including total meetings set, held meetings, pending confirmations, and no-show rates. Track progress against monthly targets with visual progress indicators.',
+            id: 'sdr-performance',
+            title: 'SDR Performance',
+            sections: [
+              {
+                title: 'SDR Performance Table',
+                content: 'The SDR Performance section displays a comprehensive table showing each SDR\'s performance metrics for the selected month. Use the month dropdown to view performance for any past or current month. Each row shows:',
+                features: [
+                  'SDR Name: The full name of the SDR',
+                  'Meetings Set: Actual meetings set vs the monthly set target, with progress percentage',
+                  'Meetings Held: Actual meetings held vs the monthly held target, with progress percentage',
+                  'Pending: Number of meetings currently pending confirmation',
+                  'Progress Indicators: Visual progress bars showing completion status',
+                ],
+                videoPath: managerOverview2,
+              },
+              {
+                title: 'Expanding SDR Details',
+                content: 'Click on any SDR row to expand and view detailed client assignments. The expanded view shows:',
+                features: [
+                  'Client Assignments: All clients assigned to that SDR for the selected month',
+                  'Per-Client Performance: Individual metrics for each client assignment including set/held targets and actual performance',
+                  'Meeting Details: Click on any assignment to see specific meetings for that SDR-client combination',
+                  'Progress Numbers: Real-time progress indicators showing how close each SDR is to their targets',
+                ],
+                additionalContent: 'The table supports filtering and sorting to help you quickly identify top performers or SDRs who may need additional support.',
+              },
+              {
+                title: 'Export Functionality',
+                content: 'Export SDR performance data to CSV format for reporting or further analysis. The export includes all SDR metrics, client assignments, and performance breakdowns for the selected month.',
+              },
+            ],
           },
           {
-            title: 'Getting Started',
-            content: 'Upon logging in, you\'ll see the Overview tab with team-wide metrics, individual SDR performance cards, and client assignment summaries. Use the navigation tabs to access specific features.',
+            id: 'clients-performance',
+            title: 'Clients Performance',
+            sections: [
+              {
+                title: 'Clients Performance Table',
+                content: 'The Clients Performance section provides a detailed view of how each client is performing. Similar to the SDR Performance table, this section shows:',
+                features: [
+                  'Client Name: The name of each client',
+                  'Assigned SDR: Which SDR is responsible for that client',
+                  'Monthly Set Target: The target number of meetings to set for that client',
+                  'Actual Set: How many meetings have actually been set',
+                  'Monthly Held Target: The target number of meetings to hold',
+                  'Actual Held: How many meetings have actually been held',
+                  'Progress Indicators: Visual bars showing progress toward targets',
+                ],
+                videoPath: managerOverview3,
+              },
+              {
+                title: 'Client Assignment Details',
+                content: 'Click on any client row to expand and see detailed assignment information, including all SDRs assigned to that client and their individual performance metrics. This helps you track which clients are meeting their goals and identify any that may need attention.',
+              },
+            ],
           },
           {
-            title: 'SDR Performance Visualization',
-            content: 'The SDR Performance section displays a comprehensive table showing each SDR\'s performance metrics including meetings set, held, pending, and progress toward monthly targets. Click on any SDR row to expand and view detailed client assignments and performance breakdown.',
+            id: 'todays-activity',
+            title: 'Today\'s Activity',
+            sections: [
+              {
+                title: 'Meetings Booked Today',
+                content: 'The "Meetings Booked Today" section displays all meetings that were created today, regardless of their scheduled date. This gives you real-time visibility into your team\'s booking activity. Each meeting card shows:',
+                features: [
+                  'Contact Information: Full name, email, and phone number',
+                  'Meeting Details: Scheduled date and time, client, and assigned SDR',
+                  'Status: Current meeting status (pending, confirmed, etc.)',
+                  'Quick Actions: Expand to view full meeting details or edit meeting information',
+                ],
+                videoPath: managerOverview4,
+              },
+              {
+                title: 'Meetings Confirmed Today',
+                content: 'The "Meetings Confirmed Today" section shows all meetings that were confirmed today. This helps you track confirmation activity and see which prospects are responding positively. Both sections use the same meeting card interface for consistency.',
+              },
+            ],
           },
           {
-            title: 'Clients Performance Visualization',
-            content: 'The Clients Performance section shows a detailed table of all clients with their assigned SDRs, monthly targets, actual performance, and progress indicators. This visualization helps you track client-level performance and identify which clients are meeting their goals.',
-          },
-          {
-            title: 'SDR Performance Comparison Chart',
-            content: 'The SDR Performance Comparison chart provides a visual comparison of all active SDRs\' performance side-by-side. This bar chart shows set targets vs actual performance and held targets vs actual held meetings for each SDR, making it easy to compare team members.',
-          },
-          {
-            title: 'Monthly Performance Visualization',
-            content: 'The Monthly Performance chart shows your team\'s progress toward monthly goals over time. This bar chart displays target vs actual for both meetings set and meetings held, helping you track trends and identify patterns in meeting booking and completion rates.',
-          },
-          {
-            title: 'Meeting Status Distribution',
-            content: 'The Meeting Status Distribution chart is a pie chart showing the breakdown of your meetings by status (Held, Pending, No-Show). This visualization provides a quick overview of your meeting pipeline health and helps you understand the distribution of meeting outcomes.',
-          },
-        ],
-      },
-      'team-management': {
-        title: 'Team Management',
-        description: 'Manage your SDR team, assign clients, set targets, and track individual performance.',
-        sections: [
-          {
-            title: 'SDR Performance Tracking',
-            content: 'Monitor each SDR\'s performance with detailed metrics including meetings set, held meetings, confirmation rates, and goal completion. View individual progress cards that show real-time status against monthly targets.',
-          },
-          {
-            title: 'Client Assignment',
-            content: 'Efficiently assign clients to SDRs and track assignment metrics. View which clients are assigned to which SDRs, monitor performance per assignment, and manage client relationships.',
-          },
-          {
-            title: 'Goal Setting',
-            content: 'Set monthly targets for each SDR including meetings set goals and meetings held goals. Track progress in real-time with visual progress bars and percentage completion indicators.',
-          },
-        ],
-      },
-      analytics: {
-        title: 'Analytics & Reports',
-        description: 'Comprehensive analytics and exportable reports for data-driven decision making.',
-        sections: [
-          {
-            title: 'Chart Visibility Controls',
-            content: 'Toggle chart visibility from the dropdown menu to focus on specific metrics. Customize your dashboard view to highlight the data most relevant to your needs.',
-          },
-          {
-            title: 'Data Export',
-            content: 'Export meeting data, performance reports, and analytics to CSV format for further analysis or sharing with stakeholders. Access the export feature from the dropdown menu.',
-          },
-          {
-            title: 'Monthly Performance Visualization',
-            content: 'The Monthly Performance chart shows your team\'s progress toward monthly goals over time. This visualization helps you track trends and identify patterns in meeting booking and completion rates.',
-          },
-          {
-            title: 'Meeting Status Distribution',
-            content: 'The Meeting Status Distribution chart is a pie chart showing the breakdown of your meetings by status (Pending, Confirmed, Held, No-Show, etc.). This visualization provides a quick overview of your meeting pipeline health.',
-          },
-          {
-            title: 'Other Visualizations',
-            content: 'Access additional customizable charts and graphs including cumulative performance trends, SDR performance breakdowns, and client progress visualizations.',
+            id: 'visualization',
+            title: 'Visualization',
+            sections: [
+              {
+                title: 'Interactive Charts',
+                content: 'The Visualization section provides multiple interactive charts to help you understand your team\'s performance at a glance. You can toggle each chart on or off using the dropdown menu in the visualization controls:',
+                features: [
+                  'Monthly Performance: Bar chart showing target vs actual for both meetings set and meetings held over time',
+                  'Meeting Status Distribution: Pie chart showing the breakdown of meetings by status (Held, Pending, No-Show, etc.)',
+                  'Active SDR Performance Comparison: Bar chart comparing all active SDRs side-by-side, showing set targets vs actual and held targets vs actual',
+                  'Client Progress Visualization: Chart showing client-level performance and progress toward goals',
+                ],
+                videoPath: managerOverview5,
+              },
+              {
+                title: 'Chart Customization',
+                content: 'Each chart can be customized to show different goal types. You can change the goal type to focus on:',
+                features: [
+                  'Set Goals: Focus on meeting booking targets',
+                  'Held Goals: Focus on meeting completion targets',
+                  'Combined View: See both set and held goals together',
+                  'Custom Metrics: Additional goal types as configured',
+                ],
+              },
+              {
+                title: 'Chart Interactions',
+                content: 'Hover over chart elements to see specific statistics and detailed information. Export charts to PNG format for use in reports or presentations. The charts update in real-time as meeting data changes.',
+              },
+            ],
           },
         ],
       },
       meetings: {
         title: 'Team\'s Meetings',
         description: 'Oversee all team meetings with calendar views, meeting lists, and status management.',
-        sections: [
+        h1Sections: [
           {
+            id: 'calendar-view',
             title: 'Calendar View',
-            content: 'View all team meetings in multiple formats: month, week, day, or agenda view. Filter by SDR or client to focus on specific meetings. Navigate between dates easily with intuitive controls.',
+            sections: [
+              {
+                title: 'Four Calendar Views',
+                content: 'The Team\'s Meetings tab provides four different ways to view your team\'s meetings, giving you flexibility to see meetings in the format that works best for your workflow:',
+                features: [
+                  'Month View: See all meetings for the entire month in a traditional calendar grid format. Perfect for getting a high-level overview of team activity.',
+                  'Week View: Focus on a single week with detailed time slots. Ideal for planning and coordination.',
+                  'Day View: View a single day with hourly breakdown. Great for detailed daily planning.',
+                  'Agenda View: List view showing all meetings in chronological order. Best for seeing meetings sequentially.',
+                ],
+                videoPath: managerTeamsMeetings1,
+              },
+              {
+                title: 'Color-Coded Meetings',
+                content: 'Meeting cards are color-coded by SDR for visual distinction, making it easy to see at a glance which SDR has which meetings. Each SDR is assigned a unique color that remains consistent across all views.',
+              },
+              {
+                title: 'Filtering Options',
+                content: 'Filter meetings by SDR or client to focus on specific subsets of meetings. This is especially useful when managing large teams or multiple clients. The filters work across all calendar views.',
+                features: [
+                  'Filter by SDR: Show only meetings for a specific SDR',
+                  'Filter by Client: Show only meetings for a specific client',
+                  'Combined Filters: Use both filters together for precise meeting views',
+                ],
+              },
+              {
+                title: 'Adding Direct Meetings',
+                content: 'You can add meetings that aren\'t associated with any SDR directly from the calendar view. This is useful for meetings booked through other channels (email, LinkedIn, referrals, etc.). Click the "Add Direct Meeting" button to create a meeting without an SDR assignment.',
+              },
+              {
+                title: 'Export Functionality',
+                content: 'Export calendar data to CSV format for use in other tools or for reporting purposes. The export includes all meeting details, SDR information, and client data.',
+              },
+            ],
           },
           {
-            title: 'Meeting Lists',
-            content: 'Organized meeting lists by status: Pending, Confirmed, Held, No-Show, and Past Due. Each list shows meeting details including date, time, SDR, client, and contact information.',
-          },
-          {
-            title: 'Meeting Management',
-            content: 'Update meeting statuses, confirm meetings, mark as held or no-show, and track meeting outcomes. All changes are reflected in real-time across the dashboard.',
+            id: 'meeting-cards',
+            title: 'Meeting Cards',
+            sections: [
+              {
+                title: 'Meeting Organization',
+                content: 'Below the calendar view, meetings are organized into lists by status. The same filtering, sorting, and grouping options are available here as in the calendar view. Meeting cards are organized into seven different types:',
+                features: [
+                  'Pending: Meetings awaiting confirmation from the prospect',
+                  'Confirmed: Meetings that have been confirmed by the prospect',
+                  'Held: Meetings that have been successfully completed',
+                  'No Show: Meetings where the prospect didn\'t attend',
+                  'Past Due Pending: Meetings that have passed their scheduled time but haven\'t been marked as held or no-show',
+                  'No Longer Interested: Meetings where the prospect has indicated they no longer want to proceed',
+                  'Not ICP Qualified: Meetings that don\'t match the client\'s Ideal Customer Profile criteria',
+                ],
+                videoPath: managerTeamsMeetings2,
+              },
+              {
+                title: 'Filter, Sort, and Group Options',
+                content: 'The meeting lists support powerful filtering, sorting, and grouping functions:',
+                features: [
+                  'Filter: Narrow down by SDR or client name to focus on specific subsets',
+                  'Sort By: Organize meetings by date, client name, SDR name, or contact name',
+                  'Order: Choose ascending (oldest first) or descending (newest first) order',
+                  'Group By: Group meetings by client, SDR, or leave ungrouped for a chronological view',
+                  'Search: Use the search function to find specific meetings by contact name, company, or other details',
+                ],
+              },
+              {
+                title: 'Meeting Card Details',
+                content: 'Each meeting card displays comprehensive information including:',
+                features: [
+                  'Contact Information: Full name, email, phone number, and title',
+                  'Company Details: Company name and LinkedIn profile',
+                  'Meeting Time: Scheduled date and time in EST',
+                  'Created Time: When the meeting was originally booked',
+                  'Meeting Status: Current status (Pending, Confirmed, Held, etc.)',
+                  'ICP Status: Whether the meeting meets Ideal Customer Profile criteria',
+                  'Prospect\'s Timezone: The timezone of the prospect',
+                  'Notes: Any additional notes or information about the meeting',
+                  'SDR Assignment: Which SDR is responsible for the meeting',
+                ],
+              },
+              {
+                title: 'Editing Meetings',
+                content: 'As a manager, you can edit any meeting directly from the meeting card. Click the edit button (pencil icon) to modify:',
+                features: [
+                  'Meeting Date and Time: Change the scheduled date and time',
+                  'Contact Information: Update contact details, email, phone, title, company',
+                  'Meeting Status: Change status (Pending, Confirmed, Held, No Show, etc.)',
+                  'ICP Status: Update ICP qualification status',
+                  'Notes: Add or modify meeting notes',
+                  'Prospect\'s Timezone: Adjust the timezone if needed',
+                ],
+                additionalContent: 'All changes made by managers are immediately reflected in the SDR dashboard, ensuring real-time synchronization across the platform. This allows managers to make corrections or updates that SDRs can see instantly.',
+              },
+              {
+                title: 'Meeting Status Management',
+                content: 'Managers can update meeting statuses in multiple ways:',
+                features: [
+                  'Edit Mode: Click the edit button and use the status dropdown',
+                  'Drag and Drop: Drag meeting cards between status sections (where supported)',
+                  'Quick Actions: Use quick action buttons for common status changes',
+                ],
+                additionalContent: 'When a meeting is marked as "Held", the system uses the scheduled meeting time rather than the current time, ensuring accurate meeting completion records.',
+              },
+            ],
           },
         ],
       },
       clients: {
         title: 'Client Management',
         description: 'Manage client relationships, assignments, and performance tracking.',
-        sections: [
+        h1Sections: [
           {
+            id: 'client-overview',
             title: 'Client Overview',
-            content: 'View all clients with their assigned SDRs, monthly targets, and current performance metrics. See at a glance which clients are active and which have been deactivated.',
+            sections: [
+              {
+                title: 'Client List',
+                content: 'The Client Management tab displays all clients in your agency. Use the month selector to view clients and their assignments for any month (current month, next month, or past months). Each client card shows:',
+                features: [
+                  'Client Name: The name of the client',
+                  'Assigned SDRs: Which SDRs are working with this client',
+                  'Monthly Set Target: Target number of meetings to set for this client',
+                  'Monthly Held Target: Target number of meetings to hold',
+                  'Actual Performance: Current set and held meeting counts',
+                  'Progress Indicators: Visual progress bars showing completion status',
+                ],
+              },
+              {
+                title: 'Sorting Options',
+                content: 'Sort clients by:',
+                features: [
+                  'Alphabetical: Sort by client name A-Z',
+                  'Target: Sort by total monthly targets (highest first)',
+                  'Date: Sort by when the client was created (newest first)',
+                ],
+              },
+            ],
           },
           {
-            title: 'Client Assignment',
-            content: 'Assign or reassign clients to SDRs. Track assignment history and monitor performance metrics for each client-SDR relationship.',
+            id: 'client-assignments',
+            title: 'Client Assignments',
+            sections: [
+              {
+                title: 'Assigning Clients to SDRs',
+                content: 'To assign a client to an SDR, click the "Assign Client" button. You\'ll need to specify:',
+                features: [
+                  'Client: Select the client from the dropdown (or create a new client)',
+                  'SDR: Choose which SDR will work with this client',
+                  'Monthly Set Target: Set the target number of meetings to book per month',
+                  'Monthly Held Target: Set the target number of meetings to hold per month',
+                  'Month: Select which month this assignment applies to',
+                ],
+              },
+              {
+                title: 'Editing Assignments',
+                content: 'Click the edit button on any client card to modify the assignment. You can update targets, change the assigned SDR, or deactivate the assignment for a specific month.',
+              },
+              {
+                title: 'Month-Specific Management',
+                content: 'Client assignments are month-specific, allowing you to adjust targets and assignments for future months. This gives you flexibility to scale up or down based on client needs and team capacity.',
+              },
+            ],
           },
           {
+            id: 'client-performance',
             title: 'Client Performance',
-            content: 'Monitor client-specific metrics including meetings set, held, pending, and no-show rates. Track progress against monthly targets for each client.',
+            sections: [
+              {
+                title: 'Performance Metrics',
+                content: 'Each client card displays real-time performance metrics including:',
+                features: [
+                  'Meetings Set: Actual meetings booked vs the monthly set target',
+                  'Meetings Held: Actual meetings held vs the monthly held target',
+                  'Progress Percentages: Visual indicators showing how close each client is to their targets',
+                  'Overall Progress: Combined progress across all clients',
+                ],
+              },
+              {
+                title: 'Adding New Clients',
+                content: 'Click "Add New Client" to create a new client in your system. Once created, you can immediately assign the client to an SDR and set monthly targets.',
+              },
+            ],
           },
         ],
       },
       users: {
         title: 'User Management',
         description: 'Manage team members, roles, and permissions.',
-        sections: [
+        h1Sections: [
           {
-            title: 'User Roles',
-            content: 'Manage three types of users: Managers, SDRs, and Clients. Each role has specific permissions and access levels tailored to their responsibilities.',
-          },
-          {
-            title: 'SDR Management',
-            content: 'Add, edit, or deactivate SDR accounts. Assign clients, set targets, and manage individual SDR profiles and settings.',
-          },
-          {
+            id: 'manager-management',
             title: 'Manager Management',
-            content: 'Manage manager accounts and permissions. Control access levels and administrative capabilities.',
+            sections: [
+              {
+                title: 'Adding Managers',
+                content: 'Add new manager accounts to your agency. When adding a manager, you\'ll need to provide:',
+                features: [
+                  'Email: The manager\'s email address (used for login)',
+                  'Full Name: The manager\'s full name',
+                  'Password: A secure password for the account (minimum 6 characters)',
+                ],
+              },
+              {
+                title: 'Managing Manager Accounts',
+                content: 'View all managers in your agency, including their email addresses, names, and account status. You can update manager passwords and manage account access.',
+              },
+            ],
+          },
+          {
+            id: 'sdr-management',
+            title: 'SDR Management',
+            sections: [
+              {
+                title: 'Adding SDRs',
+                content: 'Create new SDR accounts for your team. When adding an SDR, provide:',
+                features: [
+                  'Email: The SDR\'s email address',
+                  'Full Name: The SDR\'s full name',
+                ],
+              },
+              {
+                title: 'SDR Invite Links',
+                content: 'Each SDR receives a unique invite link that they can use to access their dashboard. Copy the invite link to share with your SDRs. The link is secure and token-based, allowing SDRs to access their dashboard without needing to remember passwords.',
+              },
+              {
+                title: 'SDR Account Management',
+                content: 'View all SDRs in your agency, manage their accounts, and track their invite links. You can see which SDRs are active and manage their access as needed.',
+              },
+            ],
+          },
+          {
+            id: 'client-access',
+            title: 'Client Access Management',
+            sections: [
+              {
+                title: 'Client Token Management',
+                content: 'Each client receives a secure token-based access link to their dashboard. View all client tokens, copy access links, and manage client access. Client tokens allow clients to view their meetings and SDR assignments without requiring login credentials.',
+              },
+              {
+                title: 'Regenerating Tokens',
+                content: 'If needed, you can regenerate client tokens to revoke old access and provide new secure links. This is useful for security purposes or when access needs to be updated.',
+              },
+            ],
           },
         ],
       },
       history: {
         title: 'Meeting History',
         description: 'Access historical meeting data and track trends over time.',
-        sections: [
+        h1Sections: [
           {
-            title: 'Historical View',
-            content: 'Navigate to previous months to review past meetings, performance metrics, and outcomes. Track trends and patterns over time.',
+            id: 'monthly-view',
+            title: 'Monthly View',
+            sections: [
+              {
+                title: 'Month Selection',
+                content: 'Use the month dropdown to navigate to any past or current month. View all meetings that were booked, held, or had activity during that month. This allows you to review historical performance and track trends over time.',
+              },
+              {
+                title: 'Monthly Statistics',
+                content: 'For each selected month, you\'ll see:',
+                features: [
+                  'Meetings Set: Total meetings booked in that month',
+                  'Meetings Held: Total meetings held in that month',
+                  'Pending: Meetings still pending from that month',
+                  'No Shows: No-show meetings from that month',
+                ],
+              },
+            ],
           },
           {
-            title: 'Meeting Records',
-            content: 'View complete meeting history including dates, statuses, outcomes, and associated SDRs and clients. Filter and search through historical data.',
+            id: 'filtering-and-search',
+            title: 'Filtering and Search',
+            sections: [
+              {
+                title: 'Status Filtering',
+                content: 'Filter meetings by status to focus on specific types:',
+                features: [
+                  'All: Shows all meetings for the selected month',
+                  'Booked: Shows meetings that were booked in the selected month',
+                  'Held: Shows only meetings that were held',
+                  'No-Show: Shows only no-show meetings',
+                  'Pending: Shows only pending meetings',
+                ],
+              },
+              {
+                title: 'Advanced Filtering',
+                content: 'Use the filter, sort, and group options to organize meetings:',
+                features: [
+                  'Filter: Narrow down by client name or SDR name',
+                  'Sort By: Organize by date, client, contact name, or SDR',
+                  'Order: Choose ascending (oldest first) or descending (newest first)',
+                  'Group By: Group meetings by client or SDR for easier navigation',
+                  'Search: Search for specific meetings by contact name, company, or other details',
+                ],
+              },
+            ],
           },
           {
-            title: 'Performance Trends',
-            content: 'Analyze performance trends over time to identify patterns, improvements, or areas needing attention.',
+            id: 'meeting-details',
+            title: 'Meeting Details',
+            sections: [
+              {
+                title: 'Meeting Cards',
+                content: 'Each meeting is displayed as a card showing comprehensive information including contact details, meeting date and time, status, SDR assignment, and notes. Click on any meeting card to expand and view full details.',
+              },
+              {
+                title: 'Editing Historical Meetings',
+                content: 'Managers can edit historical meetings to update status, add notes, or correct information. This is useful for maintaining accurate records and updating meeting outcomes after the fact.',
+              },
+            ],
+          },
+          {
+            id: 'export-functionality',
+            title: 'Export Functionality',
+            sections: [
+              {
+                title: 'CSV Export',
+                content: 'Export meeting history to CSV format for further analysis or reporting. Select which columns to include in the export:',
+                features: [
+                  'SDR Name: Include the assigned SDR',
+                  'Client Name: Include the client',
+                  'Contact Information: Name, email, phone',
+                  'Meeting Details: Date, time, status',
+                  'Notes: Any meeting notes',
+                ],
+              },
+            ],
           },
         ],
       },
       icp: {
         title: 'ICP Check',
         description: 'Verify Ideal Customer Profile qualifications for meetings and prospects.',
-        sections: [
+        h1Sections: [
           {
-            title: 'ICP Verification',
-            content: 'Check whether meetings and prospects meet your Ideal Customer Profile criteria. Track ICP qualification status and notes.',
+            id: 'icp-review',
+            title: 'ICP Review Process',
+            sections: [
+              {
+                title: 'Pending ICP Reviews',
+                content: 'The ICP Check page displays all meetings that are pending ICP (Ideal Customer Profile) review. These are meetings that have been booked but haven\'t yet been verified against your client\'s ICP criteria.',
+              },
+              {
+                title: 'Meeting Information',
+                content: 'Each meeting card shows all relevant information needed for ICP review:',
+                features: [
+                  'Contact Details: Full name, email, phone, title',
+                  'Company Information: Company name and LinkedIn profile',
+                  'Meeting Details: Scheduled date, time, and assigned SDR',
+                  'Client Assignment: Which client this meeting is for',
+                  'Notes: Any existing notes about the meeting or prospect',
+                ],
+              },
+            ],
           },
           {
-            title: 'ICP Criteria',
-            content: 'Define and manage ICP criteria to ensure your team focuses on the right prospects and clients.',
+            id: 'icp-actions',
+            title: 'ICP Actions',
+            sections: [
+              {
+                title: 'Approving Meetings',
+                content: 'If a meeting meets your ICP criteria, click "Approve" to mark it as ICP qualified. You can optionally add notes explaining why it was approved or any relevant details.',
+              },
+              {
+                title: 'Denying Meetings',
+                content: 'If a meeting doesn\'t meet ICP criteria, click "Deny" to mark it as not ICP qualified. Add notes explaining which criteria weren\'t met or why it was denied. Denied meetings will appear in the "Not ICP Qualified" section on SDR dashboards.',
+              },
+              {
+                title: 'ICP Notes',
+                content: 'When approving or denying a meeting, you can add notes that will be visible to SDRs. This helps provide feedback and guidance on why certain meetings do or don\'t qualify.',
+              },
+            ],
+          },
+          {
+            id: 'icp-status-tracking',
+            title: 'ICP Status Tracking',
+            sections: [
+              {
+                title: 'Status Indicators',
+                content: 'Meetings are tracked with ICP status:',
+                features: [
+                  'Pending: Awaiting ICP review',
+                  'Approved: Meets ICP criteria and is qualified',
+                  'Denied: Does not meet ICP criteria',
+                ],
+              },
+              {
+                title: 'Audit Trail',
+                content: 'The system maintains a record of who reviewed each meeting and when, providing a complete audit trail of ICP decisions. This helps ensure accountability and allows you to track review activity.',
+              },
+            ],
           },
         ],
       },
@@ -797,7 +1169,7 @@ export default function Documentation() {
         <div className="flex gap-8">
           {/* Sidebar */}
           <aside className="w-64 flex-shrink-0">
-            <nav className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
+            <nav className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
               <div className="space-y-2">
                 {/* Manager Section */}
                 <div>
@@ -817,23 +1189,55 @@ export default function Documentation() {
                   </button>
                   {expandedSections.has('manager') && (
                     <div className="ml-6 mt-1 space-y-1">
-                      {sidebarItems.manager.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setActiveSection('manager');
-                            setActiveSubsection(item.id);
-                          }}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                            activeSection === 'manager' && activeSubsection === item.id
-                              ? 'bg-indigo-50 text-indigo-700 font-medium'
-                              : 'text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          <item.icon className="w-4 h-4" />
-                          <span>{item.title}</span>
-                        </button>
-                      ))}
+                      {sidebarItems.manager.map((item) => {
+                        const contentItem = (content as any).manager[item.id];
+                        const hasH1Sections = contentItem && contentItem.h1Sections;
+                        const isActiveTab = activeSection === 'manager' && activeSubsection === item.id;
+                        return (
+                          <div key={item.id}>
+                            <button
+                              onClick={() => {
+                                setActiveSection('manager');
+                                setActiveSubsection(item.id);
+                                setActiveH1(null);
+                              }}
+                              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                                isActiveTab && !activeH1
+                                  ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                  : 'text-gray-600 hover:bg-gray-50'
+                              }`}
+                            >
+                              <item.icon className="w-4 h-4" />
+                              <span>{item.title}</span>
+                            </button>
+                            {hasH1Sections && (
+                              <div className="ml-8 mt-1 space-y-1">
+                                {contentItem.h1Sections.map((h1Section: any) => (
+                                  <button
+                                    key={h1Section.id}
+                                    onClick={() => {
+                                      setActiveSection('manager');
+                                      setActiveSubsection(item.id);
+                                      setActiveH1(h1Section.id);
+                                      const element = document.getElementById(h1Section.id);
+                                      if (element) {
+                                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      }
+                                    }}
+                                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                                      isActiveTab && activeH1 === h1Section.id
+                                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                        : 'text-gray-500 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <span>{h1Section.title}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

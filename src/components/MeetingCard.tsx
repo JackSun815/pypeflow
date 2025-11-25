@@ -65,7 +65,8 @@ export function MeetingCard({
   const meetingDate = new Date(meeting.scheduled_date).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'America/New_York' // Always use EST to match time formatting
   });
 
   // Date calculations

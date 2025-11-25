@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   ArrowRight, 
   CheckCircle, 
@@ -11,7 +12,8 @@ import {
   Play,
   Mail,
   Menu,
-  X
+  X,
+  Book
 } from 'lucide-react';
 import DemoViewer from '../components/DemoViewer';
 import ManagerVideoSlideshow from '../components/ManagerVideoSlideshow';
@@ -173,9 +175,17 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Built for Every Role in Your Sales Process
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
               Whether you're an SDR, Manager, or Client, PypeFlow has the tools you need to succeed.
             </p>
+            <Link
+              to="/docs"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105"
+            >
+              <Book className="w-5 h-5" />
+              <span>View Comprehensive Documentation</span>
+              <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
 
           {/* Role Tabs */}
