@@ -1593,100 +1593,6 @@ export default function ManagerDashboard() {
               </div>
             )}
 
-            {/* Data Visualizations */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Monthly Performance Chart */}
-              {chartVisibility.monthlyPerformance && (
-                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
-                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Performance</h3>
-                <div className="h-64">
-                  <Bar
-                    data={{
-                      labels: ['Set Meetings', 'Held Meetings'],
-                      datasets: [
-                        {
-                          label: 'Target',
-                          data: [totalSetTarget, totalHeldTarget],
-                          backgroundColor: ['rgba(59, 130, 246, 0.3)', 'rgba(34, 197, 94, 0.3)'],
-                          borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
-                          borderWidth: 2,
-                        },
-                        {
-                          label: 'Actual',
-                          data: [monthlyMeetingsSetCount, monthlyHeldMeetingsCount],
-                          backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)'],
-                          borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
-                          borderWidth: 2,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'top' as const,
-                        },
-                        title: {
-                          display: false,
-                        },
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                        },
-                      },
-                    }}
-                  />
-                </div>
-                </div>
-              )}
-
-              {/* Meeting Status Distribution */}
-              {chartVisibility.meetingStatusDistribution && (
-                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
-                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meeting Status Distribution</h3>
-                <div className="h-64">
-                  <Doughnut
-                    data={{
-                      labels: ['Held', 'Pending', 'No-Show'],
-                      datasets: [
-                        {
-                          data: [monthlyHeldMeetingsCount, monthlyPendingMeetings, monthlyNoShowMeetings],
-                          backgroundColor: [
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(251, 191, 36, 0.8)',
-                            'rgba(239, 68, 68, 0.8)',
-                          ],
-                          borderColor: [
-                            'rgba(34, 197, 94, 1)',
-                            'rgba(251, 191, 36, 1)',
-                            'rgba(239, 68, 68, 1)',
-                          ],
-                          borderWidth: 2,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'bottom' as const,
-                        },
-                        title: {
-                          display: false,
-                        },
-                      },
-                    }}
-                  />
-                </div>
-                </div>
-              )}
-            </div>
-
-
-
             {/* SDR Performance Table */}
             {chartVisibility.sdrPerformance && (() => {
               // Filter SDRs to show only those with assignments for the selected month
@@ -2493,6 +2399,98 @@ export default function ManagerDashboard() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Monthly Performance and Meeting Status Distribution Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-8">
+              {/* Monthly Performance Chart */}
+              {chartVisibility.monthlyPerformance && (
+                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Monthly Performance</h3>
+                <div className="h-64">
+                  <Bar
+                    data={{
+                      labels: ['Set Meetings', 'Held Meetings'],
+                      datasets: [
+                        {
+                          label: 'Target',
+                          data: [totalSetTarget, totalHeldTarget],
+                          backgroundColor: ['rgba(59, 130, 246, 0.3)', 'rgba(34, 197, 94, 0.3)'],
+                          borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                          borderWidth: 2,
+                        },
+                        {
+                          label: 'Actual',
+                          data: [monthlyMeetingsSetCount, monthlyHeldMeetingsCount],
+                          backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)'],
+                          borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'top' as const,
+                        },
+                        title: {
+                          display: false,
+                        },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                </div>
+                </div>
+              )}
+
+              {/* Meeting Status Distribution */}
+              {chartVisibility.meetingStatusDistribution && (
+                <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-[#232529] border border-[#2d3139]' : 'bg-white'}`}>
+                  <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meeting Status Distribution</h3>
+                <div className="h-64">
+                  <Doughnut
+                    data={{
+                      labels: ['Held', 'Pending', 'No-Show'],
+                      datasets: [
+                        {
+                          data: [monthlyHeldMeetingsCount, monthlyPendingMeetings, monthlyNoShowMeetings],
+                          backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                          ],
+                          borderColor: [
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(251, 191, 36, 1)',
+                            'rgba(239, 68, 68, 1)',
+                          ],
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom' as const,
+                        },
+                        title: {
+                          display: false,
+                        },
+                      },
+                    }}
+                  />
+                </div>
+                </div>
+              )}
             </div>
 
             {/* SDR Performance Chart - Moved to bottom */}

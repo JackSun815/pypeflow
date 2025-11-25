@@ -263,6 +263,26 @@ export default function Documentation() {
             title: 'Getting Started',
             content: 'Upon logging in, you\'ll see the Overview tab with team-wide metrics, individual SDR performance cards, and client assignment summaries. Use the navigation tabs to access specific features.',
           },
+          {
+            title: 'SDR Performance Visualization',
+            content: 'The SDR Performance section displays a comprehensive table showing each SDR\'s performance metrics including meetings set, held, pending, and progress toward monthly targets. Click on any SDR row to expand and view detailed client assignments and performance breakdown.',
+          },
+          {
+            title: 'Clients Performance Visualization',
+            content: 'The Clients Performance section shows a detailed table of all clients with their assigned SDRs, monthly targets, actual performance, and progress indicators. This visualization helps you track client-level performance and identify which clients are meeting their goals.',
+          },
+          {
+            title: 'SDR Performance Comparison Chart',
+            content: 'The SDR Performance Comparison chart provides a visual comparison of all active SDRs\' performance side-by-side. This bar chart shows set targets vs actual performance and held targets vs actual held meetings for each SDR, making it easy to compare team members.',
+          },
+          {
+            title: 'Monthly Performance Visualization',
+            content: 'The Monthly Performance chart shows your team\'s progress toward monthly goals over time. This bar chart displays target vs actual for both meetings set and meetings held, helping you track trends and identify patterns in meeting booking and completion rates.',
+          },
+          {
+            title: 'Meeting Status Distribution',
+            content: 'The Meeting Status Distribution chart is a pie chart showing the breakdown of your meetings by status (Held, Pending, No-Show). This visualization provides a quick overview of your meeting pipeline health and helps you understand the distribution of meeting outcomes.',
+          },
         ],
       },
       'team-management': {
