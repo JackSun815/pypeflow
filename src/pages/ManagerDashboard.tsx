@@ -82,7 +82,18 @@ ChartJS.register(
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
-  const { isDemoMode } = useDemo();
+  const { isDemoMode: rawDemoMode, setIsDemoMode } = useDemo();
+  
+  // Override demo mode if user is authenticated - authenticated users should never see demo mode
+  const isDemoMode = profile ? false : rawDemoMode;
+  
+  // Ensure demo mode is disabled when user logs in
+  useEffect(() => {
+    if (profile && rawDemoMode) {
+      setIsDemoMode(false);
+      localStorage.removeItem('demoMode');
+    }
+  }, [profile, rawDemoMode, setIsDemoMode]);
 
   // Theme and chart visibility settings (Manager-specific)
   const [darkTheme, setDarkTheme] = useState(() => {
@@ -1871,6 +1882,9 @@ export default function ManagerDashboard() {
                                     const clientSetProgress = (assignment.monthly_set_target || 0) > 0 ? 
                                       (clientMeetingsSet / (assignment.monthly_set_target || 0)) * 100 : 0;
                                     
+                                    const clientHeldProgress = (assignment.monthly_hold_target || 0) > 0 ? 
+                                      (clientHeldMeetings / (assignment.monthly_hold_target || 0)) * 100 : 0;
+                                    
                                     // Consistent color scheme
                                     const getProgressColor = (progress: number) => {
                                       if (progress >= 100) return 'bg-green-600';
@@ -1913,16 +1927,33 @@ export default function ManagerDashboard() {
                                                 </span>
                                               </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                              <div className={`w-24 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
-                                                <div
-                                                  className={`h-full rounded-full transition-all duration-300 ${getProgressColor(clientSetProgress)}`}
-                                                  style={{ width: `${Math.min(clientSetProgress, 100)}%` }}
-                                                />
+                                            <div className="flex flex-col items-start gap-1">
+                                              {/* Set progress bar */}
+                                              <div className="flex items-center gap-2">
+                                                <div className={`w-16 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                                                  <div
+                                                    className={`h-full rounded-full transition-all duration-300 ${getProgressColor(clientSetProgress)}`}
+                                                    style={{ width: `${Math.min(clientSetProgress, 100)}%` }}
+                                                  />
+                                                </div>
+                                                <span className={`text-sm font-medium ${getProgressTextColor(clientSetProgress)}`}>
+                                                  {isNaN(clientSetProgress) ? '0.0' : clientSetProgress.toFixed(1)}%
+                                                </span>
+                                                <div className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set</div>
                                               </div>
-                                              <span className={`text-sm font-medium ${getProgressTextColor(clientSetProgress)}`}>
-                                                {isNaN(clientSetProgress) ? '0.0' : clientSetProgress.toFixed(1)}%
-                                              </span>
+                                              {/* Held progress bar */}
+                                              <div className="flex items-center gap-2">
+                                                <div className={`w-16 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                                                  <div
+                                                    className={`h-full rounded-full transition-all duration-300 ${getProgressColor(clientHeldProgress)}`}
+                                                    style={{ width: `${Math.min(clientHeldProgress, 100)}%` }}
+                                                  />
+                                                </div>
+                                                <span className={`text-sm font-medium ${getProgressTextColor(clientHeldProgress)}`}>
+                                                  {isNaN(clientHeldProgress) ? '0.0' : clientHeldProgress.toFixed(1)}%
+                                                </span>
+                                                <div className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held</div>
+                                              </div>
                                             </div>
                                           </div>
                                         );
@@ -2274,6 +2305,9 @@ export default function ManagerDashboard() {
                                     const sdrClientSetProgress = (sdr.monthly_set_target || 0) > 0 ? 
                                       (sdrClientMeetingsSet / (sdr.monthly_set_target || 0)) * 100 : 0;
                                     
+                                    const sdrClientHeldProgress = (sdr.monthly_hold_target || 0) > 0 ? 
+                                      (sdrClientHeldMeetings / (sdr.monthly_hold_target || 0)) * 100 : 0;
+                                    
                                     // Reuse parent's color functions
                                     const getProgressColor = (progress: number) => {
                                       if (progress >= 100) return 'bg-green-600';
@@ -2316,16 +2350,33 @@ export default function ManagerDashboard() {
                                             </span>
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                          <div className={`w-24 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
-                                            <div
-                                              className={`h-full rounded-full transition-all duration-300 ${getProgressColor(sdrClientSetProgress)}`}
-                                              style={{ width: `${Math.min(sdrClientSetProgress, 100)}%` }}
-                                            />
+                                        <div className="flex flex-col items-start gap-1">
+                                          {/* Set progress bar */}
+                                          <div className="flex items-center gap-2">
+                                            <div className={`w-16 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                                              <div
+                                                className={`h-full rounded-full transition-all duration-300 ${getProgressColor(sdrClientSetProgress)}`}
+                                                style={{ width: `${Math.min(sdrClientSetProgress, 100)}%` }}
+                                              />
+                                            </div>
+                                            <span className={`text-sm font-medium ${getProgressTextColor(sdrClientSetProgress)}`}>
+                                              {isNaN(sdrClientSetProgress) ? '0.0' : sdrClientSetProgress.toFixed(1)}%
+                                            </span>
+                                            <div className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set</div>
                                           </div>
-                                          <span className={`text-sm font-medium ${getProgressTextColor(sdrClientSetProgress)}`}>
-                                            {isNaN(sdrClientSetProgress) ? '0.0' : sdrClientSetProgress.toFixed(1)}%
-                                          </span>
+                                          {/* Held progress bar */}
+                                          <div className="flex items-center gap-2">
+                                            <div className={`w-16 h-2 rounded-full overflow-hidden ${darkTheme ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                                              <div
+                                                className={`h-full rounded-full transition-all duration-300 ${getProgressColor(sdrClientHeldProgress)}`}
+                                                style={{ width: `${Math.min(sdrClientHeldProgress, 100)}%` }}
+                                              />
+                                            </div>
+                                            <span className={`text-sm font-medium ${getProgressTextColor(sdrClientHeldProgress)}`}>
+                                              {isNaN(sdrClientHeldProgress) ? '0.0' : sdrClientHeldProgress.toFixed(1)}%
+                                            </span>
+                                            <div className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held</div>
+                                          </div>
                                         </div>
                                       </div>
                                     );

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 interface DemoContextType {
   isDemoMode: boolean;
@@ -13,8 +14,19 @@ const DemoContext = createContext<DemoContextType | undefined>(undefined);
 const DEMO_AGENCY_SUBDOMAIN = 'demo';
 
 export function DemoProvider({ children }: { children: React.ReactNode }) {
+  const { user, profile } = useAuth();
+  
+  // Check if user is authenticated by checking localStorage directly (since useAuth might not be ready yet)
+  const isAuthenticated = () => {
+    return !!localStorage.getItem('currentUser');
+  };
+  
   const [isDemoMode, setIsDemoMode] = useState(() => {
-    // Check if we're in demo mode via URL or localStorage
+    // If user is authenticated, never use demo mode (unless explicitly on /demo route)
+    if (isAuthenticated()) {
+      return false;
+    }
+    // For unauthenticated users, check URL or localStorage
     return window.location.pathname.startsWith('/demo') || 
            localStorage.getItem('demoMode') === 'true';
   });
@@ -22,8 +34,19 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const [demoAgencySubdomain, setDemoAgencySubdomain] = useState<string | null>(null);
 
   useEffect(() => {
+    // If user is authenticated, always disable demo mode
+    const authenticated = isAuthenticated();
+    if (authenticated) {
+      if (isDemoMode) {
+        setIsDemoMode(false);
+      }
+      localStorage.removeItem('demoMode');
+      return;
+    }
+
+    // Only allow demo mode for unauthenticated users
     if (isDemoMode) {
-      // Set demo mode in localStorage
+      // Set demo mode in localStorage only for unauthenticated users
       localStorage.setItem('demoMode', 'true');
       
       // Force demo agency in URL so AgencyContext can pick it up
@@ -47,7 +70,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     } else {
       localStorage.removeItem('demoMode');
     }
-  }, [isDemoMode]);
+  }, [isDemoMode, user, profile]);
 
   return (
     <DemoContext.Provider value={{ isDemoMode, setIsDemoMode, demoAgencySubdomain }}>
