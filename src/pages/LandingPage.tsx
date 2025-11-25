@@ -17,12 +17,14 @@ import {
 } from 'lucide-react';
 import DemoViewer from '../components/DemoViewer';
 import ManagerVideoSlideshow from '../components/ManagerVideoSlideshow';
+import ContactForm from '../components/ContactForm';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'sdr' | 'manager' | 'client'>('sdr');
   const [showDemo, setShowDemo] = useState(false);
   const [demoType, setDemoType] = useState<'manager' | 'sdr' | 'client'>('manager');
+  const [showContactForm, setShowContactForm] = useState(false);
 
   const features = {
     sdr: [
@@ -94,6 +96,13 @@ export default function LandingPage() {
                 </button>
                 <a href="/docs" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Documentation</a>
                 <a href="/blog" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Blog</a>
+                <button
+                  onClick={() => setShowContactForm(true)}
+                  className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1"
+                >
+                  <Mail className="w-4 h-4" />
+                  Contact
+                </button>
                 <a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors">
                   Sign In
                 </a>
@@ -127,6 +136,16 @@ export default function LandingPage() {
               </button>
               <a href="/docs" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Documentation</a>
               <a href="/blog" className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors">Blog</a>
+              <button
+                onClick={() => {
+                  setShowContactForm(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors w-full text-left flex items-center gap-2"
+              >
+                <Mail className="w-4 h-4" />
+                Contact
+              </button>
               <a href="/login" className="bg-blue-500 text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-600 transition-colors">Sign In</a>
             </div>
           </div>
@@ -746,6 +765,13 @@ export default function LandingPage() {
               <ArrowRight className="w-5 h-5" />
             </a>
             <button 
+              onClick={() => setShowContactForm(true)}
+              className="bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-cyan-600 hover:to-teal-600 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+            >
+              <Mail className="w-5 h-5" />
+              Contact Us
+            </button>
+            <button 
               onClick={() => {
                 // Scroll to features section
                 document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
@@ -797,7 +823,14 @@ export default function LandingPage() {
                 <li><a href="#" className="hover:text-blue-200 transition-colors">About</a></li>
                 <li><a href="#" className="hover:text-blue-200 transition-colors">Blog</a></li>
                 <li><a href="#" className="hover:text-blue-200 transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-blue-200 transition-colors">Contact</a></li>
+                <li>
+                  <button 
+                    onClick={() => setShowContactForm(true)}
+                    className="hover:text-blue-200 transition-colors text-left"
+                  >
+                    Contact
+                  </button>
+                </li>
               </ul>
             </div>
             <div>
@@ -806,7 +839,14 @@ export default function LandingPage() {
                 <li><a href="#" className="hover:text-blue-200 transition-colors">Help Center</a></li>
                 <li><a href="#" className="hover:text-blue-200 transition-colors">Documentation</a></li>
                 <li><a href="#" className="hover:text-blue-200 transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-blue-200 transition-colors">Contact Support</a></li>
+                <li>
+                  <button 
+                    onClick={() => setShowContactForm(true)}
+                    className="hover:text-blue-200 transition-colors text-left"
+                  >
+                    Contact Support
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
@@ -823,6 +863,12 @@ export default function LandingPage() {
           onClose={() => setShowDemo(false)} 
         />
       )}
+
+      {/* Contact Form Modal */}
+      <ContactForm
+        isOpen={showContactForm}
+        onClose={() => setShowContactForm(false)}
+      />
     </div>
   );
 }

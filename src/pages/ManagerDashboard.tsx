@@ -6,12 +6,13 @@ import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { useAgency } from '../contexts/AgencyContext';
 import { useDemo } from '../contexts/DemoContext';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock, Filter, ArrowUpDown, Layers } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock, Filter, ArrowUpDown, Layers, HelpCircle } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
 import ManagerMeetingHistory from '../components/ManagerMeetingHistory';
 import ICPCheck from './ICPCheck';
+import ContactSupport from '../components/ContactSupport';
 import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
 import confetti from 'canvas-confetti';
@@ -242,6 +243,9 @@ export default function ManagerDashboard() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [sdrPerformanceExportModalOpen, setSdrPerformanceExportModalOpen] = useState(false);
   const [clientPerformanceExportModalOpen, setClientPerformanceExportModalOpen] = useState(false);
+  
+  // Contact support modal state
+  const [contactSupportOpen, setContactSupportOpen] = useState(false);
   const [exportFilters, setExportFilters] = useState({
     dateRange: 'all', // 'all', 'currentMonth', 'custom'
     startDate: '',
@@ -1306,6 +1310,17 @@ export default function ManagerDashboard() {
                       </button>
                     </div>
                     
+                    {/* Contact Support */}
+                    <div className={`px-4 py-2 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                      <button
+                        onClick={() => setContactSupportOpen(true)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${darkTheme ? 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/40' : 'text-blue-700 hover:bg-blue-50'}`}
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                        Contact Developers
+                      </button>
+                    </div>
+                    
                     {/* Export and Logout */}
                     <div className="px-4 py-2">
                       <button
@@ -1336,6 +1351,16 @@ export default function ManagerDashboard() {
           </div>
         </div>
       </header>
+
+      {/* Contact Support Modal */}
+      <ContactSupport
+        isOpen={contactSupportOpen}
+        onClose={() => setContactSupportOpen(false)}
+        darkTheme={darkTheme}
+        userEmail={profile?.email || ''}
+        userName={profile?.full_name || ''}
+        userRole={profile?.role || 'manager'}
+      />
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {(sdrsError || clientsError) && (
@@ -4056,6 +4081,16 @@ export default function ManagerDashboard() {
           </div>
         )}
       </main>
+
+      {/* Contact Support Modal */}
+      <ContactSupport
+        isOpen={contactSupportOpen}
+        onClose={() => setContactSupportOpen(false)}
+        darkTheme={darkTheme}
+        userEmail={profile?.email || ''}
+        userName={profile?.full_name || ''}
+        userRole={profile?.role || 'manager'}
+      />
     </div>
   );
 }

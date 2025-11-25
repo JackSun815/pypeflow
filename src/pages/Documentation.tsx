@@ -252,18 +252,18 @@ export default function Documentation() {
           {
             id: 'key-metrics',
             title: 'Key Metrics',
-            sections: [
-              {
+        sections: [
+          {
                 title: 'Overview Cards',
                 content: 'At the top of the Overview tab, you\'ll see six key metric cards that provide a comprehensive view of your team\'s performance. Each card is clickable and expands to show detailed information. The first row displays three cards:',
-                features: [
+            features: [
                   'Active SDRs: Shows the total number of active SDRs on your team. Click to view a detailed list of all SDRs with their status and basic information.',
                   'Monthly Set Target: Displays the total monthly target for meetings set across all SDRs and clients. Shows the percentage of the month completed. Click to see a breakdown by client and SDR.',
                   'Monthly Held Target: Shows the total monthly target for meetings held. Also displays month progress percentage. Click to view detailed held meeting targets by client and SDR.',
-                ],
+            ],
                 videoPath: managerOverview1,
-              },
-              {
+          },
+          {
                 title: 'Meetings Performance Cards',
                 content: 'The second row of cards shows your actual meeting performance metrics:',
                 features: [
@@ -336,7 +336,7 @@ export default function Documentation() {
             id: 'todays-activity',
             title: 'Today\'s Activity',
             sections: [
-              {
+          {
                 title: 'Meetings Booked Today',
                 content: 'The "Meetings Booked Today" section displays all meetings that were created today, regardless of their scheduled date. This gives you real-time visibility into your team\'s booking activity. Each meeting card shows:',
                 features: [
@@ -350,14 +350,14 @@ export default function Documentation() {
               {
                 title: 'Meetings Confirmed Today',
                 content: 'The "Meetings Confirmed Today" section shows all meetings that were confirmed today. This helps you track confirmation activity and see which prospects are responding positively. Both sections use the same meeting card interface for consistency.',
-              },
-            ],
           },
+        ],
+      },
           {
             id: 'visualization',
             title: 'Visualization',
-            sections: [
-              {
+        sections: [
+          {
                 title: 'Interactive Charts',
                 content: 'The Visualization section provides multiple interactive charts to help you understand your team\'s performance at a glance. You can toggle each chart on or off using the dropdown menu in the visualization controls:',
                 features: [
@@ -367,8 +367,8 @@ export default function Documentation() {
                   'Client Progress Visualization: Chart showing client-level performance and progress toward goals',
                 ],
                 videoPath: managerOverview5,
-              },
-              {
+          },
+          {
                 title: 'Chart Customization',
                 content: 'Each chart can be customized to show different goal types. You can change the goal type to focus on:',
                 features: [
@@ -377,13 +377,13 @@ export default function Documentation() {
                   'Combined View: See both set and held goals together',
                   'Custom Metrics: Additional goal types as configured',
                 ],
-              },
-              {
+          },
+          {
                 title: 'Chart Interactions',
                 content: 'Hover over chart elements to see specific statistics and detailed information. Export charts to PNG format for use in reports or presentations. The charts update in real-time as meeting data changes.',
-              },
-            ],
           },
+        ],
+      },
         ],
       },
       meetings: {
@@ -393,8 +393,8 @@ export default function Documentation() {
           {
             id: 'calendar-view',
             title: 'Calendar View',
-            sections: [
-              {
+        sections: [
+          {
                 title: 'Four Calendar Views',
                 content: 'The Team\'s Meetings tab provides four different ways to view your team\'s meetings, giving you flexibility to see meetings in the format that works best for your workflow:',
                 features: [
@@ -404,12 +404,12 @@ export default function Documentation() {
                   'Agenda View: List view showing all meetings in chronological order. Best for seeing meetings sequentially.',
                 ],
                 videoPath: managerTeamsMeetings1,
-              },
-              {
+          },
+          {
                 title: 'Color-Coded Meetings',
                 content: 'Meeting cards are color-coded by SDR for visual distinction, making it easy to see at a glance which SDR has which meetings. Each SDR is assigned a unique color that remains consistent across all views.',
-              },
-              {
+          },
+          {
                 title: 'Filtering Options',
                 content: 'Filter meetings by SDR or client to focus on specific subsets of meetings. This is especially useful when managing large teams or multiple clients. The filters work across all calendar views.',
                 features: [
@@ -417,22 +417,22 @@ export default function Documentation() {
                   'Filter by Client: Show only meetings for a specific client',
                   'Combined Filters: Use both filters together for precise meeting views',
                 ],
-              },
-              {
+          },
+          {
                 title: 'Adding Direct Meetings',
                 content: 'You can add meetings that aren\'t associated with any SDR directly from the calendar view. This is useful for meetings booked through other channels (email, LinkedIn, referrals, etc.). Click the "Add Direct Meeting" button to create a meeting without an SDR assignment.',
-              },
-              {
+          },
+          {
                 title: 'Export Functionality',
                 content: 'Export calendar data to CSV format for use in other tools or for reporting purposes. The export includes all meeting details, SDR information, and client data.',
-              },
-            ],
           },
+        ],
+      },
           {
             id: 'meeting-cards',
             title: 'Meeting Cards',
-            sections: [
-              {
+        sections: [
+          {
                 title: 'Meeting Organization',
                 content: 'Below the calendar view, meetings are organized into lists by status. The same filtering, sorting, and grouping options are available here as in the calendar view. Meeting cards are organized into seven different types:',
                 features: [
@@ -456,8 +456,8 @@ export default function Documentation() {
                   'Group By: Group meetings by client, SDR, or leave ungrouped for a chronological view',
                   'Search: Use the search function to find specific meetings by contact name, company, or other details',
                 ],
-              },
-              {
+          },
+          {
                 title: 'Meeting Card Details',
                 content: 'Each meeting card displays comprehensive information including:',
                 features: [
@@ -484,8 +484,8 @@ export default function Documentation() {
                   'Prospect\'s Timezone: Adjust the timezone if needed',
                 ],
                 additionalContent: 'All changes made by managers are immediately reflected in the SDR dashboard, ensuring real-time synchronization across the platform. This allows managers to make corrections or updates that SDRs can see instantly.',
-              },
-              {
+          },
+          {
                 title: 'Meeting Status Management',
                 content: 'Managers can update meeting statuses in multiple ways:',
                 features: [
@@ -584,8 +584,8 @@ export default function Documentation() {
           {
             id: 'manager-management',
             title: 'Manager Management',
-            sections: [
-              {
+        sections: [
+          {
                 title: 'Adding Managers',
                 content: 'Add new manager accounts to your agency. When adding a manager, you\'ll need to provide:',
                 features: [
@@ -615,8 +615,8 @@ export default function Documentation() {
               {
                 title: 'SDR Invite Links',
                 content: 'Each SDR receives a unique invite link that they can use to access their dashboard. Copy the invite link to share with your SDRs. The link is secure and token-based, allowing SDRs to access their dashboard without needing to remember passwords.',
-              },
-              {
+          },
+          {
                 title: 'SDR Account Management',
                 content: 'View all SDRs in your agency, manage their accounts, and track their invite links. You can see which SDRs are active and manage their access as needed.',
               },
@@ -645,8 +645,8 @@ export default function Documentation() {
           {
             id: 'monthly-view',
             title: 'Monthly View',
-            sections: [
-              {
+        sections: [
+          {
                 title: 'Month Selection',
                 content: 'Use the month dropdown to navigate to any past or current month. View all meetings that were booked, held, or had activity during that month. This allows you to review historical performance and track trends over time.',
               },
@@ -697,8 +697,8 @@ export default function Documentation() {
               {
                 title: 'Meeting Cards',
                 content: 'Each meeting is displayed as a card showing comprehensive information including contact details, meeting date and time, status, SDR assignment, and notes. Click on any meeting card to expand and view full details.',
-              },
-              {
+          },
+          {
                 title: 'Editing Historical Meetings',
                 content: 'Managers can edit historical meetings to update status, add notes, or correct information. This is useful for maintaining accurate records and updating meeting outcomes after the fact.',
               },
@@ -730,8 +730,8 @@ export default function Documentation() {
           {
             id: 'icp-review',
             title: 'ICP Review Process',
-            sections: [
-              {
+        sections: [
+          {
                 title: 'Pending ICP Reviews',
                 content: 'The ICP Check page displays all meetings that are pending ICP (Ideal Customer Profile) review. These are meetings that have been booked but haven\'t yet been verified against your client\'s ICP criteria.',
               },
@@ -1195,20 +1195,20 @@ export default function Documentation() {
                         const isActiveTab = activeSection === 'manager' && activeSubsection === item.id;
                         return (
                           <div key={item.id}>
-                            <button
-                              onClick={() => {
-                                setActiveSection('manager');
-                                setActiveSubsection(item.id);
+                        <button
+                          onClick={() => {
+                            setActiveSection('manager');
+                            setActiveSubsection(item.id);
                                 setActiveH1(null);
-                              }}
-                              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
                                 isActiveTab && !activeH1
-                                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                  : 'text-gray-600 hover:bg-gray-50'
-                              }`}
-                            >
-                              <item.icon className="w-4 h-4" />
-                              <span>{item.title}</span>
+                              ? 'bg-indigo-50 text-indigo-700 font-medium'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.title}</span>
                             </button>
                             {hasH1Sections && (
                               <div className="ml-8 mt-1 space-y-1">
@@ -1231,8 +1231,8 @@ export default function Documentation() {
                                     }`}
                                   >
                                     <span>{h1Section.title}</span>
-                                  </button>
-                                ))}
+                        </button>
+                      ))}
                               </div>
                             )}
                           </div>

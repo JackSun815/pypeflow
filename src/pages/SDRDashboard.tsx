@@ -10,11 +10,12 @@ import MeetingsList from '../components/MeetingsList';
 import DashboardMetrics from '../components/DashboardMetrics';
 import MeetingsHistory from './MeetingsHistory';
 import Commissions from './Commissions';
-import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff, Upload, FileSpreadsheet, X } from 'lucide-react';
+import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff, Upload, FileSpreadsheet, X, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import CalendarView from '../components/CalendarView';
+import ContactSupport from '../components/ContactSupport';
 import type { Meeting } from '../types/database';
 
 // Add custom CSS for flow animation
@@ -134,6 +135,9 @@ function SDRDashboardContent() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  
+  // Contact support modal state
+  const [contactSupportOpen, setContactSupportOpen] = useState(false);
   
   // Theme and chart visibility settings (SDR-specific)
   const [darkTheme, setDarkTheme] = useState(() => {
@@ -1584,6 +1588,17 @@ function SDRDashboardContent() {
                       </button>
                     </div>
                     
+                    {/* Contact Support */}
+                    <div className={`px-4 py-3 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                      <button
+                        onClick={() => setContactSupportOpen(true)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${darkTheme ? 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/40' : 'text-blue-700 hover:bg-blue-50'}`}
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                        Contact Developers
+                      </button>
+                    </div>
+                    
                     {/* Import Meetings Button */}
                     <div className="px-4 py-3">
                       <button
@@ -2174,6 +2189,16 @@ function SDRDashboardContent() {
         <Route path="commissions" element={<Commissions sdrId={sdrId || ''} darkTheme={darkTheme} />} />
         <Route path="calendar" element={<CalendarView meetings={meetingsWithSDR} colorByStatus={true} darkTheme={darkTheme} />} />
       </Routes>
+      
+      {/* Contact Support Modal */}
+      <ContactSupport
+        isOpen={contactSupportOpen}
+        onClose={() => setContactSupportOpen(false)}
+        darkTheme={darkTheme}
+        userEmail={''}
+        userName={sdrName || ''}
+        userRole="sdr"
+      />
     </main>
   </div>
   </>
