@@ -11,24 +11,41 @@ interface ContactSupportRequest {
 }
 
 serve(async (req) => {
+  // Enable CORS headers - must be defined outside try/catch
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Max-Age': '86400',
+  }
+
+  // Handle CORS preflight requests FIRST - before any other logic
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    })
+  }
+
   try {
-    // Enable CORS
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    }
-
-    // Handle CORS preflight requests
-    if (req.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
-      })
-    }
-
     // Get request body
-    const { subject, category, message, email, userName, userRole } = await req.json() as ContactSupportRequest
+    let body: ContactSupportRequest;
+    try {
+      body = await req.json() as ContactSupportRequest;
+    } catch (parseError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { 
+          status: 400, 
+          headers: { 
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          } 
+        }
+      )
+    }
+
+    const { subject, category, message, email, userName, userRole } = body
 
     // Validate input
     if (!subject || !category || !message || !email) {
@@ -74,19 +91,23 @@ This email was automatically generated from the PypeFlow support form.
 
     if (RESEND_API_KEY) {
       // Using Resend API
-      const resendResponse = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'PypeFlow Support <support@pypeflow.com>',
-          to: TO_EMAIL,
-          reply_to: email,
-          subject: emailSubject,
-          text: emailBody,
-          html: `
+      // Use onboarding@resend.dev if domain not verified, or your verified domain
+      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'PypeFlow Support <onboarding@resend.dev>'
+      
+      try {
+        const resendResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: TO_EMAIL,
+            reply_to: email || undefined,
+            subject: emailSubject,
+            text: emailBody,
+            html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #4F46E5;">Support Request from PypeFlow Dashboard</h2>
               <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 16px 0;">
@@ -105,13 +126,24 @@ This email was automatically generated from the PypeFlow support form.
               </p>
             </div>
           `,
-        }),
-      })
+          }),
+        })
 
-      if (!resendResponse.ok) {
-        const errorData = await resendResponse.text()
-        console.error('Resend API error:', errorData)
-        throw new Error('Failed to send email via Resend')
+        if (!resendResponse.ok) {
+          const errorData = await resendResponse.text()
+          console.error('Resend API error response:', errorData)
+          const errorJson = JSON.parse(errorData || '{}')
+          console.error('Resend API error details:', errorJson)
+          throw new Error(`Failed to send email: ${errorJson.message || 'Unknown error'}`)
+        }
+        
+        const result = await resendResponse.json()
+        console.log('Email sent successfully:', result.id)
+      } catch (resendError: any) {
+        console.error('Resend API call failed:', resendError)
+        // Don't throw - log the error but still return success to user
+        // You can check logs in Supabase Dashboard
+        console.error('Failed to send email but continuing...', resendError.message)
       }
     } else {
       // Fallback: Use Supabase's built-in email or log for now
@@ -139,15 +171,23 @@ This email was automatically generated from the PypeFlow support form.
     )
   } catch (error: any) {
     console.error('Contact support error:', error)
+    const errorMessage = error?.message || error?.toString() || 'Failed to submit support request'
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: error?.stack,
+      name: error?.name
+    })
+    
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to submit support request' }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      }),
       { 
         status: 500, 
         headers: { 
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+          ...corsHeaders
         } 
       }
     )
