@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2, Search, Briefcase } from 'lucide-react';
+import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2, Search, Briefcase, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CalendarView from '../components/CalendarView';
+import ContactSupport from '../components/ContactSupport';
 
 // Add custom CSS for flow animation
 const flowStyles = `
@@ -180,6 +181,7 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'meetings' | 'calendar' | 'icp' | 'lead-sample' | 'email' | 'linkedin' | 'analytics' | 'cold-calling'>('overview');
+  const [contactSupportOpen, setContactSupportOpen] = useState(false);
   
   // Detect if we're in an iframe (demo viewer) and prevent navigation escapes
   const isInIframe = window.self !== window.top;
@@ -1960,6 +1962,17 @@ export default function ClientDashboard() {
             </div>
             
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setContactSupportOpen(true)}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  isDarkMode
+                    ? 'bg-[#2d3139] text-blue-400 hover:bg-[#353941]'
+                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                }`}
+                title="Contact Developers"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </button>
               <button
                 onClick={toggleTheme}
                 className={`p-2 rounded-lg transition-all duration-200 ${
@@ -5738,6 +5751,16 @@ export default function ClientDashboard() {
           </div>
         </div>
       )}
+
+      {/* Contact Support Modal */}
+      <ContactSupport
+        isOpen={contactSupportOpen}
+        onClose={() => setContactSupportOpen(false)}
+        darkTheme={isDarkMode}
+        userEmail={''}
+        userName={clientInfo?.name || 'Client'}
+        userRole="client"
+      />
     </div>
   );
 }
