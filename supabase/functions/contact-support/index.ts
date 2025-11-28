@@ -48,9 +48,9 @@ serve(async (req) => {
     const { subject, category, message, email, userName, userRole } = body
 
     // Validate input
-    if (!subject || !category || !message || !email) {
+    if (!subject || !category || !message) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields: subject, category, and message are required' }),
         { 
           status: 400, 
           headers: { 
@@ -60,6 +60,9 @@ serve(async (req) => {
         }
       )
     }
+
+    // Email is optional but preferred - use fallback if not provided
+    const userEmail = email || userName || 'Unknown User'
 
     // Prepare email content
     const categoryLabels: Record<string, string> = {
@@ -74,7 +77,7 @@ serve(async (req) => {
 Support Request from PypeFlow Dashboard
 
 Category: ${categoryLabels[category] || category}
-User: ${userName} (${email})
+User: ${userName}${email ? ` (${email})` : ''}
 Role: ${userRole}
 Subject: ${subject}
 
@@ -101,10 +104,10 @@ This email was automatically generated from the PypeFlow support form.
             'Authorization': `Bearer ${RESEND_API_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
+            body: JSON.stringify({
             from: fromEmail,
             to: TO_EMAIL,
-            reply_to: email || undefined,
+            reply_to: email || userEmail || undefined,
             subject: emailSubject,
             text: emailBody,
             html: `
@@ -112,7 +115,7 @@ This email was automatically generated from the PypeFlow support form.
               <h2 style="color: #4F46E5;">Support Request from PypeFlow Dashboard</h2>
               <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 16px 0;">
                 <p><strong>Category:</strong> ${categoryLabels[category] || category}</p>
-                <p><strong>User:</strong> ${userName} (${email})</p>
+                <p><strong>User:</strong> ${userName}${email ? ` (${email})` : ''}</p>
                 <p><strong>Role:</strong> ${userRole}</p>
                 <p><strong>Subject:</strong> ${subject}</p>
               </div>

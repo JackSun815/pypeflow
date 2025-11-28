@@ -86,6 +86,7 @@ function SDRDashboardContent() {
   const { isDemoMode } = useDemo();
   const [sdrId, setSdrId] = useState<string | null>(null);
   const [sdrName, setSdrName] = useState<string | null>(null);
+  const [sdrEmail, setSdrEmail] = useState<string | null>(null);
   const [sdrAgencyId, setSdrAgencyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
@@ -223,7 +224,7 @@ function SDRDashboardContent() {
       }
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${decodedToken.id}&role=eq.sdr&active=eq.true&select=id,full_name,agency_id`, {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${decodedToken.id}&role=eq.sdr&active=eq.true&select=id,full_name,email,agency_id`, {
           headers: {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
@@ -243,6 +244,7 @@ function SDRDashboardContent() {
         console.log('🔍 SDR Profile loaded:', sdrProfile);
         setSdrId(decodedToken.id);
         setSdrName(sdrProfile.full_name);
+        setSdrEmail(sdrProfile.email || null);
         setSdrAgencyId(sdrProfile.agency_id);
         setError(null);
       } catch (err) {
@@ -2195,7 +2197,7 @@ function SDRDashboardContent() {
         isOpen={contactSupportOpen}
         onClose={() => setContactSupportOpen(false)}
         darkTheme={darkTheme}
-        userEmail={''}
+        userEmail={sdrEmail || ''}
         userName={sdrName || ''}
         userRole="sdr"
       />
