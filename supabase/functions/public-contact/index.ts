@@ -8,44 +8,24 @@ interface PublicContactRequest {
   message: string
 }
 
-// Allowed origins - add your production domains here
-const ALLOWED_ORIGINS = [
-  'https://www.pypeflow.com',
-  'https://pypeflow.com',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:3000'
-]
-
-// Helper function to get CORS headers
-function getCorsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get('origin') || req.headers.get('Origin') || ''
-  
-  // Determine the allowed origin
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*')
-  
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Max-Age': '86400', // 24 hours
-  }
-}
-
 serve(async (req) => {
-  try {
-    // Get CORS headers
-    const corsHeaders = getCorsHeaders(req)
+  // Simple CORS headers (matches working contact-support function)
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Max-Age': '86400',
+  }
 
-    // Handle CORS preflight requests
-    if (req.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
-      })
-    }
+  // Handle CORS preflight requests first
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    })
+  }
+
+  try {
 
     // Get request body
     const { name, email, phone, message } = await req.json() as PublicContactRequest
@@ -133,8 +113,8 @@ This email was automatically generated from the PypeFlow public contact form.
 
       if (!resendResponse.ok) {
         const errorData = await resendResponse.text()
-        console.error('Resend API error:', errorData)
-        throw new Error('Failed to send email via Resend')
+        console.error('Resend API error (public-contact):', errorData)
+        // Do NOT throw here – we still want to return success to the user
       }
     } else {
       // Fallback: Log to console (for development)
@@ -159,9 +139,6 @@ This email was automatically generated from the PypeFlow public contact form.
     )
   } catch (error: any) {
     console.error('Public contact error:', error)
-    
-    // Get CORS headers for error response
-    const corsHeaders = getCorsHeaders(req)
     
     return new Response(
       JSON.stringify({ error: error.message || 'Failed to submit contact form' }),

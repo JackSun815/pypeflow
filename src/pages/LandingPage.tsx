@@ -98,9 +98,8 @@ export default function LandingPage() {
                 <a href="/blog" className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">Blog</a>
                 <button
                   onClick={() => setShowContactForm(true)}
-                  className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1"
+                  className="text-gray-700 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center"
                 >
-                  <Mail className="w-4 h-4" />
                   Contact
                 </button>
                 <a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors">
@@ -141,9 +140,8 @@ export default function LandingPage() {
                   setShowContactForm(true);
                   setMobileMenuOpen(false);
                 }}
-                className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors w-full text-left flex items-center gap-2"
+                className="text-gray-700 hover:text-blue-500 block px-3 py-2 rounded-md text-base font-medium transition-colors w-full text-left"
               >
-                <Mail className="w-4 h-4" />
                 Contact
               </button>
               <a href="/login" className="bg-blue-500 text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-600 transition-colors">Sign In</a>
