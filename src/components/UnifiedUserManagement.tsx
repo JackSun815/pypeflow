@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAgency } from '../contexts/AgencyContext';
-import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck, Archive, ArchiveRestore } from 'lucide-react';
+import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 import CompensationManagement from './CompensationManagement';
 
 
@@ -361,6 +361,47 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
     } catch (err) {
       console.error('Toggle active error:', err);
       setError(err instanceof Error ? err.message : `Failed to ${action} SDR. Please ensure you have the necessary permissions.`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteSDR(sdrId: string, sdrName: string) {
+    if (!confirm(`⚠️ WARNING: Are you sure you want to permanently delete ${sdrName}?\n\nThis will DELETE ALL of their data including:\n• All meetings and booking history\n• All compensation records\n• Dashboard access\n• This action CANNOT be undone!`)) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Delete compensation structures first (if any)
+      const { error: compensationError } = await supabase
+        .from('compensation_structures')
+        .delete()
+        .eq('sdr_id', sdrId);
+
+      if (compensationError) {
+        console.error('Compensation deletion error:', compensationError);
+        // Continue even if this fails - might not have any records
+      }
+
+      // Delete the profile (CASCADE will handle meetings and assignments)
+      const { error: deleteError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', sdrId);
+
+      if (deleteError) {
+        console.error('Profile deletion error:', deleteError);
+        throw new Error(`Failed to delete SDR: ${deleteError.message}`);
+      }
+
+      setSuccess('SDR and all associated data permanently deleted');
+      onUpdate();
+    } catch (err) {
+      console.error('Delete SDR error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete SDR. Please ensure you have the necessary permissions.');
     } finally {
       setLoading(false);
     }
@@ -753,6 +794,14 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
                     >
                       <UserCheck className="w-4 h-4" />
                       Reactivate
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSDR(sdr.id, sdr.full_name || 'this SDR')}
+                      className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${darkTheme ? 'text-red-300 bg-red-900/30 hover:bg-red-900/50' : 'text-red-700 bg-red-50 hover:bg-red-100'}`}
+                      title="Permanently delete this SDR and all their data"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete 
                     </button>
                   </div>
                 </div>

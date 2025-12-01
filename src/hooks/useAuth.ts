@@ -33,7 +33,7 @@ export function useAuth() {
       const userProfile: Profile = {
         id: userData.email, // Using email as ID for simplicity
         role: 'manager',
-        full_name: userData.fullName || 'Manager',
+        full_name: userData.full_name || userData.fullName || 'Manager',
         email: userData.email,
         created_at: now,
         updated_at: now,
