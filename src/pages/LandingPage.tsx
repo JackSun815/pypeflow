@@ -13,38 +13,97 @@ import {
   Mail,
   Menu,
   X,
-  Book
+  Book,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import DemoViewer from '../components/DemoViewer';
 import ManagerVideoSlideshow from '../components/ManagerVideoSlideshow';
 import ContactForm from '../components/ContactForm';
+import carousel1 from '../demo-video/homepage/carousel-1.gif';
+import carousel2 from '../demo-video/homepage/carousel-2.gif';
+import carousel3 from '../demo-video/homepage/carousel-3.gif';
+import carousel4 from '../demo-video/homepage/carousel-4.gif';
+import carousel5 from '../demo-video/homepage/carousel-5.gif';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'sdr' | 'manager' | 'client'>('sdr');
   const [showDemo, setShowDemo] = useState(false);
   const [demoType, setDemoType] = useState<'manager' | 'sdr' | 'client'>('manager');
   const [showContactForm, setShowContactForm] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
 
-  const features = {
-    sdr: [
-      { icon: Target, title: 'Real-Time Goal Tracking', description: 'Track monthly set and held meeting targets with live progress bars, client-specific goals, and performance metrics that update instantly' },
-      { icon: Calendar, title: 'Advanced Meeting Management', description: 'Schedule meetings with timezone support, contact details, LinkedIn integration, and automated status tracking (pending, confirmed, held, no-show)' },
-      { icon: BarChart3, title: 'Comprehensive Analytics', description: 'View detailed performance charts, meeting distribution, client performance comparisons, and monthly progress visualizations' },
-      { icon: Clock, title: 'Smart Meeting Lists', description: 'Organized meeting lists by status: pending, confirmed, held, no-shows, and ICP-qualified meetings with easy filtering and management' }
-    ],
-    manager: [
-      { icon: Users, title: 'Complete Team Oversight', description: 'Manage SDRs, assign clients, set individual targets, track team performance, and generate comprehensive reports' },
-      { icon: BarChart3, title: 'Advanced Team Analytics', description: 'Team-wide performance dashboards, individual SDR metrics, client performance analysis, and exportable data reports' },
-      { icon: Target, title: 'Goal & Target Management', description: 'Set monthly targets for each SDR, track progress across all team members, and manage client assignments with detailed goal tracking' },
-      { icon: Calendar, title: 'Meeting Oversight & History', description: 'View all team meetings, track meeting history, manage meeting statuses, and oversee the complete sales process' }
-    ],
-    client: [
-      { icon: Calendar, title: 'Seamless Meeting Coordination', description: 'Access your dedicated SDR dashboard through secure token-based links for easy meeting scheduling and coordination' },
-      { icon: Clock, title: 'Flexible Timezone Support', description: 'Schedule meetings across different timezones with automatic time conversion and prospect-friendly scheduling' },
-      { icon: Mail, title: 'Direct SDR Communication', description: 'Direct access to your assigned SDR with integrated contact information and meeting management' },
-      { icon: CheckCircle, title: 'Meeting Status Tracking', description: 'Real-time updates on meeting confirmations, held meetings, and progress tracking with your dedicated SDR team' }
-    ]
+  const valueProps = [
+    {
+      id: 0,
+      title: 'Single source of truth',
+      subtitle: 'Manager, SDR, and client dashboards all read from the same live data so everyone is working off a single source of truth.',
+      bullets: [
+        'Manager, SDR, and client views stay perfectly in sync',
+        'Key stats update once and reflect everywhere',
+        'No more “which spreadsheet is right?” debates'
+      ],
+      media: carousel1,
+      label: 'Single source of truth'
+    },
+    {
+      id: 1,
+      title: 'Manager-ready SDR performance at a glance',
+      subtitle: 'Instantly see who’s on track vs. behind with live stats and graph visualizations for every active SDR.',
+      bullets: [
+        'Live set vs. held vs. target for every SDR',
+        'Visual leaderboards highlight top and bottom performers',
+        'Drill into SDR performance without exporting to sheets'
+      ],
+      media: carousel2,
+      label: 'Live SDR performance'
+    },
+    {
+      id: 2,
+      title: 'Bookings flow straight into the manager calendar',
+      subtitle: 'The moment an SDR books a meeting, it appears on the manager calendar — no copy-paste, no delays.',
+      bullets: [
+        'New meetings show up instantly for managers',
+        'Stay aligned on what’s actually on the calendar',
+        'Eliminate manual data entry between tools'
+      ],
+      media: carousel3,
+      label: 'Instant calendar sync'
+    },
+    {
+      id: 3,
+      title: 'Access-based calendars for each role',
+      subtitle: 'Managers see everything, SDRs see their own pipeline, and clients see just what’s relevant to them.',
+      bullets: [
+        'Role-based views for manager, SDR, and client dashboards',
+        'Managers get the full team view across accounts',
+        'Clients only see meetings and data tied to their company'
+      ],
+      media: carousel4,
+      label: 'Role-based visibility'
+    },
+    {
+      id: 4,
+      title: 'Customize your workspace and stop living in spreadsheets',
+      subtitle: 'Hide noise, export what matters, turn on dark mode, and contact support right from inside the app.',
+      bullets: [
+        'Toggle sections on and off to match how you work',
+        'Export structured data instead of screenshotting dashboards',
+        'Built-in dark mode and contact support when you need it'
+      ],
+      media: carousel5,
+      label: 'Customization & exports'
+    }
+  ];
+
+  const goToSlide = (index: number) => {
+    if (index < 0) {
+      setActiveSlide(valueProps.length - 1);
+    } else if (index >= valueProps.length) {
+      setActiveSlide(0);
+    } else {
+      setActiveSlide(index);
+    }
   };
 
   const testimonials = [
@@ -185,63 +244,99 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20">
+      {/* Product Value Props (Carousel) */}
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Built for Every Role in Your Sales Process
+              See PypeFlow in Action
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              Whether you're an SDR, Manager, or Client, PypeFlow has the tools you need to succeed.
+              These real product walkthroughs show how managers, SDRs, and clients all share the same live data — without ever going back to spreadsheets.
             </p>
             <Link
               to="/docs"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105"
             >
               <Book className="w-5 h-5" />
-              <span>View Comprehensive Documentation</span>
+              <span>Explore the full product tour in the docs</span>
               <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
 
-          {/* Role Tabs */}
-          <div className="flex justify-center mb-12">
-            <div className="bg-gray-100 rounded-lg p-1">
-              {[
-                { id: 'sdr', label: 'SDRs', icon: Target },
-                { id: 'manager', label: 'Managers', icon: Users },
-                { id: 'client', label: 'Clients', icon: Calendar }
-              ].map((role) => (
+          <div className="relative max-w-5xl mx-auto">
+            <div className="overflow-hidden rounded-2xl shadow-2xl border border-gray-100 bg-white">
+              <div
+                className="flex transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+              >
+                 {valueProps.map((slide) => (
+                   <div key={slide.id} className="w-full flex-shrink-0 flex flex-col gap-6 md:gap-8 px-4 md:px-10 py-6">
+                     <h3 className="text-2xl md:text-3xl font-extrabold text-center md:text-left text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-fuchsia-500 to-blue-500">
+                       {slide.label}
+                     </h3>
+                     <div className="w-full">
+                       <img
+                         src={slide.media}
+                         alt={slide.title}
+                         className="w-full h-auto object-contain rounded-lg"
+                         loading="lazy"
+                       />
+                     </div>
+                     <div className="flex flex-col gap-4">
+                       <p className="text-gray-700 text-base md:text-lg text-center md:text-left">
+                         {slide.subtitle}
+                       </p>
+                       <ul className="space-y-3 text-gray-700 text-sm md:text-base">
+                         {slide.bullets.map((point) => (
+                           <li key={point} className="flex items-start gap-2">
+                             <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                             <span>{point}</span>
+                           </li>
+                         ))}
+                       </ul>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="absolute inset-y-0 left-0 flex items-center">
+              <button
+                type="button"
+                onClick={() => goToSlide(activeSlide - 1)}
+                className="h-10 w-10 -ml-5 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-gray-700 hover:text-blue-600 hover:border-blue-300 transition"
+                aria-label="Previous slide"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="absolute inset-y-0 right-0 flex items-center">
+              <button
+                type="button"
+                onClick={() => goToSlide(activeSlide + 1)}
+                className="h-10 w-10 -mr-5 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-gray-700 hover:text-blue-600 hover:border-blue-300 transition"
+                aria-label="Next slide"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Indicators */}
+            <div className="mt-6 flex items-center justify-center gap-2">
+              {valueProps.map((_, index) => (
                 <button
-                  key={role.id}
-                  onClick={() => setActiveTab(role.id as any)}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors ${
-                    activeTab === role.id
-                      ? 'bg-white text-blue-500 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                  key={index}
+                  onClick={() => goToSlide(index)}
+                  className={`h-2 rounded-full transition-all ${
+                    activeSlide === index ? 'bg-blue-500 w-10' : 'bg-gray-300 w-4'
                   }`}
-                >
-                  <role.icon className="w-5 h-5" />
-                  {role.label}
-                </button>
+                  aria-label={`Go to slide ${index + 1}`}
+                />
               ))}
             </div>
           </div>
-
-          {/* Feature Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features[activeTab].map((feature, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center mb-4 group-hover:from-blue-200 group-hover:to-cyan-200 transition-all duration-300">
-                  <feature.icon className="w-6 h-6 text-blue-500" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-
         </div>
       </section>
 

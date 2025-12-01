@@ -212,7 +212,7 @@ export default function ManagerDashboard() {
   });
   
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs(selectedMonth);
-  const { clients, loading: clientsLoading, error: clientsError } = useAllClients();
+  const { clients, loading: clientsLoading, error: clientsError, fetchAllClients } = useAllClients();
   const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
   const [selectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
@@ -261,6 +261,14 @@ export default function ManagerDashboard() {
       timestamps: true
     }
   });
+
+  // Ensure user / client changes propagate immediately across tabs
+  const handleUsersUpdated = async () => {
+    await Promise.all([
+      fetchSDRs(),
+      fetchAllClients(),
+    ]);
+  };
 
   // Generate month options: next month + current month + 5 previous months
   const nextMonth = new Date(nowForMonth.getFullYear(), nowForMonth.getMonth() + 1, 1);
@@ -3121,7 +3129,7 @@ export default function ManagerDashboard() {
           isDemoMode ? (
             <LockedTabMessage featureName="Client Management" />
           ) : (
-            <ClientManagement sdrs={sdrs} onUpdate={fetchSDRs} darkTheme={darkTheme} />
+            <ClientManagement sdrs={sdrs} onUpdate={handleUsersUpdated} darkTheme={darkTheme} />
           )
         )}
 
@@ -3132,7 +3140,7 @@ export default function ManagerDashboard() {
             <UnifiedUserManagement 
               sdrs={allSDRs.length > 0 ? allSDRs : sdrs} 
               clients={clients as any} 
-              onUpdate={fetchSDRs}
+              onUpdate={handleUsersUpdated}
               darkTheme={darkTheme}
             />
           )
