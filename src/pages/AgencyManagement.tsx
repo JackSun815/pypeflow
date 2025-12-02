@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase';
 import { supabaseAdmin } from '../lib/supabase-admin';
 import { useAuth } from '../hooks/useAuth';
@@ -259,24 +260,31 @@ export default function AgencyManagement() {
         return;
       }
 
-      // Store user credentials in localStorage for login simulation
-      // In a real app, this would be handled by proper authentication
-      const userCredentials = {
-        email: newUser.email,
-        password: newUser.password,
-        fullName: newUser.full_name,
-        role: newUser.role,
-        agency_id: selectedAgency.id,
-        agency_name: selectedAgency.name,
-        agency_subdomain: selectedAgency.subdomain,
-        super_admin: false,
-        developer: false
-      };
+      // Store manager credentials in database with hashed password
+      if (newUser.role === 'manager') {
+        const passwordHash = bcrypt.hashSync(newUser.password, 10);
 
-      // Store in a way that can be retrieved during login
-      const existingCredentials = JSON.parse(localStorage.getItem('agencyCredentials') || '{}');
-      existingCredentials[newUser.email] = userCredentials;
-      localStorage.setItem('agencyCredentials', JSON.stringify(existingCredentials));
+        const { error: credsError } = await supabase
+          .from('manager_credentials')
+          .upsert(
+            {
+              email: newUser.email.trim(),
+              password_hash: passwordHash,
+              full_name: newUser.full_name.trim(),
+              role: 'manager',
+              agency_id: selectedAgency.id,
+              agency_subdomain: selectedAgency.subdomain,
+              super_admin: false,
+              developer: false
+            } as any,
+            { onConflict: 'email' }
+          );
+
+        if (credsError) {
+          console.error('Failed to save manager credentials:', credsError);
+          throw new Error('Manager created but failed to save credentials. Please contact support.');
+        }
+      }
 
       // Reset form and close modal
       setNewUser({

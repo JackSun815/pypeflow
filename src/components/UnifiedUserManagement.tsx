@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase';
 import { useAgency } from '../contexts/AgencyContext';
 import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
@@ -56,7 +57,8 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null); // Manager / generic success
+  const [sdrSuccess, setSdrSuccess] = useState<string | null>(null); // SDR-specific success
   const [editingManager, setEditingManager] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [managers, setManagers] = useState<any[]>([]);
@@ -201,21 +203,29 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
         }
       }
 
-      // Store user credentials in localStorage for login simulation
-      const agencyCredentials = localStorage.getItem('agencyCredentials');
-      const credentials = agencyCredentials ? JSON.parse(agencyCredentials) : {};
-      
-      credentials[email] = {
-        email: email.trim(),
-        password: password,
-        full_name: fullName.trim(),
-        role: 'manager',
-        agency_id: agency.id,
-        agency_subdomain: agency.subdomain,
-        profile_id: profileData?.id
-      };
-      
-      localStorage.setItem('agencyCredentials', JSON.stringify(credentials));
+      // Hash password and store manager credentials in database so login works across environments
+      const passwordHash = bcrypt.hashSync(password, 10);
+
+      const { error: credsError } = await supabase
+        .from('manager_credentials')
+        .upsert(
+          {
+            email: email.trim(),
+            password_hash: passwordHash,
+            full_name: fullName.trim(),
+            role: 'manager',
+            agency_id: agency.id,
+            agency_subdomain: agency.subdomain,
+            super_admin: false,
+            developer: false
+          } as any,
+          { onConflict: 'email' }
+        );
+
+      if (credsError) {
+        console.error('Failed to save manager credentials:', credsError);
+        throw new Error('Manager created but failed to save credentials. Please contact support.');
+      }
 
       // Refresh managers list
       await fetchManagers();
@@ -373,31 +383,20 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
 
     setLoading(true);
     setError(null);
+    setSdrSuccess(null);
 
     try {
-      // Delete compensation structures first (if any)
-      const { error: compensationError } = await supabase
-        .from('compensation_structures')
-        .delete()
-        .eq('sdr_id', sdrId);
+      // Use a SECURITY DEFINER RPC function to delete the SDR and all related data
+      const { error: rpcError } = await supabase.rpc('delete_sdr_and_data', {
+        p_sdr_id: sdrId,
+      });
 
-      if (compensationError) {
-        console.error('Compensation deletion error:', compensationError);
-        // Continue even if this fails - might not have any records
+      if (rpcError) {
+        console.error('delete_sdr_and_data RPC error:', rpcError);
+        throw new Error(rpcError.message || 'Failed to delete SDR via RPC');
       }
 
-      // Delete the profile (CASCADE will handle meetings and assignments)
-      const { error: deleteError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', sdrId);
-
-      if (deleteError) {
-        console.error('Profile deletion error:', deleteError);
-        throw new Error(`Failed to delete SDR: ${deleteError.message}`);
-      }
-
-      setSuccess('SDR and all associated data permanently deleted');
+      setSdrSuccess('SDR and all associated data permanently deleted');
       onUpdate();
     } catch (err) {
       console.error('Delete SDR error:', err);
@@ -513,19 +512,6 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
 
         <form onSubmit={handleAddManager} className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Add New Manager</h3>
-
-          {error && (
-            <div className={`mb-4 p-3 border rounded-md flex items-center gap-2 ${darkTheme ? 'bg-red-900/20 border-red-800/50 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
-              <AlertCircle className="w-4 h-4" />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className={`mb-4 p-3 border rounded-md ${darkTheme ? 'bg-green-900/20 border-green-800/50 text-green-300' : 'bg-green-50 border-green-200 text-green-700'}`}>
-              <p className="text-sm">{success}</p>
-            </div>
-          )}
 
           <div className="space-y-4">
             <div>
@@ -678,19 +664,6 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
         <form onSubmit={handleAddSDR} className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Add New SDR</h3>
 
-          {error && (
-            <div className={`mb-4 p-3 border rounded-md flex items-center gap-2 ${darkTheme ? 'bg-red-900/20 border-red-800/50 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
-              <AlertCircle className="w-4 h-4" />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className={`mb-4 p-3 border rounded-md ${darkTheme ? 'bg-green-900/20 border-green-800/50 text-green-300' : 'bg-green-50 border-green-200 text-green-700'}`}>
-              <p className="text-sm">{success}</p>
-            </div>
-          )}
-
           <div className="space-y-4">
             <div>
               <label htmlFor="sdrFullName" className={`block text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
@@ -811,6 +784,16 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
           </div>
         </div>
       </div>
+
+      {sdrSuccess && (
+        <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="p-4">
+            <div className={`p-3 border rounded-md text-sm ${darkTheme ? 'bg-green-900/20 border-green-800/50 text-green-300' : 'bg-green-50 border-green-200 text-green-700'}`}>
+              {sdrSuccess}
+            </div>
+          </div>
+        </div>
+      )}
 
       {sdrs.filter(sdr => !sdr.active).length > 0 && (
         <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
@@ -996,7 +979,25 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Global toast for errors / success (fixed at top of viewport) */}
+      {(error || success || sdrSuccess) && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-[90%]">
+          <div
+            className={`p-3 rounded-md shadow-lg border text-sm ${
+              error
+                ? darkTheme
+                  ? 'bg-red-900/80 border-red-500 text-red-100'
+                  : 'bg-red-50 border-red-300 text-red-800'
+                : darkTheme
+                ? 'bg-green-900/80 border-green-500 text-green-100'
+                : 'bg-green-50 border-green-300 text-green-800'
+            }`}
+          >
+            {error || sdrSuccess || success}
+          </div>
+        </div>
+      )}
       {/* Tab Navigation */}
       <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className={`border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>

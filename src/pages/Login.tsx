@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { LogIn, AlertCircle } from 'lucide-react';
+import bcrypt from 'bcryptjs';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -36,15 +38,32 @@ export default function Login() {
         return;
       }
 
-      // Check for agency credentials in local storage
-      const agencyCredentials = localStorage.getItem('agencyCredentials');
-      const credentials = agencyCredentials ? JSON.parse(agencyCredentials) : {};
-      const userCredential = credentials[email];
+      // First, check database-backed manager credentials
+      const { data: dbUser, error: dbError } = await supabase
+        .from('manager_credentials')
+        .select('email, password_hash, full_name, role, agency_id, agency_subdomain, super_admin, developer')
+        .eq('email', email.trim())
+        .maybeSingle();
 
-      if (userCredential && userCredential.password === password) {
+      if (dbError) {
+        console.error('DB auth error:', dbError);
+      }
+
+      if (dbUser && dbUser.password_hash && bcrypt.compareSync(password, dbUser.password_hash)) {
+        const userCredential = {
+          email: dbUser.email,
+          password,
+          full_name: dbUser.full_name,
+          role: dbUser.role || 'manager',
+          agency_id: dbUser.agency_id,
+          agency_subdomain: dbUser.agency_subdomain,
+          super_admin: dbUser.super_admin || false,
+          developer: dbUser.developer || false
+        };
+
         localStorage.setItem('currentUser', JSON.stringify(userCredential));
-        
-        // Dispatch custom event to notify agency context of login
+
+        // Notify agency context of login
         window.dispatchEvent(new CustomEvent('userLogin', { 
           detail: { 
             agencyId: userCredential.agency_id,
@@ -52,7 +71,26 @@ export default function Login() {
           } 
         }));
         
-        // Redirect based on role, preserving agency context
+        const agencyParam = userCredential.agency_subdomain ? `?agency=${userCredential.agency_subdomain}` : '';
+        window.location.href = `/dashboard/manager${agencyParam}`;
+        return;
+      }
+
+      // Fallback: legacy localStorage-based credentials (for older accounts)
+      const agencyCredentials = localStorage.getItem('agencyCredentials');
+      const credentials = agencyCredentials ? JSON.parse(agencyCredentials) : {};
+      const userCredential = credentials[email];
+
+      if (userCredential && userCredential.password === password) {
+        localStorage.setItem('currentUser', JSON.stringify(userCredential));
+        
+        window.dispatchEvent(new CustomEvent('userLogin', { 
+          detail: { 
+            agencyId: userCredential.agency_id,
+            agencySubdomain: userCredential.agency_subdomain 
+          } 
+        }));
+        
         const agencyParam = userCredential.agency_subdomain ? `?agency=${userCredential.agency_subdomain}` : '';
         
         if (userCredential.role === 'manager') {

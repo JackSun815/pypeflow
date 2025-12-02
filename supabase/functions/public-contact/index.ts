@@ -10,20 +10,20 @@ interface PublicContactRequest {
 
 serve(async (req) => {
   // Simple CORS headers (matches working contact-support function)
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Max-Age': '86400',
-  }
+    }
 
   // Handle CORS preflight requests first
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    })
-  }
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+      })
+    }
 
   try {
 
