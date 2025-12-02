@@ -407,6 +407,44 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
     }
   }
 
+  async function handleDeleteManager(managerId: string, managerName: string, managerEmail: string) {
+    if (!confirm(`⚠️ WARNING: Are you sure you want to permanently delete ${managerName}?\n\nThis will remove their account and they will no longer be able to log in.\n\nThis action CANNOT be undone!`)) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Delete the manager profile from database
+      const { error: deleteError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', managerId);
+
+      if (deleteError) {
+        console.error('Manager deletion error:', deleteError);
+        throw new Error(`Failed to delete manager: ${deleteError.message}`);
+      }
+
+      // Remove from localStorage credentials
+      const agencyCredentials = localStorage.getItem('agencyCredentials');
+      if (agencyCredentials) {
+        const credentials = JSON.parse(agencyCredentials);
+        delete credentials[managerEmail];
+        localStorage.setItem('agencyCredentials', JSON.stringify(credentials));
+      }
+
+      setSuccess('Manager permanently deleted');
+      await fetchManagers();
+    } catch (err) {
+      console.error('Delete manager error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete manager. Please ensure you have the necessary permissions.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleCopyUrl(sdrId: string) {
     const url = getDashboardUrl(sdrId);
     try {
@@ -593,17 +631,27 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setEditingManager(manager.id);
-                        setNewPassword('');
-                        setError(null);
-                      }}
-                      className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
-                    >
-                      <Key className="w-4 h-4" />
-                      Edit Password
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingManager(manager.id);
+                          setNewPassword('');
+                          setError(null);
+                        }}
+                        className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
+                      >
+                        <Key className="w-4 h-4" />
+                        Edit Password
+                      </button>
+                      <button
+                        onClick={() => handleDeleteManager(manager.id, manager.full_name || 'this manager', manager.email)}
+                        className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${darkTheme ? 'text-red-300 bg-red-900/30 hover:bg-red-900/50' : 'text-red-700 bg-red-50 hover:bg-red-100'}`}
+                        title="Permanently delete this manager"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

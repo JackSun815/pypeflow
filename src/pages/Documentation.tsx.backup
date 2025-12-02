@@ -265,20 +265,10 @@ export default function Documentation() {
           {
                 title: 'Target and Capacity Cards',
                 content: 'The first row of metric cards focuses on your team\'s capacity and targets, providing essential context for understanding performance. These cards display aggregate data across all SDRs and clients, helping you understand your team\'s overall capacity and goals for the month.',
-                cardFeatures: [
-                  { label: 'Active SDRs', color: 'bg-blue-50 border-blue-200 text-blue-700' },
-                  { label: 'Monthly Set Target', color: 'bg-purple-50 border-purple-200 text-purple-700' },
-                  { label: 'Monthly Held Target', color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
-                ],
           },
               {
                 title: 'Performance and Activity Cards',
                 content: 'The second row of cards shifts focus from targets to actual performance, showing you what your team has accomplished. These cards display total meetings booked, meetings held, and pending meetings for the current month, along with progress percentages and cumulative counts. All cards are fully interactive, opening detailed views with comprehensive filtering, sorting, and grouping capabilities that let you analyze the data from multiple perspectives.',
-                cardFeatures: [
-                  { label: 'Meetings Set', color: 'bg-green-50 border-green-200 text-green-700' },
-                  { label: 'Meetings Held', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-                  { label: 'Pending', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
-                ],
                 additionalContent: 'The interactive nature of these cards transforms them from simple displays into powerful analytical tools. By combining current performance metrics with historical data and providing flexible filtering options, the cards enable you to answer complex questions about your team\'s performance quickly and efficiently.',
               },
             ],
@@ -328,7 +318,13 @@ export default function Documentation() {
             sections: [
           {
                 title: 'Monitoring Daily Booking Activity',
-                content: 'The "Meetings Booked Today" section provides real-time visibility into your team\'s daily booking activity, showing all meetings that were created today regardless of when they\'re scheduled to occur. This immediate view of booking activity is invaluable for understanding daily productivity, identifying trends in booking patterns, and ensuring that your team is maintaining consistent activity levels. The section displays meetings as they\'re created throughout the day, giving you a live feed of your team\'s work. Each meeting card shows comprehensive information, allowing you to quickly understand what meetings are being booked and by whom.',
+                content: 'The "Meetings Booked Today" section provides real-time visibility into your team\'s daily booking activity, showing all meetings that were created today regardless of when they\'re scheduled to occur. This immediate view of booking activity is invaluable for understanding daily productivity, identifying trends in booking patterns, and ensuring that your team is maintaining consistent activity levels. The section displays meetings as they\'re created throughout the day, giving you a live feed of your team\'s work. Each meeting card shows comprehensive information including contact details, scheduled date and time, client assignment, and assigned SDR, allowing you to quickly understand what meetings are being booked and by whom.',
+                features: [
+                  'Contact Information: Full name, email, and phone number for each prospect',
+                  'Meeting Details: Scheduled date and time, client assignment, and assigned SDR',
+                  'Current Status: Real-time meeting status (pending, confirmed, etc.)',
+                  'Interactive Cards: Expand any card to view full meeting details or edit information',
+                ],
                 videoPath: managerOverview4,
                 additionalContent: 'This real-time view of booking activity helps you stay connected to your team\'s daily work. By monitoring bookings as they happen, you can quickly identify if activity levels are appropriate, spot any issues that arise, and celebrate wins as they occur. This immediate visibility supports proactive management and helps you maintain awareness of your team\'s activity without needing to constantly check individual SDR dashboards.',
               },
@@ -425,17 +421,38 @@ export default function Documentation() {
           },
           {
                 title: 'Comprehensive Meeting Information',
-                content: 'Each meeting card is a rich source of information, displaying everything you need to understand that meeting at a glance. The cards show complete contact information, company details, meeting timing, status information, and additional contextual details that provide a comprehensive view of each meeting.',
+                content: 'Each meeting card is a rich source of information, displaying everything you need to understand that meeting at a glance. The cards show complete contact information including full name, email, phone number, and job title, ensuring you have all the details needed for communication or follow-up. Company details include the company name and LinkedIn profile when available, providing context about the prospect\'s organization. Meeting timing information shows both the scheduled date and time (in EST) and when the meeting was originally booked, giving you temporal context. Status information includes both the current meeting status and ICP qualification status, helping you understand both where the meeting is in its lifecycle and whether it meets qualification criteria. Additional details include the prospect\'s timezone, any notes that have been added, and which SDR is responsible for the meeting.',
+                features: [
+                  'Contact Information: Full name, email, phone number, and job title',
+                  'Company Details: Company name and LinkedIn profile when available',
+                  'Meeting Timing: Scheduled date and time in EST, plus original booking date',
+                  'Status Information: Current meeting status and ICP qualification status',
+                  'Contextual Details: Prospect timezone, notes, and assigned SDR',
+                ],
                 additionalContent: 'This comprehensive information display means you rarely need to navigate elsewhere to understand a meeting. All the context you need is right there in the card, making it easy to quickly assess meetings, make decisions, and take action.',
               },
               {
                 title: 'Manager Editing Capabilities',
-                content: 'As a manager, you have comprehensive editing capabilities that allow you to maintain data accuracy and make necessary updates. You can edit any meeting directly from the meeting card by clicking the edit button, which opens a form where you can modify meeting details including dates, contact information, status, ICP qualification, notes, and timezone. All changes made by managers are immediately reflected in the SDR dashboard, ensuring real-time synchronization across the platform. This instant synchronization means that when managers make corrections or updates, SDRs see those changes immediately, maintaining consistency and ensuring everyone is working with the same information.',
+                content: 'As a manager, you have comprehensive editing capabilities that allow you to maintain data accuracy and make necessary updates. You can edit any meeting directly from the meeting card by clicking the edit button, which opens a form where you can modify meeting details. You can change the scheduled date and time if meetings need to be rescheduled, update contact information if details are incorrect or have changed, modify meeting status to reflect actual outcomes, update ICP qualification status based on review, add or modify notes to provide context or document outcomes, and adjust the prospect\'s timezone if needed. All changes made by managers are immediately reflected in the SDR dashboard, ensuring real-time synchronization across the platform. This instant synchronization means that when managers make corrections or updates, SDRs see those changes immediately, maintaining consistency and ensuring everyone is working with the same information.',
+                features: [
+                  'Meeting Date and Time: Reschedule meetings when needed',
+                  'Contact Information: Update details, email, phone, title, company',
+                  'Meeting Status: Change status to reflect actual outcomes',
+                  'ICP Status: Update qualification status based on review',
+                  'Notes: Add or modify notes to provide context',
+                  'Timezone: Adjust timezone if needed',
+                ],
                 additionalContent: 'The ability for managers to edit any meeting ensures that data remains accurate and up-to-date. Whether correcting errors, updating statuses based on outcomes, or adding important context, manager editing capabilities maintain data quality across the organization.',
           },
           {
                 title: 'Flexible Status Management',
-                content: 'Managers can update meeting statuses through multiple methods, providing flexibility to match different workflows and preferences. The edit mode allows you to click the edit button and use a status dropdown to change status. Drag and drop functionality (where supported) lets you move meeting cards between status sections. Quick action buttons provide one-click status changes for common updates. When a meeting is marked as "Held", the system uses the scheduled meeting time rather than the current time, ensuring that meeting completion records reflect when meetings actually occurred rather than when they were marked as complete. This accuracy is important for reporting, analysis, and understanding actual meeting patterns.',
+                content: 'Managers can update meeting statuses through multiple methods, providing flexibility to match different workflows and preferences. The edit mode allows you to click the edit button and use a status dropdown to change status, which is ideal when you want to review other details while updating status. Drag and drop functionality (where supported) lets you move meeting cards between status sections, providing an intuitive visual way to update status that\'s particularly useful when reviewing multiple meetings. Quick action buttons provide one-click status changes for common updates, streamlining frequent operations. When a meeting is marked as "Held", the system uses the scheduled meeting time rather than the current time, ensuring that meeting completion records reflect when meetings actually occurred rather than when they were marked as complete. This accuracy is important for reporting, analysis, and understanding actual meeting patterns.',
+                features: [
+                  'Edit Mode: Use the edit button and status dropdown for comprehensive updates',
+                  'Drag and Drop: Move meeting cards between status sections for visual updates',
+                  'Quick Actions: One-click status changes for common updates',
+                  'Accurate Timestamps: System uses scheduled time for held meetings, not current time',
+                ],
                 additionalContent: 'This multi-method approach to status management ensures that the system adapts to different workflows and preferences. Whether you prefer detailed editing, quick visual updates, or streamlined actions, the interface supports your preferred method.',
               },
             ],
@@ -459,6 +476,12 @@ export default function Documentation() {
               {
                 title: 'Month Selection and Planning Ahead',
                 content: 'One of the most powerful features of Client Management is the month selector, which enables you to navigate through time seamlessly. The system always shows one month ahead of the current month, allowing you to start planning assignments early. This forward-looking capability is invaluable for proactive management, as you can set up next month\'s assignments while the current month is still in progress. When you select a month, the entire interface updates to show client assignments, targets, and performance metrics specific to that time period. This month-specific approach ensures that historical data remains accurate while giving you the flexibility to adjust future plans as business needs evolve.',
+                features: [
+                  'View past months to analyze historical performance and identify trends',
+                  'See the current month\'s assignments and real-time progress',
+                  'Plan ahead by viewing and setting up next month\'s assignments early',
+                  'All changes are month-specific, preserving historical accuracy',
+                ],
               },
               {
                 title: 'Client Card Information',
@@ -475,7 +498,12 @@ export default function Documentation() {
               },
               {
                 title: 'Sorting and Organization',
-                content: 'To help you find and organize clients efficiently, the interface offers multiple sorting options. You can sort clients alphabetically by name, by target value (highest to lowest), or by date to see the most recently added clients first.',
+                content: 'To help you find and organize clients efficiently, the interface offers multiple sorting options. You can sort clients alphabetically by name, which is useful when you know the client you\'re looking for. Alternatively, you can sort by target value, which automatically arranges clients from highest to lowest total monthly targets, helping you quickly identify your most demanding clients. Finally, you can sort by date to see the most recently added clients first, which is helpful when onboarding new clients or reviewing recent additions to your portfolio.',
+                features: [
+                  'Alphabetical: Sort by client name A-Z for easy lookup',
+                  'Target: Sort by total monthly targets (highest first) to prioritize high-volume clients',
+                  'Date: Sort by creation date (newest first) to see recent additions',
+                ],
               },
             ],
           },
@@ -490,16 +518,36 @@ export default function Documentation() {
               {
                 title: 'Assigning Clients to SDRs',
                 content: 'The assignment process is designed to be both comprehensive and intuitive. When you click the "Assign Client" button, a form opens that guides you through creating a new assignment. You\'ll first select the client from a dropdown menu—or if the client doesn\'t exist yet, you can create them on the spot. Next, you choose which SDR will work with this client from a list of all active SDRs in your agency. As you browse through the SDR options, you can interactively see each SDR\'s current assignment load for the selected month, displayed right in the assignment interface. This real-time visibility is crucial for workload balancing, as you can immediately see if an SDR is already handling multiple clients or if they have capacity for additional assignments.',
+                features: [
+                  'Client Selection: Choose from existing clients or create a new one during assignment',
+                  'SDR Selection: Pick from all active SDRs, with current assignment information visible',
+                  'Interactive Assignment View: See each SDR\'s current workload as you browse options',
+                  'Monthly Set Target: Set the target number of meetings to book per month for this assignment',
+                  'Monthly Held Target: Set the target number of meetings to successfully hold per month',
+                  'Month Selection: Choose which month this assignment applies to (current, next, or past)',
+                ],
                 additionalContent: 'The ability to see current assignments while selecting an SDR helps prevent overloading team members and ensures fair distribution of work. This interactive feature transforms assignment from a blind process into an informed decision-making experience.',
               },
               {
                 title: 'Editing Client and SDR Targets',
-                content: 'Targets are not set in stone—they can and should be adjusted as business needs change. The Client Management interface provides two levels of target editing that give you granular control over performance expectations. At the client level, you can edit the overall monthly targets for meetings set and meetings held. At the assignment level, you can edit the specific targets for each SDR-client combination, allowing you to fine-tune expectations based on individual SDR capacity, client requirements, or strategic priorities.',
+                content: 'Targets are not set in stone—they can and should be adjusted as business needs change. The Client Management interface provides two levels of target editing that give you granular control over performance expectations. At the client level, you can edit the overall monthly targets for meetings set and meetings held. These client-level targets represent the total goals for that client across all assigned SDRs. At the assignment level, you can edit the specific targets for each SDR-client combination, allowing you to fine-tune expectations based on individual SDR capacity, client requirements, or strategic priorities.',
+                features: [
+                  'Client Monthly Targets: Edit the overall set and held targets for the entire client',
+                  'SDR Assignment Targets: Edit individual targets for specific SDR-client assignments',
+                  'Real-time Updates: Changes are immediately reflected across the dashboard',
+                  'Month-Specific: All target edits apply to the selected month only',
+                ],
                 additionalContent: 'This dual-level editing capability means you can set broad client goals while also customizing individual SDR assignments. For example, if a client has a total target of 50 meetings per month, you might assign 30 to one SDR and 20 to another, with the ability to adjust these splits as needed.',
               },
               {
                 title: 'Managing SDR Assignments',
-                content: 'Each client card shows all SDRs assigned to that client, and you have full control over these assignments. You can add new SDR assignments by clicking the assignment button, which allows you to assign additional SDRs to work with a client. This is particularly useful when a client\'s needs grow and require multiple SDRs, or when you want to distribute workload across your team. Conversely, you can delete SDR assignments when they\'re no longer needed, such as when an SDR moves to a different client or when a client\'s requirements change.',
+                content: 'Each client card shows all SDRs assigned to that client, and you have full control over these assignments. You can add new SDR assignments by clicking the assignment button, which allows you to assign additional SDRs to work with a client. This is particularly useful when a client\'s needs grow and require multiple SDRs, or when you want to distribute workload across your team. Conversely, you can delete SDR assignments when they\'re no longer needed, such as when an SDR moves to a different client or when a client\'s requirements change. The ability to add and remove assignments gives you the flexibility to adapt your team structure as your business evolves.',
+                features: [
+                  'Add SDR Assignments: Assign additional SDRs to work with a client',
+                  'Delete SDR Assignments: Remove assignments when they\'re no longer needed',
+                  'View All Assignments: See all SDRs assigned to each client at a glance',
+                  'Month-Specific: Additions and deletions apply to the selected month',
+                ],
               },
               {
                 title: 'The Migrate Feature',
@@ -515,6 +563,12 @@ export default function Documentation() {
               {
                 title: 'Understanding Target Overview',
                 content: 'At the top of the Client Management interface, you\'ll find the Target Overview section, which provides a high-level summary of all your targets and progress. This overview is designed to give you immediate insight into your team\'s overall performance and workload distribution. The overview displays aggregate statistics across all clients and SDRs for the selected month, showing total targets, actual performance, and progress percentages. This bird\'s-eye view helps you quickly assess whether your team is on track to meet monthly goals and identify any areas that may need attention.',
+                features: [
+                  'Total Monthly Set Target: Sum of all set targets across all clients and SDRs',
+                  'Total Monthly Held Target: Sum of all held targets across all clients and SDRs',
+                  'Overall Progress: Combined progress percentage showing how close you are to goals',
+                  'Unassigned Clients: Count of clients without SDR assignments for the selected month',
+                ],
               },
               {
                 title: 'The Unassigned Section',
@@ -534,7 +588,15 @@ export default function Documentation() {
             sections: [
               {
                 title: 'Comprehensive Spreadsheet Export',
-                content: 'The export functionality in Client Management is designed to give you complete control over your data. When you click the export button, you can export everything—all clients, all assignments, all targets, and all performance metrics—into a spreadsheet format. The export feature offers extensive customization options that let you select exactly which columns and data points you want to include. This means you can create exports tailored to specific reporting needs, whether you\'re preparing a summary for stakeholders, analyzing performance trends, or planning for upcoming months.',
+                content: 'The export functionality in Client Management is designed to give you complete control over your data. When you click the export button, you can export everything—all clients, all assignments, all targets, and all performance metrics—into a spreadsheet format. But the export feature goes beyond simple data dumping; it offers extensive customization options that let you select exactly which columns and data points you want to include. This means you can create exports tailored to specific reporting needs, whether you\'re preparing a summary for stakeholders, analyzing performance trends, or planning for upcoming months.',
+                features: [
+                  'Export All Data: Include all clients, assignments, targets, and metrics',
+                  'Customizable Columns: Select which data points to include in your export',
+                  'Client Information: Export client names, creation dates, and status',
+                  'Assignment Details: Include SDR names, assignment dates, and target values',
+                  'Performance Metrics: Export actual set/held counts and progress percentages',
+                  'Month-Specific: Export data for the selected month or multiple months',
+                ],
                 additionalContent: 'The detailed customization options mean you can create exports for different purposes—a high-level summary for executives, a detailed breakdown for analysis, or a planning template for next month. This flexibility ensures that the export feature serves multiple use cases and adapts to your specific workflow needs.',
               },
               {
@@ -557,10 +619,10 @@ export default function Documentation() {
                 title: 'The Three-Tier User Structure',
                 content: 'The User Management tab organizes all users in your system into three distinct groups, each with specific roles and capabilities. Understanding these groups is fundamental to effective user administration. Managers represent the administrative tier with super admin powers, giving them complete control over the system. SDRs are the operational tier, responsible for booking and managing meetings. Clients are the external tier, with read-only access to view their meetings and SDR assignments. This three-tier structure ensures proper separation of concerns while maintaining security and appropriate access levels.',
                 videoPath: managerUserManagement1,
-                cardFeatures: [
-                  { label: 'Manager', color: 'bg-red-50 border-red-200 text-red-700' },
-                  { label: 'SDR', color: 'bg-blue-50 border-blue-200 text-blue-700' },
-                  { label: 'Client', color: 'bg-green-50 border-green-200 text-green-700' },
+                features: [
+                  'Managers: Super admin access with full system control and user management capabilities',
+                  'SDRs: Operational users who book meetings and manage client relationships',
+                  'Clients: External users with read-only access to their own meeting data',
                 ],
                 additionalContent: 'Each user group has distinct needs and permissions, and the User Management interface is designed to handle all three groups efficiently from a single location. This centralized approach simplifies administration while maintaining the security boundaries necessary for a multi-tenant system.',
               },
@@ -573,10 +635,22 @@ export default function Documentation() {
               {
                 title: 'Manager Super Admin Powers',
                 content: 'Managers hold the highest level of access in the system, functioning as super administrators with comprehensive control over all aspects of the platform. This elevated status means managers can manage every user type—other managers, SDRs, and clients—giving them complete oversight of the organization. Manager accounts use traditional email and password authentication, providing secure access to the full suite of administrative tools. The ability to manage other managers means you can build a team of administrators, each with the same powerful capabilities, which is essential for larger organizations that need multiple people handling user management and system administration.',
+                features: [
+                  'Full System Access: Complete control over all features and settings',
+                  'User Management: Add, edit, and delete users across all three groups',
+                  'Manager Administration: Create and manage other manager accounts',
+                  'Password Management: Set and update passwords for manager accounts',
+                ],
               },
               {
                 title: 'Adding and Managing Manager Accounts',
-                content: 'When you need to add a new manager to your agency, the process is straightforward. You\'ll provide the manager\'s email address, which serves as their login credential, along with their full name for identification purposes. You\'ll also set an initial password for the account, which must be at least 6 characters long. Once created, the manager immediately has full access to the system and can begin managing users, viewing dashboards, and performing all administrative functions. The interface displays all managers in your agency, showing their email addresses, names, and account status, allowing you to maintain oversight of your administrative team.',
+                content: 'When you need to add a new manager to your agency, the process is straightforward. You\'ll provide the manager\'s email address, which serves as their login credential, along with their full name for identification purposes. You\'ll also set an initial password for the account, which must be at least 6 characters long. Once created, the manager immediately has full access to the system and can begin managing users, viewing dashboards, and performing all administrative functions. The interface displays all managers in your agency, showing their email addresses, names, and account status, allowing you to maintain oversight of your administrative team. You can update manager passwords if needed, ensuring that access remains secure and current.',
+                features: [
+                  'Email: The manager\'s email address (used for login)',
+                  'Full Name: The manager\'s full name for identification',
+                  'Password: A secure password for the account (minimum 6 characters)',
+                  'Account Status: View active status and manage access',
+                ],
               },
             ],
           },
@@ -587,6 +661,12 @@ export default function Documentation() {
               {
                 title: 'Adding and Managing SDR Accounts',
                 content: 'SDR management is a core function of the User Management tab, as SDRs are the primary operational users of the system. When adding a new SDR, you only need to provide their email address and full name—the system handles the rest automatically. Unlike managers, SDRs don\'t use traditional passwords. Instead, each SDR receives a unique, secure invite link that provides token-based access to their dashboard. This approach simplifies onboarding while maintaining security, as SDRs don\'t need to remember passwords and can access their dashboard directly through the link. The invite link is generated automatically when you create an SDR account, and you can copy it immediately to share with your new team member.',
+                features: [
+                  'Email: The SDR\'s email address',
+                  'Full Name: The SDR\'s full name',
+                  'Automatic Invite Link: System generates a secure token-based access link',
+                  'Copy to Share: Easy one-click copying of invite links',
+                ],
               },
               {
                 title: 'SDR Invite Links and Access',
@@ -595,7 +675,13 @@ export default function Documentation() {
               },
               {
                 title: 'Deactivating and Reactivating SDRs',
-                content: 'One of the most important features in SDR management is the ability to deactivate SDR accounts without deleting their data. When you deactivate an SDR, they immediately lose access to the system and can no longer log in or view their dashboard. However, all their historical data—meetings, assignments, performance metrics, and records—remains intact in the system. This is crucial for maintaining data integrity and historical accuracy. When you need to reactivate an SDR, perhaps after a leave of absence or when they return to the team, you can do so with a single click. Upon reactivation, the SDR regains access to their dashboard and can see all their previous data, assignments, and meeting history.',
+                content: 'One of the most important features in SDR management is the ability to deactivate SDR accounts without deleting their data. When you deactivate an SDR, they immediately lose access to the system and can no longer log in or view their dashboard. However, all their historical data—meetings, assignments, performance metrics, and records—remains intact in the system. This is crucial for maintaining data integrity and historical accuracy. When you need to reactivate an SDR, perhaps after a leave of absence or when they return to the team, you can do so with a single click. Upon reactivation, the SDR regains access to their dashboard and can see all their previous data, assignments, and meeting history. This deactivation/reactivation workflow ensures that you can manage team changes without losing valuable historical information.',
+                features: [
+                  'Deactivate SDRs: Remove access without deleting data',
+                  'Data Preservation: All meetings, assignments, and history remain intact',
+                  'Reactivate SDRs: Restore access and full data visibility with one click',
+                  'Historical Continuity: Performance tracking and records are never lost',
+                ],
                 additionalContent: 'The distinction between deactivation and deletion is important. Deactivation is reversible and preserves data, making it the right choice for temporary absences, role changes, or team restructuring. Deletion, by contrast, would permanently remove all data, which is rarely the desired outcome.',
               },
             ],
@@ -607,10 +693,22 @@ export default function Documentation() {
               {
                 title: 'Client Token System',
                 content: 'Clients receive access through a secure token-based system similar to SDRs, but with read-only permissions. Each client gets a unique token that\'s embedded in their dashboard URL, allowing them to view their meetings, see their assigned SDR, and track meeting status—all without needing to create an account or remember login credentials. This token-based approach makes it easy for clients to access their information while maintaining security and privacy boundaries. Clients can only see their own data, ensuring that sensitive information from other clients remains protected.',
+                features: [
+                  'Token-Based Access: Secure, unique tokens for each client',
+                  'Read-Only Access: Clients can view but not modify data',
+                  'No Login Required: Direct access through token URL',
+                  'Data Isolation: Each client only sees their own information',
+                ],
               },
               {
                 title: 'Managing Client Tokens',
                 content: 'The User Management interface provides comprehensive tools for managing client access. You can view all client tokens in one place, see which clients have active access, and copy access links to share with clients. If security concerns arise or if you need to update client access, you can regenerate tokens, which immediately revokes the old token and generates a new one. This regeneration process ensures that old links no longer work, providing a way to control access when needed. The ability to manage client tokens centrally makes it easy to maintain oversight of who has access to what information, which is essential for security and compliance.',
+                features: [
+                  'View All Tokens: See all client access tokens in one interface',
+                  'Copy Access Links: Easy sharing of client dashboard URLs',
+                  'Regenerate Tokens: Revoke old access and create new secure links',
+                  'Access Control: Maintain oversight of client access',
+                ],
               },
             ],
           },
@@ -621,6 +719,12 @@ export default function Documentation() {
               {
                 title: 'How Compensation Management Works',
                 content: 'The User Management tab includes powerful compensation management tools that allow managers to set and adjust how SDRs are paid. The compensation system supports multiple commission structures, giving you flexibility to design compensation plans that align with your business goals. You can set per-meeting rates, where SDRs earn a base amount for each meeting booked and an additional amount for each meeting held. Alternatively, you can implement goal-based compensation, where SDRs earn bonuses for achieving specific percentage milestones of their monthly held goals. The system tracks all compensation automatically based on meeting performance, calculating earnings in real-time as meetings are booked and held.',
+                features: [
+                  'Per-Meeting Compensation: Set base rates for meetings set and held',
+                  'Goal-Based Bonuses: Configure milestone bonuses for goal achievement',
+                  'Real-Time Calculation: Automatic earnings calculation based on performance',
+                  'Historical Tracking: View compensation history for past months',
+                ],
                 additionalContent: 'The compensation management system integrates seamlessly with meeting data, automatically calculating earnings as performance metrics update. This real-time calculation ensures that SDRs always have accurate, up-to-date information about their earnings, which helps with motivation and transparency.',
               },
               {
@@ -649,6 +753,13 @@ export default function Documentation() {
               {
                 title: 'Key Differences from SDR Meeting History',
                 content: 'While the Manager Meeting History shares many features with the SDR version, there are important differences that reflect the different needs of managers versus individual SDRs. Managers see all meetings from all SDRs, not just their own, which provides the team-wide visibility necessary for effective management. The statistics and metrics are aggregated across the entire team, showing totals and averages rather than individual performance. Additionally, managers have enhanced editing capabilities, allowing them to update meeting statuses, add notes, or correct information for any meeting in the system. This administrative control is essential for maintaining data accuracy and ensuring that historical records are complete and correct.',
+                features: [
+                  'Team-Wide View: See meetings from all SDRs, not just individual performance',
+                  'Aggregated Statistics: View totals and averages across the entire team',
+                  'Enhanced Editing: Update any meeting in the system, not just your own',
+                  'Cross-SDR Analysis: Compare performance across different SDRs',
+                  'Client-Level Insights: Analyze meeting patterns by client',
+                ],
               },
             ],
           },
@@ -659,10 +770,22 @@ export default function Documentation() {
               {
                 title: 'Month Selection and Historical Navigation',
                 content: 'The month selector is your primary tool for navigating through historical meeting data. You can select any past month or the current month to view all meetings that were booked, held, or had activity during that time period. This month-by-month view allows you to review historical performance systematically, track trends over time, and compare performance across different periods. The interface remembers your selected month as you navigate, making it easy to jump between different time periods to analyze specific months or compare performance across quarters or years.',
+                features: [
+                  'Past Month Navigation: View any historical month to analyze past performance',
+                  'Current Month View: See real-time data for the current month',
+                  'Activity-Based Filtering: View all meetings with activity in the selected month',
+                  'Persistent Selection: The interface remembers your month selection',
+                ],
               },
               {
                 title: 'Monthly Statistics Overview',
                 content: 'For each selected month, the Meeting History interface displays comprehensive statistics that give you an immediate understanding of that month\'s performance. These statistics are calculated across all SDRs and all clients, providing a team-wide perspective on meeting activity. The statistics include total meetings set (booked) during that month, total meetings held, meetings that are still pending, and meetings that resulted in no-shows. These numbers help you quickly assess whether the month was successful, identify any issues that may have occurred, and understand the overall health of your team\'s meeting activity.',
+                features: [
+                  'Meetings Set: Total meetings booked in that month across all SDRs and clients',
+                  'Meetings Held: Total meetings successfully completed during that month',
+                  'Pending: Meetings from that month that are still awaiting confirmation or completion',
+                  'No Shows: Meetings from that month where prospects didn\'t attend',
+                ],
                 additionalContent: 'These monthly statistics serve as key performance indicators, helping you understand not just what happened, but how it compares to targets and previous months. By tracking these metrics over time, you can identify trends, spot patterns, and make informed decisions about strategy and resource allocation.',
               },
             ],
@@ -674,10 +797,25 @@ export default function Documentation() {
               {
                 title: 'Status-Based Filtering',
                 content: 'The Meeting History interface provides powerful filtering options that allow you to focus on specific types of meetings. Status filtering lets you narrow down the view to show only meetings with particular statuses, which is invaluable for analysis and reporting. You can view all meetings for the selected month, or filter to show only meetings that were booked during that month (regardless of their current status), only meetings that were held, only no-show meetings, or only pending meetings. This granular filtering helps you answer specific questions about your team\'s performance, such as "How many meetings were actually held last month?" or "What meetings are still pending from previous months?"',
+                features: [
+                  'All: Shows all meetings for the selected month regardless of status',
+                  'Booked: Shows meetings that were booked in the selected month (regardless of current status)',
+                  'Held: Shows only meetings that were successfully held',
+                  'No-Show: Shows only meetings where prospects didn\'t attend',
+                  'Pending: Shows only meetings that are still awaiting confirmation or completion',
+                ],
               },
               {
                 title: 'Advanced Filtering and Organization',
                 content: 'Beyond status filtering, the Meeting History interface offers comprehensive filtering, sorting, and grouping capabilities that make it easy to find and analyze specific meetings. You can filter by client name to see all meetings for a particular client, or filter by SDR name to review an individual SDR\'s historical performance. Sorting options let you organize meetings by date (to see chronological order), by client name (to group by account), by contact name (to find specific prospects), or by SDR name (to review individual performance). You can choose ascending order (oldest first) or descending order (newest first) depending on your analysis needs. Grouping options let you organize meetings by client or by SDR, which is particularly useful when analyzing patterns or preparing reports. Finally, a search function allows you to find specific meetings by contact name, company name, or other details, making it easy to locate particular meetings even in large datasets.',
+                features: [
+                  'Filter by Client: Narrow down to meetings for specific clients',
+                  'Filter by SDR: Focus on meetings from specific SDRs',
+                  'Sort By: Organize by date, client, contact name, or SDR',
+                  'Order: Choose ascending (oldest first) or descending (newest first)',
+                  'Group By: Group meetings by client or SDR for easier analysis',
+                  'Search: Find specific meetings by contact name, company, or other details',
+                ],
                 additionalContent: 'These advanced filtering and organization tools transform the Meeting History from a simple list into a powerful analytical resource. By combining different filters, sorts, and groupings, you can answer complex questions about your team\'s performance and identify insights that might not be obvious in a flat list view.',
               },
             ],
@@ -688,7 +826,15 @@ export default function Documentation() {
             sections: [
               {
                 title: 'Comprehensive Meeting Cards',
-                content: 'Each meeting in the history is displayed as a detailed card that shows comprehensive information about that meeting. The cards include all contact details (name, email, phone number, title), company information, meeting date and time, current status, assigned SDR, client information, and any notes that were added. This rich information display means you can understand the context and details of any meeting without needing to navigate elsewhere. Clicking on a meeting card expands it to show even more details, including the prospect\'s timezone, LinkedIn profile if available, meeting creation date, and full meeting notes.',
+                content: 'Each meeting in the history is displayed as a detailed card that shows comprehensive information about that meeting. The cards include all contact details (name, email, phone number, title), company information, meeting date and time, current status, assigned SDR, client information, and any notes that were added. This rich information display means you can understand the context and details of any meeting without needing to navigate elsewhere. Clicking on a meeting card expands it to show even more details, including the prospect\'s timezone, LinkedIn profile if available, meeting creation date, and full meeting notes. This level of detail ensures that you have complete information for analysis, reporting, or follow-up actions.',
+                features: [
+                  'Contact Information: Full name, email, phone, and job title',
+                  'Company Details: Company name and LinkedIn profile if available',
+                  'Meeting Information: Scheduled date, time, and timezone',
+                  'Status: Current meeting status (Held, Pending, No-Show, etc.)',
+                  'Assignment: Assigned SDR and client information',
+                  'Notes: Any notes or additional information about the meeting',
+                ],
               },
               {
                 title: 'Editing Historical Meetings',
@@ -704,6 +850,12 @@ export default function Documentation() {
               {
                 title: 'What Statistics Are Available and Why They Matter',
                 content: 'The Meeting History interface provides a wealth of statistics that help you understand your team\'s performance at both aggregate and detailed levels. At the monthly level, you can see total meetings set, total meetings held, pending counts, and no-show rates. These statistics help you assess overall performance, identify trends, and compare performance across different time periods. The statistics are particularly helpful for understanding conversion rates (how many booked meetings actually result in held meetings), no-show rates (which can indicate issues with prospect qualification or meeting preparation), and overall activity levels (which help you understand team productivity and capacity utilization).',
+                features: [
+                  'Conversion Rates: Understand how many booked meetings result in held meetings',
+                  'No-Show Analysis: Identify patterns in no-show rates to improve qualification',
+                  'Activity Trends: Track meeting volume over time to understand capacity and productivity',
+                  'Performance Comparison: Compare statistics across months to identify improvements or declines',
+                ],
                 additionalContent: 'These statistics aren\'t just numbers—they\'re insights that drive decision-making. By regularly reviewing and analyzing these statistics, you can identify what\'s working well, spot potential issues early, and make data-driven decisions about strategy, resource allocation, and process improvements.',
               },
             ],
@@ -714,7 +866,16 @@ export default function Documentation() {
             sections: [
               {
                 title: 'CSV Export with Customization',
-                content: 'The export functionality in Meeting History allows you to extract meeting data for external analysis, reporting, or record-keeping. When you export, you can select exactly which columns and data points to include, giving you complete control over the exported dataset. This customization is essential because different reports and analyses require different data points. For example, a summary report for executives might only need high-level metrics, while a detailed analysis might require all contact information, notes, and status details.',
+                content: 'The export functionality in Meeting History allows you to extract meeting data for external analysis, reporting, or record-keeping. When you export, you can select exactly which columns and data points to include, giving you complete control over the exported dataset. This customization is essential because different reports and analyses require different data points. For example, a summary report for executives might only need high-level metrics, while a detailed analysis might require all contact information, notes, and status details. The export feature supports this flexibility by letting you choose which columns to include.',
+                features: [
+                  'SDR Name: Include the assigned SDR for each meeting',
+                  'Client Name: Include the client associated with each meeting',
+                  'Contact Information: Name, email, phone number, and job title',
+                  'Meeting Details: Date, time, timezone, and status',
+                  'Company Information: Company name and LinkedIn profile',
+                  'Notes: Any meeting notes or additional information',
+                  'Custom Selection: Choose exactly which columns to include in your export',
+                ],
                 additionalContent: 'The ability to customize exports means you can create datasets tailored to specific needs—whether that\'s importing into other analysis tools, preparing reports for stakeholders, or maintaining external records. This flexibility ensures that the export feature serves multiple use cases and adapts to your workflow requirements.',
               },
             ],
@@ -735,7 +896,14 @@ export default function Documentation() {
               },
               {
                 title: 'Meeting Information',
-                content: 'Each meeting card shows all relevant information needed for ICP review, including contact details, company information, meeting details, client assignment, and any existing notes.',
+                content: 'Each meeting card shows all relevant information needed for ICP review:',
+                features: [
+                  'Contact Details: Full name, email, phone, title',
+                  'Company Information: Company name and LinkedIn profile',
+                  'Meeting Details: Scheduled date, time, and assigned SDR',
+                  'Client Assignment: Which client this meeting is for',
+                  'Notes: Any existing notes about the meeting or prospect',
+                ],
               },
             ],
           },
@@ -763,7 +931,12 @@ export default function Documentation() {
             sections: [
               {
                 title: 'Status Indicators',
-                content: 'Meetings are tracked with ICP status including Pending (awaiting review), Approved (meets ICP criteria), and Denied (does not meet ICP criteria).',
+                content: 'Meetings are tracked with ICP status:',
+                features: [
+                  'Pending: Awaiting ICP review',
+                  'Approved: Meets ICP criteria and is qualified',
+                  'Denied: Does not meet ICP criteria',
+                ],
               },
               {
                 title: 'Audit Trail',
@@ -792,6 +965,15 @@ export default function Documentation() {
               {
                 title: 'Tracking Your Actual Performance',
                 content: 'The "Meetings Set" and "Meetings Held" cards show your actual performance for the current month, displaying the real meetings you\'ve booked and completed. These cards don\'t just show numbers—they display your progress percentage toward your monthly targets, giving you instant visibility into whether you\'re on track, ahead of schedule, or need to increase your activity. This real-time progress tracking is essential for managing your own performance and making adjustments throughout the month. Clicking on either card opens a comprehensive view of all meetings in that category, with detailed information and powerful organizational tools that help you understand your performance at a granular level.',
+                features: [
+                  'Progress Percentages: Instant visibility into how close you are to your targets',
+                  'Real-Time Updates: Performance metrics update as you book and complete meetings',
+                  'Detailed Views: Click any card to see all meetings with full filtering and organization',
+                  'Filter by Client: Narrow down meetings by client name to focus on specific accounts',
+                  'Sort Options: Organize meetings by date, client name, or contact name',
+                  'Order Control: Choose ascending (oldest first) or descending (newest first) order',
+                  'Grouping: Group meetings by client to see all meetings for each account together, or leave ungrouped for chronological view',
+                ],
                 additionalContent: 'The combination of high-level progress indicators and detailed meeting views means you can quickly assess your status and then drill down into specifics when needed. This two-level approach supports both quick status checks and detailed analysis.',
               },
               {
@@ -826,6 +1008,19 @@ export default function Documentation() {
               {
                 title: 'Booking New Meetings',
                 content: 'The "Add Meeting" button is your primary tool for booking new meetings directly from your dashboard. When clicked, it opens an intuitive form that guides you through entering all the necessary information. The form is designed to be both comprehensive and efficient, collecting all the details needed for a complete meeting record while making the process as smooth as possible. Required fields ensure that essential information is always captured, while optional fields allow you to add additional context when available. The meeting booked date automatically defaults to the current day, saving you time while still allowing you to adjust if needed. The prospect\'s timezone is required to ensure accurate scheduling, with options covering all major US time zones including EST, CST, MST, PST, Arizona, Alaska, and Hawaii.',
+                features: [
+                  'Meeting Booked Date: Automatically defaults to current day, but can be adjusted (optional)',
+                  'Meeting Date: The scheduled date for the meeting (required)',
+                  'Meeting Time: The scheduled time for the meeting (required)',
+                  'Contact Full Name: The prospect\'s full name (required)',
+                  'Contact Email: Email address for communication (optional)',
+                  'Contact Phone: Phone number for contact (optional)',
+                  'Title: The prospect\'s job title for context (optional)',
+                  'Company: Company name for identification (optional)',
+                  'LinkedIn Page: LinkedIn profile URL for additional context (optional)',
+                  'Prospect\'s Timezone: Required selection from all major US time zones',
+                  'Notes: Additional information about the meeting or prospect (optional)',
+                ],
                 videoPath: sdrDashboard4,
                 additionalContent: 'The form balances completeness with efficiency, ensuring you can quickly book meetings while still capturing all the information needed for effective follow-up and relationship management.',
               },
@@ -837,7 +1032,16 @@ export default function Documentation() {
               },
               {
                 title: 'Organizing Meetings by Status',
-                content: 'Below the metric cards, your dashboard organizes all meetings into intuitive lists grouped by status. This status-based organization helps you understand where meetings are in their lifecycle and which ones need attention. When you book a new meeting, it automatically appears in the "Pending" section, where it remains until the prospect confirms or you update the status. The dashboard organizes meetings into seven distinct status categories: Pending (awaiting confirmation), Confirmed (prospects have committed), Past Due Pending (scheduled time passed without status update), Held (successfully completed), No Show (prospects didn\'t attend), No Longer Interested (prospects asked to stop contact), and Not ICP Qualified (don\'t match client criteria).',
+                content: 'Below the metric cards, your dashboard organizes all meetings into intuitive lists grouped by status. This status-based organization helps you understand where meetings are in their lifecycle and which ones need attention. When you book a new meeting, it automatically appears in the "Pending" section, where it remains until the prospect confirms or you update the status. The dashboard organizes meetings into seven distinct status categories, each representing a different stage or outcome. Pending meetings are those awaiting confirmation, representing active pipeline. Confirmed meetings show prospects who have committed to the scheduled time. Past Due Pending meetings are those where the scheduled time has passed without being marked as held or no-show, requiring immediate attention. Held meetings represent successful completions. No Shows indicate meetings where prospects didn\'t attend. No Longer Interested represents prospects who have asked to stop contact, though no-show meetings can still be rescheduled. Not ICP Qualified meetings are those that don\'t match client criteria and require review.',
+                features: [
+                  'Pending: Meetings awaiting confirmation from prospects',
+                  'Confirmed: Meetings that prospects have confirmed',
+                  'Past Due Pending: Meetings past their scheduled time awaiting status update',
+                  'Held: Meetings that have been successfully completed',
+                  'No Show: Meetings where prospects didn\'t attend',
+                  'No Longer Interested: Prospects who have asked to stop contact',
+                  'Not ICP Qualified: Meetings that don\'t match client criteria',
+                ],
                 additionalContent: 'Pending meetings with scheduled times within 24 hours require confirmation and will flash yellow to draw your attention. To change meeting status, click the pencil button, select the correct status from the dropdown, and click save. To delete a meeting, click the trash can button. You can also change status by dragging and dropping meeting cards between status sections.',
                 videoPath: sdrDashboard5,
               },
@@ -849,7 +1053,12 @@ export default function Documentation() {
             sections: [
               {
                 title: 'Understanding Performance Through Visualizations',
-                content: 'The dashboard includes three interactive charts that transform your performance data into visual insights, making patterns and trends immediately apparent. These visualizations complement the numerical metrics and detailed lists by providing a different perspective on your performance—one that helps you see the big picture and identify insights that might not be obvious in raw data. You can toggle each chart on or off using the dropdown menu in the name card at the top, allowing you to customize your view based on what you want to analyze.',
+                content: 'The dashboard includes three interactive charts that transform your performance data into visual insights, making patterns and trends immediately apparent. These visualizations complement the numerical metrics and detailed lists by providing a different perspective on your performance—one that helps you see the big picture and identify insights that might not be obvious in raw data. You can toggle each chart on or off using the dropdown menu in the name card at the top, allowing you to customize your view based on what you want to analyze. This flexibility ensures that the visualizations serve your needs rather than cluttering your view with information you don\'t need at the moment.',
+                features: [
+                  'Monthly Performance Chart: Shows your progress toward monthly goals over time, helping you track trends and understand your trajectory',
+                  'Meeting Status Distribution: A pie chart breaking down all your meetings by status, providing a visual representation of your pipeline health',
+                  'Client Performance Comparison: Compares your performance across different client assignments, helping you identify which relationships are most productive',
+                ],
                 videoPath: sdrDashboard6,
                 additionalContent: 'These visualizations serve different analytical purposes. The monthly performance chart helps you understand trends over time, the status distribution shows pipeline health, and the client comparison enables you to optimize your approach across different accounts. Together, they provide a comprehensive visual understanding of your performance.',
               },
@@ -863,13 +1072,25 @@ export default function Documentation() {
         sections: [
           {
             title: 'Four Perspectives on Your Schedule',
-            content: 'The Calendar tab recognizes that different situations call for different views of your schedule, and provides four distinct calendar views optimized for different use cases. The Month View displays all meetings for an entire month in a traditional calendar grid format. The Week View zooms in to focus on a single week with detailed time slots. The Day View provides the most granular perspective, showing a single day with hourly breakdown. The Agenda View presents meetings as a chronological list.',
+            content: 'The Calendar tab recognizes that different situations call for different views of your schedule, and provides four distinct calendar views optimized for different use cases. The Month View displays all meetings for an entire month in a traditional calendar grid format, perfect for getting a high-level overview of your schedule and understanding the distribution of meetings across time. The Week View zooms in to focus on a single week with detailed time slots, ideal for planning and coordination when you need to understand scheduling patterns and identify potential conflicts. The Day View provides the most granular perspective, showing a single day with hourly breakdown, which is great for detailed daily planning and understanding exactly what\'s happening on specific days. Finally, the Agenda View presents meetings as a chronological list, best for seeing meetings sequentially and understanding the flow of activity over time.',
             videoPath: sdrCalendar1,
+            features: [
+              'Month View: Comprehensive monthly overview in traditional calendar grid format',
+              'Week View: Detailed weekly perspective with time slot visibility',
+              'Day View: Hourly breakdown for precise daily planning',
+              'Agenda View: Chronological list format for sequential understanding',
+            ],
             additionalContent: 'The ability to switch between these views seamlessly means you can zoom in and out as needed, moving from big-picture planning to detailed coordination without losing context. This flexibility ensures that the calendar interface adapts to your workflow rather than forcing you to adapt to it.',
           },
           {
             title: 'Visual Organization Through Color Coding',
-            content: 'Meeting cards are color-coded by status throughout all calendar views, providing immediate visual distinction that makes it easy to identify meeting types at a glance without reading individual details. This color coding creates a visual language that you quickly learn to recognize: yellow or orange for pending meetings, blue for confirmed meetings, green for held meetings, and red for no-shows.',
+            content: 'Meeting cards are color-coded by status throughout all calendar views, providing immediate visual distinction that makes it easy to identify meeting types at a glance without reading individual details. This color coding creates a visual language that you quickly learn to recognize: yellow or orange for pending meetings, blue for confirmed meetings, green for held meetings, and red for no-shows. This visual organization is particularly valuable in Month and Week views, where multiple meetings appear simultaneously, as it allows you to quickly scan and understand your schedule composition without reading individual meeting details. The consistent color assignment means that once you learn the color scheme, you can identify meeting statuses instantly across all views.',
+            features: [
+              'Pending: Yellow/orange color for meetings awaiting confirmation',
+              'Confirmed: Blue color for meetings that prospects have confirmed',
+              'Held: Green color for successfully completed meetings',
+              'No Show: Red color for meetings where prospects didn\'t attend',
+            ],
             additionalContent: 'This visual organization system transforms what could be an overwhelming display of information into an easily navigable interface. By using color as a primary organizational tool, the system leverages visual processing to make information more accessible and understandable.',
           },
           {
@@ -885,8 +1106,12 @@ export default function Documentation() {
         sections: [
           {
             title: 'Understanding Commission Structures',
-            content: 'Your manager configures how your commission is calculated based on your organization\'s compensation structure. The system supports multiple commission types, each designed to align incentives with performance goals. The Per Meeting commission type provides a base amount for each meeting booked and an additional amount for each meeting held. When you exceed your monthly held goal, meetings beyond the goal earn the full rate. The Goal Based commission type offers bonuses for achieving specific percentage milestones of your monthly held goal, rewarding consistent high performance.',
+            content: 'Your manager configures how your commission is calculated based on your organization\'s compensation structure. The system supports multiple commission types, each designed to align incentives with performance goals. The Per Meeting commission type, which is demonstrated in the video, provides a base amount for each meeting booked and an additional amount for each meeting held. When you exceed your monthly held goal, meetings beyond the goal earn the full rate (base plus additional), providing extra incentive for exceeding targets. The Goal Based commission type offers bonuses for achieving specific percentage milestones of your monthly held goal (such as 100%, 110%, or 120% of goal), rewarding consistent high performance. Understanding which commission structure applies to you is essential for maximizing your earnings and setting appropriate goals.',
             videoPath: sdrCommissions1,
+            features: [
+              'Per Meeting: Base amount per meeting booked plus additional amount per meeting held, with full rate for meetings beyond goal',
+              'Goal Based: Bonuses for achieving percentage milestones of monthly held goal (e.g., 100%, 110%, 120%)',
+            ],
             additionalContent: 'The commission structure is designed to reward both activity (booking meetings) and results (holding meetings), with additional incentives for exceeding goals. This balanced approach encourages consistent performance while providing extra rewards for exceptional achievement.',
           },
           {
@@ -916,7 +1141,15 @@ export default function Documentation() {
             sections: [
               {
                 title: 'Understanding Your Overall Performance',
-                content: 'At the top of the Meeting History page, comprehensive all-time statistics provide a high-level overview of your overall performance across your entire tenure. These statistics aren\'t just numbers—they tell the story of your work, showing both volume and quality metrics that help you understand your effectiveness. The statistics show total meetings booked, total meetings held, total no shows, total pending, plus calculated held rate and no show rate percentages that help you understand not just how many meetings you\'re booking, but how effective those bookings are at moving prospects through the pipeline.',
+                content: 'At the top of the Meeting History page, comprehensive all-time statistics provide a high-level overview of your overall performance across your entire tenure. These statistics aren\'t just numbers—they tell the story of your work, showing both volume and quality metrics that help you understand your effectiveness. The Total Meetings Booked statistic shows the scale of your activity, representing all meetings you\'ve ever created. The Total Meetings Held statistic shows successful outcomes, representing meetings that were successfully completed. The Total No Shows statistic helps you understand conversion challenges, showing meetings where prospects didn\'t attend. The Total Pending statistic shows your current pipeline, representing meetings across all time that are still awaiting confirmation or completion. Perhaps most importantly, the Held Rate and No Show Rate percentages provide quality metrics that help you understand not just how many meetings you\'re booking, but how effective those bookings are at moving prospects through the pipeline.',
+                features: [
+                  'Total Meetings Booked: Complete count of all meetings you\'ve ever created',
+                  'Total Meetings Held: Complete count of all successfully completed meetings',
+                  'Total No Shows: Complete count of meetings where prospects didn\'t attend',
+                  'Total Pending: Currently pending meetings across all time periods',
+                  'Held Rate: Percentage of booked meetings that resulted in held meetings (Held / (Held + No Shows))',
+                  'No Show Rate: Percentage of booked meetings that resulted in no-shows (No Shows / (Held + No Shows))',
+                ],
                 additionalContent: 'These all-time statistics provide context for understanding your current performance. By seeing your overall held rate, for example, you can assess whether your current month\'s performance is above or below your historical average, helping you identify improvements or areas that need attention.',
               },
             ],
@@ -933,12 +1166,25 @@ export default function Documentation() {
               },
               {
                 title: 'Filtering by Status for Focused Analysis',
-                content: 'Status filtering allows you to focus on specific types of meetings, helping you analyze different aspects of your performance. You can view all meetings for the selected month to get a comprehensive view, or filter to show only meetings that were booked in that month (regardless of current status) to understand booking activity. Filtering to show only held meetings helps you analyze successful outcomes, while filtering to no-shows helps you understand conversion challenges.',
+                content: 'Status filtering allows you to focus on specific types of meetings, helping you analyze different aspects of your performance. You can view all meetings for the selected month to get a comprehensive view, or filter to show only meetings that were booked in that month (regardless of current status) to understand booking activity. Filtering to show only held meetings helps you analyze successful outcomes, while filtering to no-shows helps you understand conversion challenges. Filtering to pending meetings shows your pipeline at that point in time. This granular filtering enables you to answer specific questions about your performance and understand different aspects of your meeting activity.',
+                features: [
+                  'All: Shows all meetings for the selected month regardless of status',
+                  'Booked: Shows all meetings that were booked in the selected month (regardless of current status)',
+                  'Held: Shows only meetings that were successfully held in the selected month',
+                  'No-Show: Shows only no-show meetings from the selected month',
+                  'Pending: Shows only pending meetings from the selected month',
+                ],
                 additionalContent: 'This status-based filtering transforms a simple list into a powerful analytical tool. By allowing you to focus on specific types of meetings, the filters help you understand different aspects of your performance and identify areas for improvement.',
               },
               {
                 title: 'Advanced Filtering and Organization Tools',
-                content: 'The Meeting History page includes comprehensive filtering, sorting, and grouping functions that help you find and analyze specific meetings. You can filter by client name to focus on specific accounts, helping you understand your performance with individual clients over time. Sorting options let you organize meetings by date, by client, or by contact name. You can choose ascending or descending order depending on your analytical needs. Grouping options let you organize meetings by client to see all meetings for each account together, or leave them ungrouped for a pure chronological view.',
+                content: 'The Meeting History page includes comprehensive filtering, sorting, and grouping functions that help you find and analyze specific meetings. You can filter by client name to focus on specific accounts, helping you understand your performance with individual clients over time. Sorting options let you organize meetings by date (to see chronological order), by client (to group by account), or by contact name (to find specific prospects). You can choose ascending order (oldest first) or descending order (newest first) depending on your analytical needs. Grouping options let you organize meetings by client to see all meetings for each account together, or leave them ungrouped for a pure chronological view. These organizational tools work together to create a flexible analytical environment where you can answer complex questions about your historical performance.',
+                features: [
+                  'Filter by Client: Narrow down to meetings for specific accounts',
+                  'Sort By: Organize by date, client, or contact name',
+                  'Order: Choose ascending (oldest first) or descending (newest first)',
+                  'Group By: Group by client to see all meetings for each account together, or view ungrouped for chronological view',
+                ],
                 additionalContent: 'These advanced organizational tools transform historical data from a simple list into a powerful analytical resource. By combining filters, sorts, and groupings, you can answer complex questions about your performance, identify patterns, and understand trends over time.',
               },
               {
@@ -959,6 +1205,13 @@ export default function Documentation() {
           {
             title: 'Secure Access',
             content: 'Access your personalized dashboard through a secure, token-based link. No login required - simply click the link provided by your SDR team.',
+            features: [
+              'Secure token-based access',
+              'No account creation needed',
+              'Direct SDR communication',
+              'Meeting scheduling and management',
+              'Real-time status updates',
+            ],
           },
           {
             title: 'Your Dedicated SDR',
