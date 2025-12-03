@@ -28,12 +28,14 @@ export default function Blog() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Always refetch when component mounts to ensure fresh data
     loadBlogPosts();
   }, []);
 
   const loadBlogPosts = async () => {
     try {
       setLoading(true);
+      setPosts([]); // Clear previous posts to avoid showing stale data
       
       // Check if Strapi URL is configured
       const strapiUrl = import.meta.env.VITE_STRAPI_URL;
@@ -44,10 +46,11 @@ export default function Blog() {
         return;
       }
       
-      console.log('Loading blog posts from Strapi...');
+      console.log('Loading blog posts from Strapi...', strapiUrl);
       
       // Create a fetch with timeout using AbortController
-      const fetchWithTimeout = (url: string, timeout = 5000): Promise<Response> => {
+      // Increased timeout to 15 seconds for slower connections
+      const fetchWithTimeout = (url: string, timeout = 15000): Promise<Response> => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
         
@@ -58,7 +61,7 @@ export default function Blog() {
       // Try both possible endpoints - articles and blog-posts
       let response;
       let data;
-      const timeout = 5000; // 5 second timeout
+      const timeout = 15000; // 15 second timeout
       
       try {
         // First try the articles endpoint (most common in Strapi)
@@ -89,23 +92,23 @@ export default function Blog() {
           data = await response.json();
           console.log('Successfully loaded from /api/blog-posts');
         } catch (blogPostsError: any) {
-          // If both endpoints fail or timeout, use mock data immediately
+          // Don't fall back to mock data - show error instead
           if (blogPostsError.name === 'AbortError' || blogPostsError.message === 'Request timeout') {
-            console.warn('Blog posts endpoint also timed out, using mock data');
+            console.error('Blog posts endpoint timed out after 15 seconds');
+            throw new Error('Request timed out. Please check your Strapi URL and try again.');
           } else {
-            console.error('Both endpoints failed, using mock data', blogPostsError);
+            console.error('Both endpoints failed:', blogPostsError);
+            throw new Error(`Failed to load blog posts: ${blogPostsError.message || 'Unknown error'}`);
           }
-          setPosts(getMockPosts());
-          setLoading(false);
-          return;
         }
       }
       
       console.log('Strapi response:', data);
       
       if (!data.data || data.data.length === 0) {
-        console.log('No blog posts found in Strapi, using mock data');
-        setPosts(getMockPosts());
+        console.log('No blog posts found in Strapi');
+        setPosts([]); // Show empty state instead of mock data
+        setLoading(false);
         return;
       }
       
@@ -144,6 +147,17 @@ export default function Blog() {
                 .substring(0, 150) + '...' : 
           (description || 'No description available');
         
+        // Handle image URLs - Strapi returns relative URLs that need to be prefixed
+        const getImageUrl = (url: string | undefined) => {
+          if (!url) return undefined;
+          if (url.startsWith('http://') || url.startsWith('https://')) {
+            return url; // Already absolute
+          }
+          // Relative URL - prefix with Strapi base URL
+          const baseUrl = strapiUrl.replace(/\/$/, ''); // Remove trailing slash
+          return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+        };
+
         return {
           id: post.id.toString(),
           title,
@@ -153,20 +167,28 @@ export default function Blog() {
           publishedAt,
           author: {
             name: author?.name || 'Eric Chen',
-            avatar: author?.avatar?.url
+            avatar: getImageUrl(author?.avatar?.url)
           },
           tags: category ? [category.name] : [],
-          featuredImage: cover?.url,
+          featuredImage: getImageUrl(cover?.url),
           readTime: 5 // Default read time
         };
       });
       
       console.log('Formatted posts:', formattedPosts);
       setPosts(formattedPosts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading blog posts:', error);
-      // Fallback to mock data for development
-      setPosts(getMockPosts());
+      // Only use mock data if VITE_STRAPI_URL is not configured
+      // Otherwise, show empty state or error message
+      const strapiUrl = import.meta.env.VITE_STRAPI_URL;
+      if (!strapiUrl) {
+        setPosts(getMockPosts());
+      } else {
+        // Show empty state - don't use mock data when API is configured
+        setPosts([]);
+        console.error('Failed to load blog posts from API:', error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -404,15 +426,27 @@ export default function Blog() {
           </div>
 
           {/* No Results */}
-          {filteredPosts.length === 0 && (
+          {filteredPosts.length === 0 && !loading && (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <Search className="w-16 h-16 mx-auto" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No posts found</h3>
-              <p className="text-gray-600">
-                Try adjusting your search terms or filters
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {posts.length === 0 ? 'No blog posts available' : 'No posts found'}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {posts.length === 0 
+                  ? 'Check your Strapi configuration or create some blog posts.'
+                  : 'Try adjusting your search terms or filters'}
               </p>
+              {posts.length === 0 && import.meta.env.VITE_STRAPI_URL && (
+                <button
+                  onClick={() => loadBlogPosts()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Retry Loading
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -32,6 +32,7 @@ export default function BlogPost() {
 
   useEffect(() => {
     if (slug) {
+      // Always reload when slug changes (including when navigating back)
       loadBlogPost(slug);
     }
   }, [slug]);
@@ -40,6 +41,7 @@ export default function BlogPost() {
     try {
       setLoading(true);
       setError(null);
+      setPost(null); // Clear previous post to avoid showing stale data
       
       const strapiUrl = import.meta.env.VITE_STRAPI_URL;
       if (!strapiUrl) {
@@ -48,8 +50,11 @@ export default function BlogPost() {
         return;
       }
       
+      console.log('Loading blog post from Strapi...', { strapiUrl, slug, encodedSlug: encodeURIComponent(slug) });
+      
       // Create a fetch with timeout using AbortController
-      const fetchWithTimeout = (url: string, timeout = 5000): Promise<Response> => {
+      // Increased timeout to 15 seconds for slower connections
+      const fetchWithTimeout = (url: string, timeout = 15000): Promise<Response> => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
         
@@ -57,17 +62,22 @@ export default function BlogPost() {
           .finally(() => clearTimeout(timeoutId));
       };
       
+      // URL encode the slug to handle special characters
+      const encodedSlug = encodeURIComponent(slug);
+      
       // Try both possible endpoints - articles and blog-posts
       let response;
       let data;
-      const timeout = 5000; // 5 second timeout
+      const timeout = 15000; // 15 second timeout
       
       try {
-        // First try the articles endpoint with optimized populate
-        const articlesUrl = `${strapiUrl}/api/articles?filters[slug][$eq]=${slug}&populate[cover][fields][0]=url&populate[author][fields][0]=name&populate[author][fields][1]=bio&populate[category][fields][0]=name`;
+        // First try the articles endpoint with full populate to get all content
+        const articlesUrl = `${strapiUrl}/api/articles?filters[slug][$eq]=${encodedSlug}&populate=*`;
+        console.log('Trying articles endpoint:', articlesUrl);
         response = await fetchWithTimeout(articlesUrl, timeout);
         if (response.ok) {
           data = await response.json();
+          console.log('Successfully loaded from /api/articles');
         } else {
           throw new Error(`Articles endpoint failed: ${response.status}`);
         }
@@ -80,37 +90,63 @@ export default function BlogPost() {
         }
         
         try {
-          // Fallback to blog-posts endpoint with optimized populate
-          const blogPostsUrl = `${strapiUrl}/api/blog-posts?filters[slug][$eq]=${slug}&populate[cover][fields][0]=url&populate[author][fields][0]=name&populate[author][fields][1]=bio&populate[category][fields][0]=name`;
+          // Fallback to blog-posts endpoint with full populate to get all content
+          const blogPostsUrl = `${strapiUrl}/api/blog-posts?filters[slug][$eq]=${encodedSlug}&populate=*`;
+          console.log('Trying blog-posts endpoint:', blogPostsUrl);
           response = await fetchWithTimeout(blogPostsUrl, timeout);
           if (!response.ok) {
+            // Log the actual response for debugging
+            const errorText = await response.text().catch(() => '');
+            console.error('Blog posts endpoint error:', response.status, errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           data = await response.json();
+          console.log('Successfully loaded from /api/blog-posts');
         } catch (blogPostsError: any) {
           if (blogPostsError.name === 'AbortError' || blogPostsError.message === 'Request timeout') {
-            setError('Request timed out. Please try again later.');
+            setError('Request timed out after 15 seconds. Please check your Strapi URL and try again.');
           } else {
-            setError('Failed to load blog post');
+            setError(`Failed to load blog post: ${blogPostsError.message || 'Unknown error'}`);
           }
           setLoading(false);
           return;
         }
       }
       
-      if (data.data && data.data.length > 0) {
-        const postData = data.data[0];
-        
-        // Handle both Strapi v4 structure (direct properties) and v3 structure (attributes)
-        const isV4 = !postData.attributes;
-        const title = isV4 ? postData.title : postData.attributes.title;
-        const slug = isV4 ? postData.slug : postData.attributes.slug;
-        const publishedAt = isV4 ? postData.publishedAt : postData.attributes.publishedAt;
-        const description = isV4 ? postData.description : postData.attributes.description;
-        const cover = isV4 ? postData.cover : postData.attributes.cover;
-        const author = isV4 ? postData.author : postData.attributes.author;
-        const category = isV4 ? postData.category : postData.attributes.category;
-        const blocks = isV4 ? postData.blocks : postData.attributes.blocks;
+      console.log('Strapi response data:', data);
+      
+      if (!data || !data.data) {
+        console.error('Invalid response structure:', data);
+        setError('Invalid response from Strapi API');
+        setLoading(false);
+        return;
+      }
+      
+      if (data.data.length === 0) {
+        console.warn('No blog post found with slug:', slug);
+        setError('Post not found');
+        setLoading(false);
+        return;
+      }
+      
+      const postData = data.data[0];
+      console.log('Post data:', postData);
+      
+      // Handle both Strapi v4 structure (direct properties) and v3 structure (attributes)
+      const isV4 = !postData.attributes;
+      const title = isV4 ? postData.title : postData.attributes?.title;
+      const slugValue = isV4 ? postData.slug : postData.attributes?.slug;
+      const publishedAt = isV4 ? postData.publishedAt : postData.attributes?.publishedAt;
+      const description = isV4 ? postData.description : postData.attributes?.description;
+      const cover = isV4 ? postData.cover : postData.attributes?.cover;
+      const author = isV4 ? postData.author : postData.attributes?.author;
+      const category = isV4 ? postData.category : postData.attributes?.category;
+      const blocks = isV4 ? postData.blocks : postData.attributes?.blocks;
+      
+      // Handle nested populate structure (cover.data, author.data, etc.)
+      const coverImage = cover?.data || cover;
+      const authorData = author?.data || author;
+      const categoryData = category?.data || category;
         
         // Extract content from blocks (Strapi v4 structure)
         let content = '';
@@ -135,29 +171,55 @@ export default function BlogPost() {
                 .substring(0, 150) + '...' : 
           (description || 'No description available');
         
+        // Handle image URLs - Strapi returns relative URLs that need to be prefixed
+        const getImageUrl = (url: string | undefined) => {
+          if (!url) return undefined;
+          if (url.startsWith('http://') || url.startsWith('https://')) {
+            return url; // Already absolute
+          }
+          // Relative URL - prefix with Strapi base URL
+          const baseUrl = strapiUrl.replace(/\/$/, ''); // Remove trailing slash
+          return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+        };
+
+        // Extract author info (handle nested structure)
+        const authorName = authorData?.name || authorData?.attributes?.name || 'Eric Chen';
+        const authorAvatar = authorData?.avatar?.data?.attributes?.url || 
+                           authorData?.avatar?.url || 
+                           authorData?.attributes?.avatar?.data?.attributes?.url ||
+                           authorData?.attributes?.avatar?.url;
+        const authorBio = authorData?.bio || authorData?.attributes?.bio;
+        
+        // Extract category/tags
+        const categoryName = categoryData?.name || categoryData?.attributes?.name;
+        const tags = categoryName ? [categoryName] : [];
+        
+        // Extract cover image
+        const coverUrl = coverImage?.attributes?.url || 
+                        coverImage?.url || 
+                        cover?.data?.attributes?.url ||
+                        cover?.url;
+
         const formattedPost: BlogPost = {
           id: postData.id.toString(),
-          title,
+          title: title || 'Untitled',
           content: content || description || 'No content available',
-          slug,
-          publishedAt,
+          slug: slugValue || slug,
+          publishedAt: publishedAt || new Date().toISOString(),
           excerpt,
           author: {
-            name: author?.name || 'Eric Chen',
-            avatar: author?.avatar?.url,
-            bio: author?.bio
+            name: authorName,
+            avatar: getImageUrl(authorAvatar),
+            bio: authorBio
           },
-          tags: category ? [category.name] : [],
-          featuredImage: cover?.url,
+          tags,
+          featuredImage: getImageUrl(coverUrl),
           readTime: 5 // Default read time
         };
         
         setPost(formattedPost);
         // Track blog post view
         trackBlogEngagement('view_post', formattedPost.title, formattedPost.slug);
-      } else {
-        setError('Post not found');
-      }
     } catch (error) {
       console.error('Error loading blog post:', error);
       setError('Failed to load blog post');
