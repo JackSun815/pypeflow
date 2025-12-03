@@ -391,17 +391,6 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
   e.preventDefault();
   if (!selectedClient || !selectedSDR) return;
 
-  // Check for duplicate assignment
-  const existingAssignment = clients.find(client => 
-    client.id === selectedClient && 
-    client.assignments.some(assignment => assignment.sdr_id === selectedSDR)
-  );
-
-  if (existingAssignment) {
-    setError('This SDR is already assigned to this client for the selected month');
-    return;
-  }
-
   try {
     setLoading(true);
     setError(null);
@@ -414,9 +403,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       selectedSDR,
       currentMonth,
       monthlySetTarget,
-      monthlyHoldTarget
+      monthlyHoldTarget,
+      agencyId: agency?.id
     });
 
+    // First check: Look for existing assignment in database (including inactive ones)
     const { data: existingAssignment, error: checkError } = await supabase
       .from('assignments')
       .select('*')
@@ -425,22 +416,48 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       .eq('month', String(currentMonth))
       .maybeSingle();
 
-    if (checkError) throw checkError;
+    if (checkError) {
+      console.error('❌ Error checking existing assignment:', checkError);
+      throw checkError;
+    }
 
     console.log('🔍 Existing assignment check:', existingAssignment);
 
     if (existingAssignment) {
-      const { error: updateError } = await supabase
-        .from('assignments')
-        .update({
-          monthly_set_target: monthlySetTarget,
-          monthly_hold_target: monthlyHoldTarget,
-          month: String(currentMonth),
-        })
-        .eq('id', String(existingAssignment.id))
-        .eq('month', String(currentMonth));
+      // If assignment exists but is inactive, reactivate it
+      if (existingAssignment.is_active === false) {
+        console.log('🔄 Reactivating inactive assignment...');
+        const { error: updateError } = await supabase
+          .from('assignments')
+          .update({
+            monthly_set_target: monthlySetTarget,
+            monthly_hold_target: monthlyHoldTarget,
+            month: String(currentMonth),
+            is_active: true,
+          })
+          .eq('id', String(existingAssignment.id));
 
-      if (updateError) throw updateError;
+        if (updateError) {
+          console.error('❌ Update error (reactivate):', updateError);
+          throw updateError;
+        }
+      } else {
+        // Update existing active assignment
+        console.log('🔄 Updating existing assignment...');
+        const { error: updateError } = await supabase
+          .from('assignments')
+          .update({
+            monthly_set_target: monthlySetTarget,
+            monthly_hold_target: monthlyHoldTarget,
+            month: String(currentMonth),
+          })
+          .eq('id', String(existingAssignment.id));
+
+        if (updateError) {
+          console.error('❌ Update error:', updateError);
+          throw updateError;
+        }
+      }
     } else {
       console.log('🔍 Creating new assignment...');
       
@@ -453,23 +470,75 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           monthly_hold_target: monthlyHoldTarget,
           month: String(currentMonth),
           agency_id: agency?.id,
+          is_active: true,
         }])
         .select()
         .single();
 
       if (insertError) {
         console.error('❌ Insert error:', insertError);
-        throw insertError;
+        console.error('❌ Insert error details:', {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        });
+        
+        // If it's a unique constraint violation, try to find and update/reactivate the existing assignment
+        if (insertError.code === '23505' || insertError.message?.includes('unique') || insertError.message?.includes('duplicate')) {
+          console.log('🔄 Unique constraint violation detected, attempting to find and reactivate existing assignment...');
+          
+          const { data: existingAssignmentRetry, error: retryCheckError } = await supabase
+            .from('assignments')
+            .select('*')
+            .eq('client_id', String(selectedClient))
+            .eq('sdr_id', String(selectedSDR))
+            .eq('month', String(currentMonth))
+            .maybeSingle();
+          
+          if (retryCheckError) {
+            console.error('❌ Error finding existing assignment on retry:', retryCheckError);
+            throw insertError; // Throw original error
+          }
+          
+          if (existingAssignmentRetry) {
+            console.log('🔄 Found existing assignment, reactivating and updating...');
+            const { error: reactivateError } = await supabase
+              .from('assignments')
+              .update({
+                monthly_set_target: monthlySetTarget,
+                monthly_hold_target: monthlyHoldTarget,
+                month: String(currentMonth),
+                is_active: true,
+              })
+              .eq('id', String(existingAssignmentRetry.id));
+            
+            if (reactivateError) {
+              console.error('❌ Error reactivating assignment:', reactivateError);
+              throw reactivateError;
+            }
+            
+            console.log('✅ Assignment reactivated successfully');
+            // Skip undo stack for reactivated assignments (they're updates, not new)
+            // Continue to success flow below
+          } else {
+            // Couldn't find existing assignment, throw original error
+            throw insertError;
+          }
+        } else {
+          throw insertError;
+        }
+      } else {
+        // Only add to undo stack if this was a new assignment (not a reactivation)
+        console.log('✅ Assignment created successfully:', insertedAssignment);
+
+        // Add to undo stack for new assignments
+        addToUndoStack('assign_client', {
+          assignmentId: insertedAssignment.id,
+          clientId: String(selectedClient),
+          sdrId: String(selectedSDR)
+        });
       }
-
-      console.log('✅ Assignment created successfully:', insertedAssignment);
-
-      // Add to undo stack for new assignments
-      addToUndoStack('assign_client', {
-        assignmentId: insertedAssignment.id,
-        clientId: String(selectedClient),
-        sdrId: String(selectedSDR)
-      });
     }
 
     setSuccess('Client assigned successfully');

@@ -90,7 +90,7 @@ This email was automatically generated from the PypeFlow support form.
 
     // Send email using Resend API
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    const TO_EMAIL = 'jack.sun121601@gmail.com'
+    const TO_EMAILS = ['jack.sun121601@gmail.com', 'support@outboundsalespro.com']
 
     if (RESEND_API_KEY) {
       // Using Resend API
@@ -106,7 +106,7 @@ This email was automatically generated from the PypeFlow support form.
           },
             body: JSON.stringify({
             from: fromEmail,
-            to: TO_EMAIL,
+            to: TO_EMAILS,
             reply_to: email || userEmail || undefined,
             subject: emailSubject,
             text: emailBody,
@@ -152,7 +152,7 @@ This email was automatically generated from the PypeFlow support form.
       // Fallback: Use Supabase's built-in email or log for now
       // Note: In production, set RESEND_API_KEY in Supabase Edge Function secrets
       console.log('=== SUPPORT REQUEST (Email not sent - RESEND_API_KEY not configured) ===')
-      console.log('To:', TO_EMAIL)
+      console.log('To:', TO_EMAILS.join(', '))
       console.log('Subject:', emailSubject)
       console.log('Body:', emailBody)
       console.log('========================================')

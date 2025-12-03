@@ -67,7 +67,7 @@ This email was automatically generated from the PypeFlow public contact form.
 
     // Send email using Resend API
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    const TO_EMAIL = 'jack.sun121601@gmail.com'
+    const TO_EMAILS = ['jack.sun121601@gmail.com', 'support@outboundsalespro.com']
 
     if (RESEND_API_KEY) {
       // Using Resend API
@@ -79,7 +79,7 @@ This email was automatically generated from the PypeFlow public contact form.
         },
         body: JSON.stringify({
           from: 'PypeFlow Contact <contact@pypeflow.com>',
-          to: TO_EMAIL,
+          to: TO_EMAILS,
           reply_to: email || undefined,
           subject: emailSubject,
           text: emailBody,
@@ -119,7 +119,7 @@ This email was automatically generated from the PypeFlow public contact form.
     } else {
       // Fallback: Log to console (for development)
       console.log('=== PUBLIC CONTACT FORM SUBMISSION ===')
-      console.log('To:', TO_EMAIL)
+      console.log('To:', TO_EMAILS.join(', '))
       console.log('Subject:', emailSubject)
       console.log('Body:', emailBody)
       console.log('=====================================')
