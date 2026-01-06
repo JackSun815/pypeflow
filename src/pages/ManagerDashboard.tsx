@@ -262,6 +262,10 @@ export default function ManagerDashboard() {
     }
   });
 
+  // SDR Performance date range filter state
+  const [sdrPerfStartDate, setSdrPerfStartDate] = useState('');
+  const [sdrPerfEndDate, setSdrPerfEndDate] = useState('');
+
   // Ensure user / client changes propagate immediately across tabs
   const handleUsersUpdated = async () => {
     await Promise.all([
@@ -1734,7 +1738,7 @@ export default function ManagerDashboard() {
             <div className={`rounded-lg shadow-md overflow-hidden mb-8 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
               <div className={`px-6 py-4 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
                     <h2 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>SDR Performance</h2>
                     <div className="flex items-center gap-2">
                       <label className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Month:</label>
@@ -1755,6 +1759,35 @@ export default function ManagerDashboard() {
                       )}
                       {assignmentsLoading && (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Date Range:</label>
+                      <input
+                        type="date"
+                        value={sdrPerfStartDate}
+                        onChange={(e) => setSdrPerfStartDate(e.target.value)}
+                        className={`border rounded px-2 py-1 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+                        placeholder="Start"
+                      />
+                      <span className={darkTheme ? 'text-slate-400' : 'text-gray-500'}>to</span>
+                      <input
+                        type="date"
+                        value={sdrPerfEndDate}
+                        onChange={(e) => setSdrPerfEndDate(e.target.value)}
+                        className={`border rounded px-2 py-1 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+                        placeholder="End"
+                      />
+                      {(sdrPerfStartDate || sdrPerfEndDate) && (
+                        <button
+                          onClick={() => {
+                            setSdrPerfStartDate('');
+                            setSdrPerfEndDate('');
+                          }}
+                          className={`text-xs px-2 py-1 rounded ${darkTheme ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                        >
+                          Clear
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1815,10 +1848,29 @@ export default function ManagerDashboard() {
                         (sum, assignment) => sum + (assignment.monthly_hold_target || 0),
                         0
                       );
-                      // Calculate directly from monthlyMeetingsSet and monthlyMeetingsHeld to ensure consistency
+                      
+                      // Filter meetings by date range if specified
+                      let filteredMeetingsSet = monthlyMeetingsSet.filter(m => m.sdr_id === sdr.id);
+                      let filteredMeetingsHeld = monthlyMeetingsHeld.filter(m => m.sdr_id === sdr.id);
+                      
+                      if (sdrPerfStartDate || sdrPerfEndDate) {
+                        if (sdrPerfStartDate) {
+                          const startDate = new Date(sdrPerfStartDate);
+                          filteredMeetingsSet = filteredMeetingsSet.filter(m => new Date(m.created_at) >= startDate);
+                          filteredMeetingsHeld = filteredMeetingsHeld.filter(m => new Date(m.scheduled_date) >= startDate);
+                        }
+                        if (sdrPerfEndDate) {
+                          const endDate = new Date(sdrPerfEndDate);
+                          endDate.setHours(23, 59, 59, 999); // Include the entire end date
+                          filteredMeetingsSet = filteredMeetingsSet.filter(m => new Date(m.created_at) <= endDate);
+                          filteredMeetingsHeld = filteredMeetingsHeld.filter(m => new Date(m.scheduled_date) <= endDate);
+                        }
+                      }
+                      
+                      // Calculate directly from filtered meetings to ensure consistency
                       // This matches the calculation used in the client assignments and modal views
-                      const sdrMeetingsSet = monthlyMeetingsSet.filter(m => m.sdr_id === sdr.id).length;
-                      const sdrHeldMeetings = monthlyMeetingsHeld.filter(m => m.sdr_id === sdr.id).length;
+                      const sdrMeetingsSet = filteredMeetingsSet.length;
+                      const sdrHeldMeetings = filteredMeetingsHeld.length;
 
                       const setProgress = totalSetTarget > 0 ? (sdrMeetingsSet / totalSetTarget) * 100 : 0;
                       const heldProgress = totalHeldTarget > 0 ? (sdrHeldMeetings / totalHeldTarget) * 100 : 0;
