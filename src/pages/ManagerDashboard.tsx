@@ -941,6 +941,24 @@ export default function ManagerDashboard() {
     console.log('Client:', clientName, '(ID:', clientId, ')');
     console.log('Month Range:', monthStart.toISOString(), 'to', nextMonthStart.toISOString());
     
+    // Apply date range filtering if specified
+    let filteredMeetingsSetForModal = monthlyMeetingsSet;
+    let filteredMeetingsHeldForModal = monthlyMeetingsHeld;
+    
+    if (sdrPerfStartDate || sdrPerfEndDate) {
+      if (sdrPerfStartDate) {
+        const startDate = new Date(sdrPerfStartDate);
+        filteredMeetingsSetForModal = filteredMeetingsSetForModal.filter(m => new Date(m.created_at) >= startDate);
+        filteredMeetingsHeldForModal = filteredMeetingsHeldForModal.filter(m => new Date(m.scheduled_date) >= startDate);
+      }
+      if (sdrPerfEndDate) {
+        const endDate = new Date(sdrPerfEndDate);
+        endDate.setHours(23, 59, 59, 999); // Include the entire end date
+        filteredMeetingsSetForModal = filteredMeetingsSetForModal.filter(m => new Date(m.created_at) <= endDate);
+        filteredMeetingsHeldForModal = filteredMeetingsHeldForModal.filter(m => new Date(m.scheduled_date) <= endDate);
+      }
+    }
+    
     // Check ALL meetings for this SDR (not filtered by month yet)
     const allSDRMeetings = meetings.filter(m => m.sdr_id === sdrId);
     console.log('Total meetings for SDR (all time):', allSDRMeetings.length);
@@ -956,15 +974,15 @@ export default function ManagerDashboard() {
       icp_status: (m as any).icp_status
     })));
     
-    console.log('Total meetings in monthlyMeetingsSet:', monthlyMeetingsSet.length);
-    console.log('Meetings for this SDR+Client in monthlyMeetingsSet:', monthlyMeetingsSet.filter(m => m.sdr_id === sdrId && m.client_id === clientId).length);
+    console.log('Total meetings in filteredMeetingsSetForModal:', filteredMeetingsSetForModal.length);
+    console.log('Meetings for this SDR+Client in filteredMeetingsSetForModal:', filteredMeetingsSetForModal.filter(m => m.sdr_id === sdrId && m.client_id === clientId).length);
     
     // Filter meetings for this specific SDR and client
     // SET meetings: by created_at (when SDR booked the meeting)
-    const setMeetings = monthlyMeetingsSet.filter(m => 
+    const setMeetings = filteredMeetingsSetForModal.filter(m => 
       m.sdr_id === sdrId && m.client_id === clientId
     );
-    console.log('Set meetings (filtered by month):', setMeetings.map(m => ({ 
+    console.log('Set meetings (filtered by month and date range):', setMeetings.map(m => ({ 
       contact: m.contact_full_name, 
       created_at: m.created_at,
       scheduled_date: m.scheduled_date,
@@ -974,7 +992,7 @@ export default function ManagerDashboard() {
     
     // HELD meetings: by held_at (when meeting was actually held)
     // This matches the SDR Dashboard useClients logic
-    const heldMeetings = monthlyMeetingsHeld.filter(m => 
+    const heldMeetings = filteredMeetingsHeldForModal.filter(m => 
       m.sdr_id === sdrId && m.client_id === clientId
     );
     console.log('Held meetings:', heldMeetings.length);
