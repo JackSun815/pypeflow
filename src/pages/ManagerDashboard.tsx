@@ -2025,12 +2025,13 @@ export default function ManagerDashboard() {
                                       
                                       return (() => {
                                     
-                                    // Calculate directly from monthlyMeetingsSet and monthlyMeetingsHeld to match modal calculation
+                                    // Calculate directly from filteredMeetingsSet and filteredMeetingsHeld to match modal calculation
                                     // This ensures consistency with the modal view when clicking into a client
-                                    const clientMeetingsSet = monthlyMeetingsSet.filter(m => 
+                                    // and respects the date range filter
+                                    const clientMeetingsSet = filteredMeetingsSet.filter(m => 
                                       m.sdr_id === sdr.id && m.client_id === client.id
                                     ).length;
-                                    const clientHeldMeetings = monthlyMeetingsHeld.filter(m => 
+                                    const clientHeldMeetings = filteredMeetingsHeld.filter(m => 
                                       m.sdr_id === sdr.id && m.client_id === client.id
                                     ).length;
                                     
@@ -2129,7 +2130,8 @@ export default function ManagerDashboard() {
                                       .map(a => a.clients.id);
                                     
                                     // Find held meetings for this SDR that belong to clients NOT in current assignments
-                                    const otherHeldMeetings = monthlyMeetingsHeld.filter(m => 
+                                    // Use filteredMeetingsHeld to respect the date range filter
+                                    const otherHeldMeetings = filteredMeetingsHeld.filter(m => 
                                       m.sdr_id === sdr.id && 
                                       !assignedClientIds.includes(m.client_id)
                                     );
