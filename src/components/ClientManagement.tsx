@@ -1812,7 +1812,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                   className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
                 >
                   <option value="">Select an SDR</option>
-                  {sdrs.map((sdr) => (
+                  {sdrs.filter(sdr => sdr.active !== false).map((sdr) => (
                     <option key={sdr.id} value={sdr.id}>
                       {sdr.full_name}
                     </option>
