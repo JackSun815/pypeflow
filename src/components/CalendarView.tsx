@@ -40,6 +40,8 @@ export interface MeetingEvent {
   notes?: string;
   timezone?: string; // Added timezone to MeetingEvent
   sdr_id?: string; // Added sdr_id to MeetingEvent
+  no_longer_interested?: boolean; // Flag for no longer interested meetings
+  icp_status?: 'pending' | 'approved' | 'denied'; // ICP qualification status
 }
 
 interface CalendarViewProps {
@@ -162,11 +164,30 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
 
   // Style events for month/week/day views
   const eventStyleGetter = (event: MeetingEvent) => {
+    // Check if meeting is no longer interested or not ICP qualified
+    const isInactive = event.no_longer_interested || event.icp_status === 'denied';
+    
     if (colorByStatus) {
       let status = event.status;
       if (status === 'confirmed' && event.held_at) status = 'held';
       if (event.no_show) status = 'no_show';
       const color = STATUS_COLORS[status] || '#6366f1';
+      
+      // Apply grayed out styling for inactive meetings
+      if (isInactive) {
+        return { 
+          style: { 
+            backgroundColor: darkTheme ? '#4a4a4a' : '#9ca3af',
+            color: darkTheme ? '#a0a0a0' : '#fff',
+            borderRadius: '4px', 
+            border: darkTheme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #d1d5db',
+            boxShadow: 'none',
+            opacity: 0.6,
+            textDecoration: 'line-through'
+          } 
+        };
+      }
+      
       return { 
         style: { 
           backgroundColor: color, 
@@ -178,6 +199,22 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
       };
     } else {
       const color = event.sdr_id ? getSDRColor(event.sdr_id) : '#82ed94';
+      
+      // Apply grayed out styling for inactive meetings
+      if (isInactive) {
+        return { 
+          style: { 
+            backgroundColor: darkTheme ? '#4a4a4a' : '#9ca3af',
+            color: darkTheme ? '#a0a0a0' : '#fff',
+            borderRadius: '4px', 
+            border: darkTheme ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #d1d5db',
+            boxShadow: 'none',
+            opacity: 0.6,
+            textDecoration: 'line-through'
+          } 
+        };
+      }
+      
       return { 
         style: { 
           backgroundColor: color, 
@@ -192,6 +229,7 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
 
   // Custom event component for month/week/day views (used for month, week, and day)
   const CustomEvent = ({ event }: { event: MeetingEvent }) => {
+    const isInactive = event.no_longer_interested || event.icp_status === 'denied';
     let preview = '';
     if (event.contact_full_name && event.client_name) {
       preview = `${event.contact_full_name} - ${event.client_name}`;
@@ -205,9 +243,14 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
     // Add SDR name
     return (
       <div className="rbc-event-content flex flex-col">
-        <span>{preview}</span>
+        <span style={isInactive ? { textDecoration: 'line-through', opacity: 0.7 } : {}}>{preview}</span>
         {event.sdr_name && (
           <span className="text-xs" style={{ color: darkTheme ? 'rgba(255, 255, 255, 0.8)' : '#e0e7ff' }}>SDR: {event.sdr_name}</span>
+        )}
+        {isInactive && (
+          <span className="text-xs" style={{ color: darkTheme ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)', fontStyle: 'italic' }}>
+            {event.no_longer_interested ? 'No Longer Interested' : 'Not ICP Qualified'}
+          </span>
         )}
       </div>
     );
@@ -215,11 +258,23 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
 
   // Custom event component specifically for agenda view
   const CustomAgendaEvent = ({ event }: { event: MeetingEvent }) => {
+    const isInactive = event.no_longer_interested || event.icp_status === 'denied';
     let statusText = '';
     let statusColor = '';
     let backgroundColor = '';
     
-    if (darkTheme) {
+    // Override styling for inactive meetings
+    if (isInactive) {
+      if (darkTheme) {
+        statusColor = '#6b7280';
+        statusText = event.no_longer_interested ? 'No Longer Interested' : 'Not ICP Qualified';
+        backgroundColor = '#374151';
+      } else {
+        statusColor = '#6b7280';
+        statusText = event.no_longer_interested ? 'No Longer Interested' : 'Not ICP Qualified';
+        backgroundColor = '#e5e7eb';
+      }
+    } else if (darkTheme) {
       switch (event.status) {
         case 'pending': 
           statusColor = '#fbbf24';
@@ -284,7 +339,8 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
           padding: '12px',
           margin: '4px 0',
           border: darkTheme ? `1px solid ${statusColor}40` : '1px solid #E5E7EB',
-          boxShadow: darkTheme ? '0 2px 6px rgba(0, 0, 0, 0.4)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
+          boxShadow: darkTheme ? '0 2px 6px rgba(0, 0, 0, 0.4)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+          opacity: isInactive ? 0.6 : 1
         }}
       >
         <div className="flex items-start justify-between">
@@ -300,7 +356,7 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
               >
                 {statusText}
               </span>
-              {event.held_at && (
+              {event.held_at && !isInactive && (
                 <span 
                   className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border"
                   style={{
@@ -314,7 +370,9 @@ export default function CalendarView({ meetings, colorByStatus = false, defaultD
               )}
             </div>
             
-            <h4 className={`font-semibold mb-1 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`} title={event.sdr_name ? `SDR: ${event.sdr_name}` : undefined}>
+            <h4 className={`font-semibold mb-1 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`} 
+                style={isInactive ? { textDecoration: 'line-through' } : {}}
+                title={event.sdr_name ? `SDR: ${event.sdr_name}` : undefined}>
               {event.client_name || event.contact_full_name || 'Untitled Meeting'}
               {event.sdr_name && (
                 <span className="ml-2 text-xs font-normal" style={{ color: getSDRColor(event.sdr_id || '') }}>
