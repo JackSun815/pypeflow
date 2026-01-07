@@ -91,13 +91,9 @@ export default function TeamMeetings({
     fetchAllMeetings();
   }, [selectedSDR, sdrs, selectedSDRMeetings, agency?.id]);
 
-  // Filter meetings by selected client and exclude non-ICP-qualified meetings
+  // Filter meetings by selected client only - do NOT exclude ICP disqualified or no longer interested
+  // Those will be shown in their own separate cards
   const filteredMeetings = allMeetings.filter(meeting => {
-    // Exclude meetings that are marked as not ICP qualified
-    const icpStatus = (meeting as any).icp_status;
-    const isNotQualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
-    if (isNotQualified) return false;
-    
     if (selectedClient === 'all') return true;
     return meeting.client_id === selectedClient;
   });
@@ -429,28 +425,63 @@ export default function TeamMeetings({
   };
 
   const pendingMeetings = filteredMeetings
-    .filter(meeting => meeting.status === 'pending' && !meeting.no_show && !meeting.held_at && new Date(meeting.scheduled_date) >= nowDate)
+    .filter(meeting => 
+      meeting.status === 'pending' && 
+      !meeting.no_show && 
+      !meeting.held_at && 
+      !meeting.no_longer_interested &&
+      (meeting.icp_status || 'pending') !== 'denied' &&
+      new Date(meeting.scheduled_date) >= nowDate
+    )
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const confirmedMeetings = filteredMeetings
-    .filter(meeting => meeting.status === 'confirmed' && !meeting.held_at && !meeting.no_show)
+    .filter(meeting => 
+      meeting.status === 'confirmed' && 
+      !meeting.held_at && 
+      !meeting.no_show &&
+      !meeting.no_longer_interested &&
+      (meeting.icp_status || 'pending') !== 'denied'
+    )
     .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
 
   const heldMeetings = filteredMeetings
-    .filter(meeting => meeting.held_at)
+    .filter(meeting => 
+      meeting.held_at &&
+      !meeting.no_longer_interested &&
+      (meeting.icp_status || 'pending') !== 'denied'
+    )
     .sort((a, b) => new Date(b.held_at!).getTime() - new Date(a.held_at!).getTime());
 
   const noShowMeetings = filteredMeetings
-    .filter(meeting => meeting.no_show)
+    .filter(meeting => 
+      meeting.no_show &&
+      !meeting.no_longer_interested &&
+      (meeting.icp_status || 'pending') !== 'denied'
+    )
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   const pastDuePendingMeetings = filteredMeetings
     .filter(meeting => {
       const isPastDue = new Date(meeting.scheduled_date) < nowDate;
       const isNotFinalized = !isMeetingFinalized(meeting);
-      return isPastDue && isNotFinalized && meeting.status === 'pending';
+      return isPastDue && 
+        isNotFinalized && 
+        meeting.status === 'pending' &&
+        !meeting.no_longer_interested &&
+        (meeting.icp_status || 'pending') !== 'denied';
     })
     .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
+
+  // Not ICP Qualified meetings
+  const notIcpQualifiedMeetings = filteredMeetings
+    .filter(meeting => (meeting.icp_status || 'pending') === 'denied')
+    .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+
+  // No Longer Interested meetings
+  const noLongerInterestedMeetings = filteredMeetings
+    .filter(meeting => meeting.no_longer_interested && (meeting.icp_status || 'pending') !== 'denied')
+    .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   if (sdrsLoading || clientsLoading) {
     return (
@@ -540,6 +571,8 @@ export default function TeamMeetings({
           confirmedMeetings={confirmedMeetings}
           heldMeetings={heldMeetings}
           noShowMeetings={noShowMeetings}
+          notIcpQualifiedMeetings={notIcpQualifiedMeetings}
+          noLongerInterestedMeetings={noLongerInterestedMeetings}
           pastDuePendingMeetings={pastDuePendingMeetings}
           editable={true}
           editingMeetingId={editingMeetingId}
