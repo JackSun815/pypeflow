@@ -2189,7 +2189,38 @@ function SDRDashboardContent() {
           } 
         />
         <Route path="commissions" element={<Commissions sdrId={sdrId || ''} darkTheme={darkTheme} />} />
-        <Route path="calendar" element={<CalendarView meetings={meetingsWithSDR} colorByStatus={true} darkTheme={darkTheme} />} />
+        <Route path="calendar" element={
+          <div className="space-y-8">
+            {/* Calendar View */}
+            <div className="mb-8">
+              <CalendarView meetings={meetingsWithSDR} colorByStatus={true} darkTheme={darkTheme} />
+            </div>
+            
+            {/* Visual Separator */}
+            <div className={`border-t-2 my-8 ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}></div>
+            
+            {/* Meeting Cards */}
+            <UnifiedMeetingLists
+              pendingMeetings={pendingMeetings}
+              confirmedMeetings={confirmedMeetings}
+              heldMeetings={heldMeetings}
+              noShowMeetings={noShowMeetings}
+              notIcpQualifiedMeetings={notIcpQualifiedMeetings}
+              noLongerInterestedMeetings={noLongerInterestedMeetings}
+              pastDuePendingMeetings={pastDuePendingMeetings}
+              editable={true}
+              editingMeetingId={editingMeeting}
+              onEdit={handleEditMeeting}
+              onDelete={deleteMeeting}
+              onSave={handleSaveMeeting}
+              onCancel={handleCancelEdit}
+              onUpdateHeldDate={handleMeetingHeldDateUpdate}
+              onUpdateConfirmedDate={handleMeetingConfirmedDateUpdate}
+              onMeetingStatusChange={handleMeetingStatusChange}
+              darkTheme={darkTheme}
+            />
+          </div>
+        } />
       </Routes>
       
       {/* Contact Support Modal */}
