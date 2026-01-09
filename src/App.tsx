@@ -15,6 +15,7 @@ import Sitemap from './pages/Sitemap';
 import GoogleAnalytics from './components/GoogleAnalytics';
 import ManagerDemoPreview from './pages/ManagerDemoPreview';
 import Documentation from './pages/Documentation';
+import AuditLogs from './pages/AuditLogs';
 
 // Component to handle routing with agency context
 function AppRoutes() {
@@ -148,6 +149,16 @@ function AppRoutes() {
             element={
               profile.super_admin ? (
                 <AgencyManagement />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/audit-logs"
+            element={
+              profile.role === 'manager' ? (
+                <AuditLogs />
               ) : (
                 <Navigate to="/" replace />
               )

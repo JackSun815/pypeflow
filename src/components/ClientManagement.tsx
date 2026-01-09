@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, subMonths } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {Plus, Trash2, AlertCircle, Users, Target, Edit } from 'lucide-react';
 import type { Client, Profile, Meeting } from '../types/database';
 import { useAgency } from '../contexts/AgencyContext';
+import { logger, calculateChanges } from '../lib/logger';
 
 interface ClientManagementProps {
   sdrs: Profile[];
@@ -101,7 +102,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
   // Undo system
   const [undoStack, setUndoStack] = useState<Array<{
-    action: 'remove_client' | 'add_client' | 'assign_client' | 'update_target';
+    action: 'remove_client' | 'add_client' | 'assign_client' | 'update_target' | 'copy_month';
     data: any;
     timestamp: number;
   }>>([]);
@@ -110,9 +111,6 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
   // Unassigned clients modal state
   const [showUnassignedModal, setShowUnassignedModal] = useState(false);
   const [unassignedClients, setUnassignedClients] = useState<ClientWithAssignments[]>([]);
-
-  // File input ref for CSV import
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Function to calculate unassigned clients
   const calculateUnassignedClients = () => {
@@ -136,11 +134,31 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
 
   useEffect(() => {
+    // Initialize logger with current user info
+    const initLogger = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && agency?.id) {
+        const { data: profile } = await supabase
+          .from('sdrs')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        logger.setUserInfo({
+          userId: user.id,
+          email: user.email || '',
+          role: profile?.role || 'sdr',
+          agencyId: agency.id
+        });
+      }
+    };
+    
+    initLogger();
     fetchClients();
     fetchAllClients();
     fetchMeetings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortOption, selectedMonth]);
+  }, [sortOption, selectedMonth, agency?.id]);
 
   async function fetchClients() {
     try {
@@ -168,8 +186,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       console.log('🔍 Fetched assignments for month', selectedMonth, ':', assignmentsData);
       console.log('🔍 All clients data:', clientsData);
 
-      // Only show clients that have assignments in the selected month
-      // Clients will NOT auto-populate into future months - they must be explicitly imported
+      // Only show clients that either:
+      // 1. Have assignments in the current month, OR
+      // 2. Were created in the current month (for newly added clients)
+      // BUT exclude clients that have been explicitly hidden (marked with sdr_id: null and negative targets)
+      // AND exclude inactive assignments (soft deleted)
       const processedClients = (clientsData || [])
         .map((client: any) => ({
           ...client,
@@ -192,7 +213,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             return false; // Exclude clients with hidden markers
           }
           
-          // Only show clients that have assignments in this specific month
+          // Check if client has assignments in this month
           const hasAssignments = (assignmentsData || []).some((a: any) => 
             a.client_id === client.id && 
             a.sdr_id !== null && 
@@ -200,17 +221,30 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             a.is_active !== false
           );
           
+          // Check if the selected month is on or after the client's creation month
+          // This allows newly added clients to appear only in the month they were created and future months
+          const clientCreatedDate = new Date(client.created_at);
+          const clientCreatedMonth = format(clientCreatedDate, 'yyyy-MM');
+          
+          // Show client if the selected month is the same as or after the month it was created
+          const isSelectedMonthAfterCreation = selectedMonth >= clientCreatedMonth;
+          
           console.log(`🔍 Client "${client.name}":`, {
             hasAssignments,
+            isSelectedMonthAfterCreation,
+            clientCreatedDate: clientCreatedDate.toISOString(),
+            clientCreatedMonth,
             selectedMonth,
             assignments: client.assignments
           });
           
-          // Only show client if it has assignments in this month
-          if (!hasAssignments) {
-            console.log(`🔍 Client "${client.name}" excluded: no assignments for ${selectedMonth}`);
+          // Show client if it has assignments OR the selected month is on/after its creation month
+          // This allows newly added clients to appear in the month they were added and future months only
+          const shouldShow = hasAssignments || isSelectedMonthAfterCreation;
+          if (!shouldShow) {
+            console.log(`🔍 Client "${client.name}" excluded: no assignments and not created this month`);
           }
-          return hasAssignments;
+          return shouldShow;
         });
 
       let sortedClients = [...processedClients];
@@ -242,6 +276,18 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
     try {
       setError(null);
       
+      // Get old values for audit log
+      const oldClient = clients.find(c => c.id === clientId);
+      const oldValues = {
+        monthly_set_target: oldClient?.monthly_set_target || 0,
+        monthly_hold_target: oldClient?.monthly_hold_target || 0
+      };
+      
+      const newValues = {
+        monthly_set_target: newSetTarget,
+        monthly_hold_target: newHoldTarget
+      };
+      
       const { error: updateError } = await supabase
         .from('clients')
         .update({ 
@@ -251,6 +297,15 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         .eq('id', String(clientId));
 
       if (updateError) throw updateError;
+
+      // Log the update
+      await logger.logClientAction(
+        'update',
+        clientId,
+        calculateChanges(oldValues, newValues),
+        oldValues,
+        newValues
+      );
 
       setClients(prevClients => 
         prevClients.map(client => 
@@ -267,6 +322,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       onUpdate();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update target');
+      await logger.logError(
+        err instanceof Error ? err : new Error('Failed to update target'),
+        'handleUpdateClientTarget',
+        { clientId, newSetTarget, newHoldTarget }
+      );
     }
   }
 
@@ -280,7 +340,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
       const { data: existingAssignment, error: checkError } = await supabase
         .from('assignments')
-        .select('id')
+        .select('*')
         .eq('sdr_id', String(sdrId))
         .eq('client_id', String(clientId))
         .eq('month', String(currentMonth))
@@ -289,6 +349,16 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       if (checkError) throw checkError;
 
       if (existingAssignment) {
+        const oldValues = {
+          monthly_set_target: existingAssignment.monthly_set_target || 0,
+          monthly_hold_target: existingAssignment.monthly_hold_target || 0
+        };
+        
+        const newValues = {
+          monthly_set_target: newSetTarget,
+          monthly_hold_target: newHoldTarget
+        };
+        
         const { error: updateError } = await supabase
           .from('assignments')
           .update({
@@ -300,6 +370,22 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           .eq('month', String(currentMonth));
 
         if (updateError) throw updateError;
+        
+        // Log the assignment update
+        const client = clients.find(c => c.id === clientId);
+        const sdr = sdrs.find(s => s.id === sdrId);
+        await logger.logAssignmentAction(
+          'update',
+          existingAssignment.id,
+          calculateChanges(oldValues, newValues),
+          oldValues,
+          newValues,
+          {
+            client_name: client?.name,
+            sdr_name: sdr?.name,
+            month: currentMonth
+          }
+        );
       }
 
       setClients(prevClients =>
@@ -323,6 +409,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       onUpdate();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update SDR target');
+      await logger.logError(
+        err instanceof Error ? err : new Error('Failed to update SDR target'),
+        'handleUpdateSDRTarget',
+        { sdrId, clientId, newSetTarget, newHoldTarget, month: selectedMonth }
+      );
     }
   }
 
@@ -356,6 +447,19 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       clientId: insertedClient.id,
       clientName: newClientName
     });
+    
+    // Log client creation
+    await logger.logClientAction(
+      'create',
+      insertedClient.id,
+      undefined,
+      undefined,
+      {
+        name: newClientName,
+        monthly_set_target: insertedClient.monthly_set_target,
+        monthly_hold_target: insertedClient.monthly_hold_target
+      }
+    );
 
     // Client will now appear in the list immediately
     const selectedMonthName = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
@@ -369,6 +473,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
     onUpdate();
   } catch (err) {
     setError(err instanceof Error ? err.message : 'Failed to add client');
+    await logger.logError(
+      err instanceof Error ? err : new Error('Failed to add client'),
+      'handleAddClient',
+      { clientName: newClientName }
+    );
   } finally {
     setLoading(false);
   }
@@ -525,6 +634,26 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           clientId: String(selectedClient),
           sdrId: String(selectedSDR)
         });
+        
+        // Log the new assignment
+        const client = clients.find(c => c.id === selectedClient) || allClients.find(c => c.id === selectedClient);
+        const sdr = sdrs.find(s => s.id === selectedSDR);
+        await logger.logAssignmentAction(
+          'create',
+          insertedAssignment.id,
+          undefined,
+          undefined,
+          {
+            monthly_set_target: monthlySetTarget,
+            monthly_hold_target: monthlyHoldTarget,
+            month: currentMonth
+          },
+          {
+            client_name: client?.name,
+            sdr_name: sdr?.name,
+            month: currentMonth
+          }
+        );
       }
     }
 
@@ -539,6 +668,12 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
     await fetchClients();
     onUpdate();
   } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to assign client');
+    await logger.logError(
+      err instanceof Error ? err : new Error('Failed to assign client'),
+      'handleAssignClient',
+      { clientId: selectedClient, sdrId: selectedSDR, month: selectedMonth }
+    );
     setError(err instanceof Error ? err.message : 'Failed to assign client');
   } finally {
     setLoading(false);
@@ -612,6 +747,15 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
         if (updateError) throw updateError;
         
+        // Log client removal
+        await logger.logClientAction(
+          'delete',
+          clientId,
+          { removed_from_month: selectedMonth },
+          undefined,
+          { action: 'soft_delete', month: selectedMonth, client_name: clientName }
+        );
+        
         setSuccess(`"${clientName}" removed from ${selectedMonthName}. All meetings are preserved. It will still appear in other months.`);
       } else {
         // For clients without assignments, we need to mark them as hidden for this month
@@ -629,6 +773,15 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
         if (hideError) throw hideError;
         
+        // Log client hiding
+        await logger.logClientAction(
+          'delete',
+          clientId,
+          { hidden_from_month: selectedMonth },
+          undefined,
+          { action: 'hide', month: selectedMonth, client_name: clientName }
+        );
+        
         setSuccess(`"${clientName}" hidden from ${selectedMonthName} view.`);
       }
       
@@ -636,6 +789,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       onUpdate();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove client from month');
+      await logger.logError(
+        err instanceof Error ? err : new Error('Failed to remove client from month'),
+        'handleDeleteClient',
+        { clientId, month: selectedMonth }
+      );
     } finally {
       setLoading(false);
     }
@@ -646,39 +804,65 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       setLoading(true);
       setError(null);
       
-      if (!agency?.id) {
-        setError('Agency information not available');
-        return;
-      }
+      // Fetch all clients and their assignments for the selected month
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .is('archived_at', null);
 
-      // Fetch assignments for the selected month only
+      if (clientsError) throw clientsError;
+
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
-        .select('*, clients(name, id), profiles(full_name, id)')
-        .eq('agency_id', agency.id)
-        .eq('month', selectedMonth)
-        .eq('is_active', true)
-        .not('sdr_id', 'is', null);
+        .select('*')
+        .eq('month', selectedMonth);
 
       if (assignmentsError) throw assignmentsError;
 
-      if (!assignmentsData || assignmentsData.length === 0) {
-        setError(`No assignments found for ${monthOptions.find(m => m.value === selectedMonth)?.label}`);
-        return;
+      // Prepare data for export
+      const exportData = [];
+      
+      for (const client of clientsData || []) {
+        const clientAssignments = (assignmentsData || []).filter(a => 
+          a.client_id === client.id && 
+          !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude exclusion markers
+          a.is_active !== false // Exclude inactive assignments
+        );
+
+        if (clientAssignments.length > 0) {
+          // Client has assignments
+          for (const assignment of clientAssignments) {
+            const sdr = sdrs.find(s => s.id === assignment.sdr_id);
+            exportData.push({
+              'Client Name': client.name,
+              'SDR Name': sdr?.full_name || 'Unknown SDR',
+              'Month': selectedMonth,
+              'Monthly Set Target': assignment.monthly_set_target,
+              'Monthly Hold Target': assignment.monthly_hold_target,
+              'Client Monthly Set Target': client.monthly_set_target,
+              'Client Monthly Hold Target': client.monthly_hold_target,
+              'Client Created': new Date(client.created_at).toLocaleDateString(),
+              'Client Updated': new Date(client.updated_at).toLocaleDateString()
+            });
+          }
+        } else {
+          // Client has no assignments for this month
+          exportData.push({
+            'Client Name': client.name,
+            'SDR Name': 'No SDR Assigned',
+            'Month': selectedMonth,
+            'Monthly Set Target': 0,
+            'Monthly Hold Target': 0,
+            'Client Monthly Set Target': client.monthly_set_target,
+            'Client Monthly Hold Target': client.monthly_hold_target,
+            'Client Created': new Date(client.created_at).toLocaleDateString(),
+            'Client Updated': new Date(client.updated_at).toLocaleDateString()
+          });
+        }
       }
 
-      // Prepare data for export in import-friendly format
-      const exportData = assignmentsData.map((assignment: any) => ({
-        'Client Name': assignment.clients?.name || '',
-        'Client ID': assignment.client_id,
-        'SDR Name': assignment.profiles?.full_name || '',
-        'SDR ID': assignment.sdr_id,
-        'Monthly Set Target': assignment.monthly_set_target || 0,
-        'Monthly Hold Target': assignment.monthly_hold_target || 0
-      }));
-
       // Convert to CSV and download
-      const headers = ['Client Name', 'Client ID', 'SDR Name', 'SDR ID', 'Monthly Set Target', 'Monthly Hold Target'];
+      const headers = Object.keys(exportData[0] || {});
       const csvContent = [
         headers.join(','),
         ...exportData.map(row => 
@@ -698,167 +882,184 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `assignments_${selectedMonth}_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `client_assignments_${selectedMonth}_${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      setSuccess(`Successfully exported ${exportData.length} assignments to CSV file`);
+      // Log the export
+      await logger.logDataAction(
+        'export',
+        'client_assignments',
+        {
+          month: selectedMonth,
+          record_count: exportData.length,
+          format: 'csv'
+        }
+      );
+
+      setSuccess(`Successfully exported ${exportData.length} records to CSV file`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export data');
+      await logger.logError(
+        err instanceof Error ? err : new Error('Failed to export data'),
+        'exportToExcel',
+        { month: selectedMonth }
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function importFromCSV(file: File) {
+  async function copyFromPreviousMonth() {
     try {
       setLoading(true);
       setError(null);
       
+      // Check if agency is available
       if (!agency?.id) {
-        setError('Agency information not available');
+        setError('Agency information not available. Please refresh the page and try again.');
+        return;
+      }
+      
+      // Get the previous month (the month before the currently selected month)
+      const currentMonthIndex = monthOptions.findIndex(m => m.value === selectedMonth);
+      const previousMonth = monthOptions[currentMonthIndex + 1]?.value;
+      
+      if (!previousMonth) {
+        setError('No previous month available to copy from');
         return;
       }
 
-      // Read the CSV file
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      if (lines.length < 2) {
-        setError('CSV file is empty or invalid');
-        return;
-      }
+      // Fetch all clients and assignments from the previous month
+      const { data: previousClients, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('agency_id', agency.id)
+        .is('archived_at', null);
 
-      // Parse CSV headers
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-      
-      // Validate required headers
-      const requiredHeaders = ['Client Name', 'Client ID', 'SDR ID', 'Monthly Set Target', 'Monthly Hold Target'];
-      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-      
-      if (missingHeaders.length > 0) {
-        setError(`Missing required columns: ${missingHeaders.join(', ')}`);
-        return;
-      }
+      if (clientsError) throw clientsError;
 
-      // Parse data rows
-      const assignments = [];
-      const errors = [];
-      
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        
-        // Handle CSV parsing with proper quote handling
-        const values = [];
-        let currentValue = '';
-        let insideQuotes = false;
-        
-        for (let j = 0; j < line.length; j++) {
-          const char = line[j];
-          
-          if (char === '"') {
-            if (insideQuotes && line[j + 1] === '"') {
-              currentValue += '"';
-              j++;
-            } else {
-              insideQuotes = !insideQuotes;
-            }
-          } else if (char === ',' && !insideQuotes) {
-            values.push(currentValue.trim());
-            currentValue = '';
-          } else {
-            currentValue += char;
-          }
-        }
-        values.push(currentValue.trim());
-        
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || '';
+      const { data: previousAssignments, error: fetchError } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('agency_id', agency.id)
+        .eq('month', previousMonth);
+
+      if (fetchError) throw fetchError;
+
+      // Use the same logic as fetchClients to determine which clients were visible in the previous month
+      const visibleClientsInPreviousMonth = (previousClients || [])
+        .map((client: any) => ({
+          ...client,
+          assignments: (previousAssignments || []).filter((a: any) => 
+            a.client_id === client.id && 
+            !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude hidden markers
+            a.is_active !== false // Exclude inactive assignments
+          )
+        }))
+        .filter((client: any) => {
+          // Check if client has a hidden marker for the previous month
+          const hasHiddenMarker = (previousAssignments || []).some((a: any) => 
+            a.client_id === client.id && 
+            a.sdr_id === null && 
+            a.monthly_set_target === -1
+          );
+          return !hasHiddenMarker; // Only include clients that were NOT hidden
         });
-        
-        // Validate row data
-        const clientId = row['Client ID']?.trim();
-        const sdrId = row['SDR ID']?.trim();
-        const setTarget = parseInt(row['Monthly Set Target']) || 0;
-        const holdTarget = parseInt(row['Monthly Hold Target']) || 0;
-        
-        if (!clientId || !sdrId) {
-          errors.push(`Row ${i + 1}: Missing Client ID or SDR ID`);
-          continue;
-        }
-        
-        if (isNaN(setTarget) || isNaN(holdTarget)) {
-          errors.push(`Row ${i + 1}: Invalid target values`);
-          continue;
-        }
-        
-        assignments.push({
-          client_id: clientId,
-          sdr_id: sdrId,
-          monthly_set_target: setTarget,
-          monthly_hold_target: holdTarget,
-          month: selectedMonth,
-          agency_id: agency.id,
-          is_active: true
-        });
-      }
 
-      if (assignments.length === 0) {
-        setError('No valid assignments found in CSV file');
+      // Get all valid assignments for clients that were visible in the previous month
+      const finalValidAssignments = visibleClientsInPreviousMonth
+        .flatMap(client => client.assignments)
+        .filter(assignment => assignment.sdr_id !== null); // Ensure we only get real assignments, not hidden markers
+
+      if (fetchError) throw fetchError;
+
+      if (!finalValidAssignments || finalValidAssignments.length === 0) {
+        setError(`No valid assignments found in ${monthOptions.find(m => m.value === previousMonth)?.label} to copy`);
         return;
       }
 
-      // Check for existing assignments for this month
-      const { data: existingAssignments } = await supabase
+      // Get existing assignments for the current month (for undo)
+      const { data: existingAssignments, error: fetchExistingError } = await supabase
         .from('assignments')
         .select('*')
         .eq('agency_id', agency.id)
         .eq('month', selectedMonth);
 
-      const hasExisting = existingAssignments && existingAssignments.length > 0;
-      
-      if (hasExisting) {
-        const confirmMessage = `Found ${existingAssignments.length} existing assignment(s) for ${monthOptions.find(m => m.value === selectedMonth)?.label}.\n\nImporting will REPLACE all existing assignments.\n\nContinue?`;
+      if (fetchExistingError) throw fetchExistingError;
+
+      // Delete any existing assignments for the current month
+      const { error: deleteError } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('agency_id', agency.id)
+        .eq('month', selectedMonth);
+
+      if (deleteError) throw deleteError;
+
+      // Add to undo stack before making changes
+      addToUndoStack('copy_month', {
+        deletedAssignments: existingAssignments || []
+      });
+
+      // Copy assignments from previous month to current month
+      const newAssignments = finalValidAssignments.map(assignment => ({
+        client_id: assignment.client_id,
+        sdr_id: assignment.sdr_id,
+        monthly_set_target: assignment.monthly_set_target ?? 0, // Default to 0 if null/undefined
+        monthly_hold_target: assignment.monthly_hold_target ?? 0, // Default to 0 if null/undefined
+        month: selectedMonth,
+        is_active: assignment.is_active !== false, // Ensure is_active is properly set
+        agency_id: agency?.id, // Add agency_id from context
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+
+      console.log('Copying assignments:', newAssignments);
+      console.log('Number of assignments to insert:', newAssignments.length);
+
+      // Validate the data before inserting
+      const validAssignments = newAssignments.filter(assignment => {
+        const isValid = assignment.client_id && 
+                       assignment.sdr_id && 
+                       assignment.month && 
+                       typeof assignment.monthly_set_target === 'number' && 
+                       typeof assignment.monthly_hold_target === 'number';
         
-        if (!confirm(confirmMessage)) {
-          setLoading(false);
-          return;
+        if (!isValid) {
+          console.warn('Invalid assignment found:', assignment);
         }
+        return isValid;
+      });
 
-        // Delete existing assignments
-        const { error: deleteError } = await supabase
-          .from('assignments')
-          .delete()
-          .eq('agency_id', agency.id)
-          .eq('month', selectedMonth);
-
-        if (deleteError) throw deleteError;
+      if (validAssignments.length !== newAssignments.length) {
+        console.warn(`Filtered out ${newAssignments.length - validAssignments.length} invalid assignments`);
       }
 
-      // Insert new assignments
+      if (validAssignments.length === 0) {
+        setError('No valid assignments to copy after validation');
+        return;
+      }
+
       const { error: insertError } = await supabase
         .from('assignments')
-        .insert(assignments);
+        .insert(validAssignments);
 
-      if (insertError) throw insertError;
-
-      let successMessage = `Successfully imported ${assignments.length} assignment(s) for ${monthOptions.find(m => m.value === selectedMonth)?.label}`;
-      
-      if (errors.length > 0) {
-        successMessage += `\n\nWarnings:\n${errors.join('\n')}`;
+      if (insertError) {
+        console.error('Insert error details:', insertError);
+        console.error('Data being inserted:', newAssignments);
+        throw insertError;
       }
 
-      setSuccess(successMessage);
+      setSuccess(`Successfully copied ${validAssignments.length} client assignments from ${monthOptions.find(m => m.value === previousMonth)?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}`);
       
       // Refresh the client list
       await fetchClients();
       onUpdate();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import CSV file');
+      setError(err instanceof Error ? err.message : 'Failed to copy from previous month');
     } finally {
       setLoading(false);
     }
@@ -910,7 +1111,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
   }
 
   // Add action to undo stack
-  function addToUndoStack(action: 'remove_client' | 'add_client' | 'assign_client' | 'update_target', data: any) {
+  function addToUndoStack(action: 'remove_client' | 'add_client' | 'assign_client' | 'update_target' | 'copy_month', data: any) {
     const undoItem = {
       action,
       data,
@@ -951,6 +1152,9 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           break;
         case 'update_target':
           await undoUpdateTarget(lastAction.data);
+          break;
+        case 'copy_month':
+          await undoCopyMonth(lastAction.data);
           break;
       }
 
@@ -1028,6 +1232,17 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
     if (error) throw error;
   }
 
+  async function undoCopyMonth(data: { deletedAssignments: any[] }) {
+    // Restore deleted assignments
+    if (data.deletedAssignments.length > 0) {
+      const { error } = await supabase
+        .from('assignments')
+        .upsert(data.deletedAssignments);
+
+      if (error) throw error;
+    }
+  }
+
   // Removed archived client functions - now using month-specific management
 
   if (loading) {
@@ -1096,43 +1311,32 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
               Undo
             </button>
             <button
+              onClick={async () => {
+                if (confirm(`Migrate all clients and assignments from ${monthOptions.find(m => m.value === selectedMonth) === monthOptions[1] ? monthOptions[2]?.label : monthOptions[1]?.label} to ${monthOptions.find(m => m.value === selectedMonth)?.label}?\n\nThis will:\n• Migrate all client assignments\n• Migrate all target values\n• Overwrite any existing assignments for ${monthOptions.find(m => m.value === selectedMonth)?.label}`)) {
+                  await copyFromPreviousMonth();
+                }
+              }}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-green-100 border ${darkTheme ? 'text-green-300 bg-green-900/30 border-green-800/50 hover:bg-green-900/50' : 'text-green-700 bg-green-50 border-green-200'}`}
+              title="Migrate all clients and assignments from previous month"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Migrate
+            </button>
+            <button
               onClick={() => {
                 if (confirm('Export client assignments to CSV?')) {
                   exportToExcel();
                 }
               }}
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-blue-100 border ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-800/50 hover:bg-blue-900/50' : 'text-blue-700 bg-blue-50 border-blue-200'}`}
-              title="Export all clients and assignments to CSV"
+              title="Export all clients and assignments to Excel"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Export
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  importFromCSV(file);
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                  }
-                }
-              }}
-              style={{ display: 'none' }}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-green-100 border ${darkTheme ? 'text-green-300 bg-green-900/30 border-green-800/50 hover:bg-green-900/50' : 'text-green-700 bg-green-50 border-green-200'}`}
-              title="Import client assignments from CSV"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Import
             </button>
             <button
               onClick={() => setShowAddClient(true)}

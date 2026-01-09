@@ -6,12 +6,13 @@ import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { useAgency } from '../contexts/AgencyContext';
 import { useDemo } from '../contexts/DemoContext';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock, Filter, ArrowUpDown, Layers, HelpCircle } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock, Filter, ArrowUpDown, Layers, HelpCircle, FileText } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
 import ManagerMeetingHistory from '../components/ManagerMeetingHistory';
 import ICPCheck from './ICPCheck';
+import AuditLogs from './AuditLogs';
 import ContactSupport from '../components/ContactSupport';
 import { supabase } from '../lib/supabase';
 import { MeetingCard } from '../components/MeetingCard';
@@ -1567,6 +1568,24 @@ export default function ManagerDashboard() {
             >
               <Shield className={`w-4 h-4 transition-colors ${activeTab === 'icp' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-rose-500'}`} />
               ICP Check
+              {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
+            </button>
+            <button
+              onClick={() => {
+                if (!isDemoMode) {
+                  setActiveTab('audit');
+                }
+              }}
+              className={`${
+                activeTab === 'audit'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${isDemoMode ? 'opacity-50 cursor-not-allowed relative' : ''}`}
+              disabled={isDemoMode}
+              title={isDemoMode ? 'Locked in demo mode - Contact to unlock' : ''}
+            >
+              <FileText className={`w-4 h-4 transition-colors ${activeTab === 'audit' ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-gray-500'}`} />
+              Audit Logs
               {isDemoMode && <Lock className="w-3 h-3 ml-1" />}
             </button>
           </nav>
@@ -3238,6 +3257,14 @@ export default function ManagerDashboard() {
             <LockedTabMessage featureName="ICP Check" />
           ) : (
             <ICPCheck />
+          )
+        )}
+
+        {activeTab === 'audit' && (
+          isDemoMode ? (
+            <LockedTabMessage featureName="Audit Logs" />
+          ) : (
+            <AuditLogs />
           )
         )}
 
