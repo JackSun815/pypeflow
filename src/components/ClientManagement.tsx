@@ -166,21 +166,42 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
       if (assignmentsError) throw assignmentsError;
 
+      // Fetch month-specific client targets
+      const { data: clientTargetsData, error: clientTargetsError } = await supabase
+        .from('client_monthly_targets')
+        .select('*')
+        .eq('agency_id', agency.id)
+        .eq('month', String(selectedMonth));
+
+      if (clientTargetsError) throw clientTargetsError;
+
       console.log('🔍 Fetched assignments for month', selectedMonth, ':', assignmentsData);
       console.log('🔍 All clients data:', clientsData);
+      console.log('🔍 Client monthly targets for month', selectedMonth, ':', clientTargetsData);
 
       // Only show clients that have assignments in the selected month
       // Exception: Show newly created clients in the month they were created (even without assignments)
       // Clients will NOT auto-populate into future months - they must be explicitly imported
       const processedClients = (clientsData || [])
-        .map((client: any) => ({
-          ...client,
-          assignments: (assignmentsData || []).filter((a: any) => 
-            a.client_id === client.id && 
-            !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude hidden markers
-            a.is_active !== false // Exclude inactive assignments
-          )
-        }))
+        .map((client: any) => {
+          // Find month-specific targets for this client
+          const monthlyTarget = (clientTargetsData || []).find((t: any) => t.client_id === client.id);
+          
+          // Use month-specific targets if they exist, otherwise fall back to client's default targets
+          const monthly_set_target = monthlyTarget?.monthly_set_target ?? client.monthly_set_target ?? 0;
+          const monthly_hold_target = monthlyTarget?.monthly_hold_target ?? client.monthly_hold_target ?? 0;
+          
+          return {
+            ...client,
+            monthly_set_target, // Override with month-specific target
+            monthly_hold_target, // Override with month-specific target
+            assignments: (assignmentsData || []).filter((a: any) => 
+              a.client_id === client.id && 
+              !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude hidden markers
+              a.is_active !== false // Exclude inactive assignments
+            )
+          };
+        })
         .filter((client: any) => {
           // Check if client has a hidden marker for this month
           const hasHiddenMarker = (assignmentsData || []).some((a: any) => 
@@ -249,6 +270,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
     if (newSetTarget < 0 || newHoldTarget < 0) return;
 
     try {
+      if (!agency?.id) {
+        setError('Agency information not available');
+        return;
+      }
+
       setError(null);
       
       // Get old values for audit log
@@ -263,15 +289,46 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         monthly_hold_target: newHoldTarget
       };
       
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({ 
-          monthly_set_target: newSetTarget,
-          monthly_hold_target: newHoldTarget
-        })
-        .eq('id', String(clientId));
+      // Upsert month-specific client target (create or update)
+      // Check if target exists for this month
+      const { data: existingTarget } = await supabase
+        .from('client_monthly_targets')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('month', selectedMonth)
+        .eq('agency_id', agency.id)
+        .maybeSingle();
 
-      if (updateError) throw updateError;
+      let updateError;
+      if (existingTarget) {
+        // Update existing target
+        const { error } = await supabase
+          .from('client_monthly_targets')
+          .update({
+            monthly_set_target: newSetTarget,
+            monthly_hold_target: newHoldTarget,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingTarget.id);
+        updateError = error;
+      } else {
+        // Insert new target
+        const { error } = await supabase
+          .from('client_monthly_targets')
+          .insert({
+            client_id: clientId,
+            month: selectedMonth,
+            agency_id: agency.id,
+            monthly_set_target: newSetTarget,
+            monthly_hold_target: newHoldTarget
+          });
+        updateError = error;
+      }
+
+      if (updateError) {
+        console.error('Failed to update client monthly target:', updateError);
+        throw updateError;
+      }
 
       // Log the update
       await logger.logClientAction(
@@ -294,9 +351,18 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         )
       );
 
+      await fetchClients(); // Refresh to get updated data
       onUpdate();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update target');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update target';
+      console.error('Error updating client target:', err);
+      
+      // Check if the error is about the table not existing
+      if (errorMessage.includes('does not exist') || errorMessage.includes('client_monthly_targets')) {
+        setError(`Database table not found. Please run the migration: ${errorMessage}`);
+      } else {
+        setError(errorMessage);
+      }
     }
   }
 
