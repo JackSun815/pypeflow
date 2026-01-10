@@ -38,8 +38,13 @@ class Logger {
         return;
       }
 
+      // user_id must be UUID or NULL (for managers using localStorage, it will be NULL)
+      // Check if userId is a valid UUID format, otherwise set to null
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(this.userInfo.userId);
+      const userId = isValidUUID ? this.userInfo.userId : null;
+
       const auditLog = {
-        user_id: this.userInfo.userId,
+        user_id: userId,
         user_email: this.userInfo.email,
         user_role: this.userInfo.role,
         agency_id: this.userInfo.agencyId,

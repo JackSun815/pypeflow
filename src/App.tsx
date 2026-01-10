@@ -1,8 +1,10 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AgencyProvider, useAgency } from './contexts/AgencyContext';
 import { DemoProvider } from './contexts/DemoContext';
 import { useAuth } from './hooks/useAuth';
+import { logger } from './lib/logger';
 import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
 import SDRDashboard from './pages/SDRDashboard';
@@ -16,6 +18,31 @@ import GoogleAnalytics from './components/GoogleAnalytics';
 import ManagerDemoPreview from './pages/ManagerDemoPreview';
 import Documentation from './pages/Documentation';
 import AuditLogs from './pages/AuditLogs';
+
+// Component to initialize logger with user info
+function LoggerInitializer() {
+  const { user, profile } = useAuth();
+  const { agency } = useAgency();
+
+  useEffect(() => {
+    if (profile && agency?.id) {
+      // Initialize logger with user info from profile
+      // For managers using localStorage auth, userId is email (string), not UUID
+      // The logger will store this as user_email, and user_id will be NULL in the database
+      logger.setUserInfo({
+        userId: user?.id || profile.id, // For managers: email string, for SDRs: UUID
+        email: profile.email || '',
+        role: profile.role,
+        agencyId: agency.id
+      });
+    } else {
+      // Clear logger when user logs out
+      logger.setUserInfo(null);
+    }
+  }, [user, profile, agency?.id]);
+
+  return null;
+}
 
 // Component to handle routing with agency context
 function AppRoutes() {
@@ -249,6 +276,7 @@ function App() {
         <DemoProvider>
           <Router>
             <GoogleAnalytics />
+            <LoggerInitializer />
             <AppRoutes />
           </Router>
         </DemoProvider>
