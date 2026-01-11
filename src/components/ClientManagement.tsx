@@ -175,9 +175,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
       if (clientTargetsError) throw clientTargetsError;
 
-      console.log('🔍 Fetched assignments for month', selectedMonth, ':', assignmentsData);
-      console.log('🔍 All clients data:', clientsData);
-      console.log('🔍 Client monthly targets for month', selectedMonth, ':', clientTargetsData);
+      // Debug logs removed for cleaner console output
 
       // Only show clients that have assignments in the selected month
       // Exception: Show newly created clients in the month they were created (even without assignments)
@@ -228,18 +226,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           const clientCreatedMonth = format(clientCreatedDate, 'yyyy-MM');
           const isCreatedThisMonth = clientCreatedMonth === selectedMonth;
           
-          console.log(`🔍 Client "${client.name}":`, {
-            hasAssignments,
-            isCreatedThisMonth,
-            clientCreatedMonth,
-            selectedMonth,
-            assignments: client.assignments
-          });
-          
           // Show client if it has assignments OR if it was created this month
-          if (!hasAssignments && !isCreatedThisMonth) {
-            console.log(`🔍 Client "${client.name}" excluded: no assignments for ${selectedMonth} and not created this month`);
-          }
           return hasAssignments || isCreatedThisMonth;
         });
 
@@ -627,6 +614,20 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       } else {
         // Only add to undo stack if this was a new assignment (not a reactivation)
         console.log('✅ Assignment created successfully:', insertedAssignment);
+
+        // Log assignment creation
+        await logger.logClientAction(
+          'create',
+          insertedAssignment.client_id,
+          { action: 'assign_sdr' },
+          undefined,
+          {
+            sdr_id: insertedAssignment.sdr_id,
+            monthly_set_target: insertedAssignment.monthly_set_target,
+            monthly_hold_target: insertedAssignment.monthly_hold_target,
+            month: insertedAssignment.month
+          }
+        );
 
         // Add to undo stack for new assignments
         addToUndoStack('assign_client', {
@@ -1315,14 +1316,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           );
 
           // Debug logging
-          console.log('🔍 Target Overview Debug for', selectedMonth);
-          console.log('📊 Unassigned clients:', unassignedClients.length);
-          console.log('📊 Total client set target:', totalClientSetTarget);
-          console.log('📊 Total client held target:', totalClientHeldTarget);
-          console.log('📊 Total assigned set target:', totalAssignedSetTarget);
-          console.log('📊 Total assigned held target:', totalAssignedHeldTarget);
-          console.log('📊 Unassigned set target (sum of individual):', unassignedSetTarget);
-          console.log('📊 Unassigned held target (sum of individual):', unassignedHeldTarget);
+          // Debug logs removed for cleaner console output
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

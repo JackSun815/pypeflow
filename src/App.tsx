@@ -26,15 +26,19 @@ function LoggerInitializer() {
 
   useEffect(() => {
     if (profile && agency?.id) {
-      // Initialize logger with user info from profile
-      // For managers using localStorage auth, userId is email (string), not UUID
-      // The logger will store this as user_email, and user_id will be NULL in the database
-      logger.setUserInfo({
+      const userInfo = {
         userId: user?.id || profile.id, // For managers: email string, for SDRs: UUID
         email: profile.email || '',
         role: profile.role,
         agencyId: agency.id
-      });
+      };
+      
+      console.log('✅ Logger initialized for:', profile.email);
+      
+      // Initialize logger with user info from profile
+      // For managers using localStorage auth, userId is email (string), not UUID
+      // The logger will store this as user_email, and user_id will be NULL in the database
+      logger.setUserInfo(userInfo);
     } else {
       // Clear logger when user logs out
       logger.setUserInfo(null);

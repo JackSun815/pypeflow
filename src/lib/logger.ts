@@ -34,7 +34,7 @@ class Logger {
   async audit(entry: AuditLogEntry): Promise<void> {
     try {
       if (!this.userInfo) {
-        console.warn('Logger: No user info set, skipping audit log');
+        console.error('❌ AUDIT LOG ERROR: No user info set. Logger not initialized.');
         return;
       }
 
@@ -58,15 +58,18 @@ class Logger {
         status: entry.status || 'success',
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('audit_logs')
-        .insert(auditLog);
+        .insert(auditLog)
+        .select();
 
       if (error) {
-        console.error('Failed to write audit log:', error);
+        console.error('❌ AUDIT LOG ERROR:', error);
+      } else {
+        console.log('✅ Audit log created:', entry.action, entry.entityType);
       }
     } catch (error) {
-      console.error('Error in audit logging:', error);
+      console.error('❌ AUDIT LOG ERROR:', error);
     }
   }
 
