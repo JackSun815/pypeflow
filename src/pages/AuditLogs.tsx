@@ -472,8 +472,13 @@ export default function AuditLogs() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{log.entity_type}</div>
-                        {log.entity_id && (
+                        {log.metadata?.client_name ? (
+                          <div className="text-xs text-gray-700 font-medium">{log.metadata.client_name}</div>
+                        ) : log.entity_id ? (
                           <div className="text-xs text-gray-500 font-mono">{log.entity_id.slice(0, 8)}...</div>
+                        ) : null}
+                        {log.metadata?.sdr_name && (
+                          <div className="text-xs text-blue-600">→ {log.metadata.sdr_name}</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -482,25 +487,23 @@ export default function AuditLogs() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {log.changes && Object.keys(log.changes).length > 0 && (
+                        {(log.changes && Object.keys(log.changes).length > 0) || 
+                         (log.old_values && Object.keys(log.old_values).length > 0) ||
+                         (log.new_values && Object.keys(log.new_values).length > 0) ? (
                           <details className="cursor-pointer">
                             <summary className="text-blue-600 hover:text-blue-700">
-                              View changes
+                              View details
                             </summary>
                             <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto max-w-md">
-                              {JSON.stringify(log.changes, null, 2)}
+                              {JSON.stringify({
+                                ...(log.changes || {}),
+                                ...(log.old_values ? { old: log.old_values } : {}),
+                                ...(log.new_values ? { new: log.new_values } : {})
+                              }, null, 2)}
                             </pre>
                           </details>
-                        )}
-                        {log.metadata && Object.keys(log.metadata).length > 0 && (
-                          <details className="cursor-pointer mt-1">
-                            <summary className="text-gray-600 hover:text-gray-700">
-                              View metadata
-                            </summary>
-                            <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto max-w-md">
-                              {JSON.stringify(log.metadata, null, 2)}
-                            </pre>
-                          </details>
+                        ) : (
+                          <span className="text-gray-400">—</span>
                         )}
                       </td>
                     </tr>

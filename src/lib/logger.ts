@@ -81,7 +81,8 @@ class Logger {
     clientId: string,
     changes?: Record<string, any>,
     oldValues?: Record<string, any>,
-    newValues?: Record<string, any>
+    newValues?: Record<string, any>,
+    metadata?: Record<string, any>
   ) {
     await this.audit({
       action: `client_${action}`,
@@ -90,6 +91,7 @@ class Logger {
       changes,
       oldValues,
       newValues,
+      metadata
     });
   }
 

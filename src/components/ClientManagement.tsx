@@ -318,12 +318,14 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       }
 
       // Log the update
+      const clientName = clients.find(c => c.id === clientId)?.name || 'Unknown Client';
       await logger.logClientAction(
         'update',
         clientId,
         calculateChanges(oldValues, newValues),
         oldValues,
-        newValues
+        newValues,
+        { client_name: clientName }
       );
 
       setClients(prevClients => 
@@ -444,7 +446,8 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         name: newClientName,
         monthly_set_target: insertedClient.monthly_set_target,
         monthly_hold_target: insertedClient.monthly_hold_target
-      }
+      },
+      { client_name: newClientName }
     );
 
     // Add to undo stack after successful creation
@@ -616,6 +619,8 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         console.log('✅ Assignment created successfully:', insertedAssignment);
 
         // Log assignment creation
+        const clientName = allClients.find(c => c.id === insertedAssignment.client_id)?.name || 'Unknown Client';
+        const sdrName = sdrs.find(s => s.id === insertedAssignment.sdr_id)?.full_name || 'Unknown SDR';
         await logger.logClientAction(
           'create',
           insertedAssignment.client_id,
@@ -626,7 +631,8 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             monthly_set_target: insertedAssignment.monthly_set_target,
             monthly_hold_target: insertedAssignment.monthly_hold_target,
             month: insertedAssignment.month
-          }
+          },
+          { client_name: clientName, sdr_name: sdrName, action: 'assign_sdr' }
         );
 
         // Add to undo stack for new assignments
