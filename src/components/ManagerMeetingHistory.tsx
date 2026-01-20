@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { Calendar, CheckCircle, AlertCircle, Target, Clock, Search, Download, Hourglass } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, CheckCircle, AlertCircle, Target, Clock, Search, Download, Hourglass, DollarSign, TrendingUp, Users as UsersIcon } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { MeetingCard } from './MeetingCard';
 import type { Meeting } from '../types/database';
 import { DateTime } from 'luxon';
+import { supabase } from '../lib/supabase';
+import { useAgency } from '../contexts/AgencyContext';
 
 interface MeetingStats {
   totalBooked: number;
@@ -31,7 +33,9 @@ export default function ManagerMeetingHistory({
   onUpdateConfirmedDate,
   darkTheme = false
 }: ManagerMeetingHistoryProps) {
+  const { agency } = useAgency();
   const now = new Date();
+  const [viewMode, setViewMode] = useState<'meetings' | 'commissions'>('meetings');
   const [selectedMonth, setSelectedMonth] = useState<string>(
     now.toISOString().slice(0, 7)
   );
@@ -50,6 +54,12 @@ export default function ManagerMeetingHistory({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'set' | 'held' | 'booked' | 'noShows' | 'pending' | null>(null);
 
+  // Commission report state
+  const [commissionData, setCommissionData] = useState<any[]>([]);
+  const [commissionLoading, setCommissionLoading] = useState(false);
+  const [commissionSortBy, setCommissionSortBy] = useState<'name' | 'setMeetings' | 'heldMeetings' | 'setPercent' | 'heldPercent' | 'commission'>('commission');
+  const [commissionSortOrder, setCommissionSortOrder] = useState<'asc' | 'desc'>('desc');
+
   const columnOptions = [
     { key: 'sdr', label: 'SDR Name' },
     { key: 'client', label: 'Client Name' },
@@ -60,6 +70,209 @@ export default function ManagerMeetingHistory({
     { key: 'status', label: 'Status' },
     { key: 'notes', label: 'Notes' },
   ];
+
+  // Fetch commission data when view mode changes to commissions
+  useEffect(() => {
+    if (viewMode === 'commissions') {
+      fetchCommissionData();
+    }
+  }, [viewMode, selectedMonth, agency?.id]);
+
+  async function fetchCommissionData() {
+    if (!agency?.id) return;
+    
+    setCommissionLoading(true);
+    try {
+      console.log('🔍 Fetching commission data for month:', selectedMonth, 'agency:', agency.id);
+      
+      // Fetch all SDRs in the agency
+      const { data: sdrs, error: sdrsError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('agency_id', agency.id)
+        .eq('role', 'sdr')
+        .order('full_name');
+
+      if (sdrsError) throw sdrsError;
+
+      console.log('👥 Found SDRs:', sdrs?.length);
+
+      // Calculate commission for each SDR
+      const commissions = await Promise.all(
+        (sdrs || []).map(async (sdr) => {
+          return await calculateSDRCommission(sdr.id, sdr.full_name, sdr.email);
+        })
+      );
+
+      console.log('💰 Commission data:', commissions);
+      setCommissionData(commissions);
+    } catch (err) {
+      console.error('❌ Failed to fetch commission data:', err);
+    } finally {
+      setCommissionLoading(false);
+    }
+  }
+
+  async function calculateSDRCommission(sdrId: string, fullName: string, email: string) {
+    // Parse selected month
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const monthStart = new Date(Date.UTC(year, month - 1, 1));
+    const nextMonthStart = new Date(Date.UTC(year, month, 1));
+
+    console.log(`📊 Calculating commission for ${fullName}:`, {
+      selectedMonth,
+      monthStart: monthStart.toISOString(),
+      nextMonthStart: nextMonthStart.toISOString()
+    });
+
+    // Fetch all meetings for this SDR directly from the database
+    const { data: sdrMeetings, error: meetingsError } = await supabase
+      .from('meetings')
+      .select('*')
+      .eq('sdr_id', sdrId)
+      .eq('agency_id', agency.id);
+
+    if (meetingsError) {
+      console.error(`❌ Error fetching meetings for ${fullName}:`, meetingsError);
+    }
+
+    const allSdrMeetings = sdrMeetings || [];
+    console.log(`  📅 Total meetings in DB: ${allSdrMeetings.length}`);
+
+    // Meetings SET: Filter by created_at (when SDR booked it)
+    const meetingsSet = allSdrMeetings.filter((meeting: any) => {
+      const createdDate = new Date(meeting.created_at);
+      const isInMonth = createdDate >= monthStart && createdDate < nextMonthStart;
+      const icpStatus = meeting.icp_status;
+      const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+      return isInMonth && !isICPDisqualified;
+    });
+
+    // Meetings HELD: Filter by scheduled_date (month it was scheduled for)
+    // Match the logic from Commissions.tsx exactly
+    const meetingsHeld = allSdrMeetings.filter((meeting: any) => {
+      // Must be actually held and not a no-show, and not no_longer_interested
+      if (!meeting.held_at || meeting.no_show || meeting.no_longer_interested) return false;
+      
+      // Filter by scheduled_date (month it was scheduled for)
+      const scheduledDate = new Date(meeting.scheduled_date);
+      const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+      
+      // Exclude non-ICP-qualified meetings
+      const icpStatus = meeting.icp_status;
+      const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+      
+      return isInMonth && !isICPDisqualified;
+    });
+
+    console.log(`  ✅ Meetings SET: ${meetingsSet.length}, Meetings HELD: ${meetingsHeld.length}`);
+
+    // Get SDR's target (commission goal) from assignments
+    const { data: assignments, error: assignmentsError } = await supabase
+      .from('assignments')
+      .select('monthly_hold_target')
+      .eq('sdr_id', sdrId)
+      .eq('month', selectedMonth)
+      .eq('agency_id', agency.id);
+
+    if (assignmentsError) {
+      console.error(`❌ Error fetching assignments for ${fullName}:`, assignmentsError);
+    }
+
+    const heldGoal = assignments?.reduce((sum, a) => sum + (a.monthly_hold_target || 0), 0) || 0;
+    console.log(`  🎯 Held goal: ${heldGoal}`);
+
+    // Get compensation structure
+    const { data: structure, error: structureError } = await supabase
+      .from('compensation_structures')
+      .select('*')
+      .eq('sdr_id', sdrId)
+      .eq('agency_id', agency.id)
+      .maybeSingle();
+
+    if (structureError && structureError.code !== 'PGRST116') {
+      console.error(`❌ Error fetching structure for ${fullName}:`, structureError);
+    }
+
+    console.log(`  🏗️ Compensation structure found:`, structure ? 'YES' : 'NO', structure);
+
+    // Check for commission goal override
+    const { data: commissionGoalOverride } = await supabase
+      .from('commission_goal_overrides')
+      .select('*')
+      .eq('sdr_id', sdrId)
+      .maybeSingle();
+
+    console.log(`  🎯 Commission goal override:`, commissionGoalOverride);
+
+    // Use override goal if available, otherwise use calculated goal
+    const finalHeldGoal = commissionGoalOverride?.commission_goal ?? heldGoal;
+    console.log(`  🎯 Final held goal (with override):`, finalHeldGoal);
+
+    // Calculate commission
+    let commission = 0;
+    let commissionType = 'N/A';
+    let tierInfo = '';
+
+    if (structure) {
+      console.log(`  💼 Structure type: ${structure.commission_type}`);
+      console.log(`  📊 Meeting rates:`, structure.meeting_rates);
+      console.log(`  🎯 Goal tiers:`, structure.goal_tiers);
+      if (structure.commission_type === 'per_meeting') {
+        commissionType = 'Per Meeting';
+        const heldCount = meetingsHeld.length;
+        if (finalHeldGoal > 0 && heldCount > finalHeldGoal) {
+          const meetingsUpToGoal = finalHeldGoal;
+          const meetingsBeyondGoal = heldCount - finalHeldGoal;
+          const commissionUpToGoal = meetingsUpToGoal * structure.meeting_rates.booked;
+          const commissionBeyondGoal = meetingsBeyondGoal * (structure.meeting_rates.booked + structure.meeting_rates.held);
+          commission = commissionUpToGoal + commissionBeyondGoal;
+          tierInfo = `$${structure.meeting_rates.booked}/mtg (up to goal) + $${structure.meeting_rates.booked + structure.meeting_rates.held}/mtg (beyond)`;
+        } else {
+          commission = heldCount * structure.meeting_rates.booked;
+          tierInfo = `$${structure.meeting_rates.booked}/mtg`;
+        }
+      } else if (structure.commission_type === 'goal_based' || structure.commission_type === 'goal_percentage') {
+        commissionType = 'Goal %';
+        const percentageAchieved = finalHeldGoal > 0 ? (meetingsHeld.length / finalHeldGoal) * 100 : 0;
+        const sortedTiers = [...structure.goal_tiers].sort((a, b) => b.percentage - a.percentage);
+        console.log(`  📈 Percentage achieved: ${percentageAchieved.toFixed(1)}%`);
+        console.log(`  🎚️ Sorted tiers:`, sortedTiers);
+        for (const tier of sortedTiers) {
+          if (percentageAchieved >= tier.percentage) {
+            commission = tier.bonus;
+            tierInfo = `${tier.percentage}% = $${tier.bonus}`;
+            console.log(`  ✅ Matched tier: ${tier.percentage}% = $${tier.bonus}`);
+            break;
+          }
+        }
+      }
+    } else {
+      console.log(`  ⚠️ No compensation structure found for ${fullName}`);
+    }
+
+    const setPercent = finalHeldGoal > 0 ? (meetingsSet.length / finalHeldGoal) * 100 : 0;
+    const heldPercent = finalHeldGoal > 0 ? (meetingsHeld.length / finalHeldGoal) * 100 : 0;
+
+    console.log(`  💵 Final commission: $${commission.toFixed(2)} (${commissionType})`);
+
+    const result = {
+      sdrId,
+      name: fullName,
+      email,
+      setMeetings: meetingsSet.length,
+      heldMeetings: meetingsHeld.length,
+      heldGoal: finalHeldGoal,
+      setPercent,
+      heldPercent,
+      commission,
+      commissionType,
+      tierInfo
+    };
+
+    console.log(`  📋 Result:`, result);
+    return result;
+  }
 
   function getMeetingField(meeting: Meeting, key: string) {
     switch (key) {
@@ -330,11 +543,106 @@ export default function ManagerMeetingHistory({
   const monthlyStats = calculateMonthlyStats();
   const selectedMonthLabel = monthOptions.find(m => m.value === selectedMonth)?.label;
 
+  // Sort commission data
+  const sortedCommissionData = [...commissionData].sort((a, b) => {
+    let comparison = 0;
+    switch (commissionSortBy) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'setMeetings':
+        comparison = a.setMeetings - b.setMeetings;
+        break;
+      case 'heldMeetings':
+        comparison = a.heldMeetings - b.heldMeetings;
+        break;
+      case 'setPercent':
+        comparison = a.setPercent - b.setPercent;
+        break;
+      case 'heldPercent':
+        comparison = a.heldPercent - b.heldPercent;
+        break;
+      case 'commission':
+        comparison = a.commission - b.commission;
+        break;
+    }
+    return commissionSortOrder === 'asc' ? comparison : -comparison;
+  });
+
+  // Calculate commission summary
+  const totalCommissions = commissionData.reduce((sum, c) => sum + c.commission, 0);
+  const avgCommission = commissionData.length > 0 ? totalCommissions / commissionData.length : 0;
+
+  function exportCommissionsCSV() {
+    const headers = ['SDR Name', 'Set Meetings', 'Held Meetings', 'Set %', 'Held %', 'Commission Type', 'Total Commission'];
+    const rows = sortedCommissionData.map(c => [
+      c.name,
+      c.setMeetings,
+      c.heldMeetings,
+      `${c.setPercent.toFixed(1)}%`,
+      `${c.heldPercent.toFixed(1)}%`,
+      c.commissionType,
+      `$${c.commission.toFixed(2)}`
+    ]);
+    const csvContent = [headers, ...rows].map(row => row.map(cell => {
+      const value = String(cell);
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    }).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `commission_report_${selectedMonth}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-6">
-      {/* All-time Stats */}
-      <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
-        <h2 className={`text-xl font-semibold mb-6 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>All-time Team Performance</h2>
+      {/* View Toggle - Tab Navigation */}
+      <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <div className={`border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+          <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+            <button
+              onClick={() => setViewMode('meetings')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                viewMode === 'meetings'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Meeting History
+              </div>
+            </button>
+            <button
+              onClick={() => setViewMode('commissions')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                viewMode === 'commissions'
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Commission Reports
+              </div>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {viewMode === 'meetings' && (
+        <>
+          {/* All-time Stats */}
+          <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+            <h2 className={`text-xl font-semibold mb-6 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>All-time Team Performance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div>
             <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Meetings Booked</p>
@@ -812,6 +1120,229 @@ export default function ManagerMeetingHistory({
             </div>
           </div>
         </div>
+      )}
+        </>
+      )}
+
+      {/* Commission Reports View */}
+      {viewMode === 'commissions' && (
+        <>
+          {/* Summary Cards */}
+          <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+            <h2 className={`text-xl font-semibold mb-6 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Commission Summary - {selectedMonthLabel}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className={`rounded-lg p-6 ${darkTheme ? 'bg-green-900/20 border border-green-800/30' : 'bg-green-50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className={`text-sm font-medium ${darkTheme ? 'text-green-300' : 'text-green-700'}`}>Total Commissions</h3>
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>
+                  ${totalCommissions.toFixed(2)}
+                </p>
+              </div>
+
+              <div className={`rounded-lg p-6 ${darkTheme ? 'bg-indigo-900/20 border border-indigo-800/30' : 'bg-indigo-50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className={`text-sm font-medium ${darkTheme ? 'text-indigo-300' : 'text-indigo-700'}`}># of SDRs</h3>
+                  <UsersIcon className="w-6 h-6 text-indigo-600" />
+                </div>
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                  {commissionData.length}
+                </p>
+              </div>
+
+              <div className={`rounded-lg p-6 ${darkTheme ? 'bg-blue-900/20 border border-blue-800/30' : 'bg-blue-50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className={`text-sm font-medium ${darkTheme ? 'text-blue-300' : 'text-blue-700'}`}>Avg Commission</h3>
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+                <p className={`text-3xl font-bold ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`}>
+                  ${avgCommission.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Commission Table */}
+          <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Commission Details</h2>
+              <div className="flex gap-2">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className={`rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+                >
+                  {monthOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium shadow transition"
+                  onClick={exportCommissionsCSV}
+                  title="Export commission report"
+                >
+                  <Download className="w-4 h-4" /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            {commissionLoading ? (
+              <div className="flex justify-center items-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+              </div>
+            ) : commissionData.length === 0 ? (
+              <div className={`text-center py-8 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                <UsersIcon className={`w-12 h-12 mx-auto mb-2 ${darkTheme ? 'text-slate-600' : 'text-gray-300'}`} />
+                <p>No SDRs found for this agency</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className={`border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                      <th 
+                        className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-opacity-50 ${darkTheme ? 'text-slate-300 hover:bg-[#1d1f24]' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => {
+                          if (commissionSortBy === 'name') {
+                            setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setCommissionSortBy('name');
+                            setCommissionSortOrder('asc');
+                          }
+                        }}
+                      >
+                        SDR Name {commissionSortBy === 'name' && (commissionSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th 
+                        className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-opacity-50 ${darkTheme ? 'text-slate-300 hover:bg-[#1d1f24]' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => {
+                          if (commissionSortBy === 'setMeetings') {
+                            setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setCommissionSortBy('setMeetings');
+                            setCommissionSortOrder('desc');
+                          }
+                        }}
+                      >
+                        Set Meetings {commissionSortBy === 'setMeetings' && (commissionSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th 
+                        className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-opacity-50 ${darkTheme ? 'text-slate-300 hover:bg-[#1d1f24]' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => {
+                          if (commissionSortBy === 'heldMeetings') {
+                            setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setCommissionSortBy('heldMeetings');
+                            setCommissionSortOrder('desc');
+                          }
+                        }}
+                      >
+                        Held Meetings {commissionSortBy === 'heldMeetings' && (commissionSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th 
+                        className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-opacity-50 ${darkTheme ? 'text-slate-300 hover:bg-[#1d1f24]' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => {
+                          if (commissionSortBy === 'setPercent') {
+                            setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setCommissionSortBy('setPercent');
+                            setCommissionSortOrder('desc');
+                          }
+                        }}
+                      >
+                        Set % {commissionSortBy === 'setPercent' && (commissionSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th 
+                        className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-opacity-50 ${darkTheme ? 'text-slate-300 hover:bg-[#1d1f24]' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => {
+                          if (commissionSortBy === 'heldPercent') {
+                            setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setCommissionSortBy('heldPercent');
+                            setCommissionSortOrder('desc');
+                          }
+                        }}
+                      >
+                        Held % {commissionSortBy === 'heldPercent' && (commissionSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-slate-300' : 'text-gray-500'}`}>
+                        Type
+                      </th>
+                      <th 
+                        className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-opacity-50 ${darkTheme ? 'text-slate-300 hover:bg-[#1d1f24]' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => {
+                          if (commissionSortBy === 'commission') {
+                            setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setCommissionSortBy('commission');
+                            setCommissionSortOrder('desc');
+                          }
+                        }}
+                      >
+                        Total Commission {commissionSortBy === 'commission' && (commissionSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${darkTheme ? 'divide-[#2d3139]' : 'divide-gray-200'}`}>
+                    {sortedCommissionData.map((sdr) => (
+                      <tr key={sdr.sdrId} className={`hover:bg-opacity-50 ${darkTheme ? 'hover:bg-[#1d1f24]' : 'hover:bg-gray-50'}`}>
+                        <td className={`px-6 py-4 whitespace-nowrap ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
+                          <div className="font-medium">{sdr.name}</div>
+                          <div className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>{sdr.email}</div>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                          {sdr.setMeetings}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                          {sdr.heldMeetings}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                          <span className={`${sdr.setPercent >= 100 ? (darkTheme ? 'text-green-400' : 'text-green-600') : ''}`}>
+                            {sdr.setPercent.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                          <span className={`${sdr.heldPercent >= 100 ? (darkTheme ? 'text-green-400' : 'text-green-600') : ''}`}>
+                            {sdr.heldPercent.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                          <div>{sdr.commissionType}</div>
+                          {sdr.tierInfo && <div className="text-xs mt-1">{sdr.tierInfo}</div>}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap font-bold ${sdr.commission > 0 ? (darkTheme ? 'text-green-400' : 'text-green-600') : (darkTheme ? 'text-slate-400' : 'text-gray-400')}`}>
+                          ${sdr.commission.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className={`border-t-2 ${darkTheme ? 'border-[#2d3139] bg-[#1d1f24]' : 'border-gray-300 bg-gray-50'}`}>
+                    <tr>
+                      <td className={`px-6 py-4 font-bold ${darkTheme ? 'text-slate-200' : 'text-gray-900'}`}>
+                        TOTAL
+                      </td>
+                      <td className={`px-6 py-4 font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                        {sortedCommissionData.reduce((sum, s) => sum + s.setMeetings, 0)}
+                      </td>
+                      <td className={`px-6 py-4 font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                        {sortedCommissionData.reduce((sum, s) => sum + s.heldMeetings, 0)}
+                      </td>
+                      <td className={`px-6 py-4 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>—</td>
+                      <td className={`px-6 py-4 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>—</td>
+                      <td className={`px-6 py-4 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>—</td>
+                      <td className={`px-6 py-4 font-bold text-lg ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>
+                        ${totalCommissions.toFixed(2)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
