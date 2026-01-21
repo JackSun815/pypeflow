@@ -500,8 +500,51 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
     }
   }
 
-  const renderManagers = () => (
+  const renderManagers = () => {
+    const activeManagers = managers.filter(m => m.active).length;
+    const inactiveManagers = managers.filter(m => !m.active).length;
+
+    return (
     <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Managers</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{managers.length}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <Shield className={`w-6 h-6 ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`} />
+            </div>
+          </div>
+        </div>
+        
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Active</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{activeManagers}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-green-900/30' : 'bg-green-100'}`}>
+              <UserCheck className={`w-6 h-6 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
+            </div>
+          </div>
+        </div>
+        
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Inactive</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>{inactiveManagers}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-red-900/30' : 'bg-red-100'}`}>
+              <UserX className={`w-6 h-6 ${darkTheme ? 'text-red-400' : 'text-red-600'}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <h2 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
@@ -650,9 +693,53 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
       </div>
     </div>
   );
+  };
 
-  const renderSDRs = () => (
+  const renderSDRs = () => {
+    const activeSDRs = sdrs.filter(s => s.active).length;
+    const inactiveSDRs = sdrs.filter(s => !s.active).length;
+
+    return (
     <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total SDRs</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdrs.length}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-indigo-900/30' : 'bg-indigo-100'}`}>
+              <Users className={`w-6 h-6 ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`} />
+            </div>
+          </div>
+        </div>
+        
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Active</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{activeSDRs}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-green-900/30' : 'bg-green-100'}`}>
+              <UserCheck className={`w-6 h-6 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
+            </div>
+          </div>
+        </div>
+        
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Inactive</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>{inactiveSDRs}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-red-900/30' : 'bg-red-100'}`}>
+              <UserX className={`w-6 h-6 ${darkTheme ? 'text-red-400' : 'text-red-600'}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <h2 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
@@ -849,9 +936,53 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
       )}
     </div>
   );
+  };
 
-  const renderClients = () => (
+  const renderClients = () => {
+    const activeClients = clients.filter(c => !c.archived_at).length;
+    const archivedClients = clients.filter(c => c.archived_at).length;
+
+    return (
     <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Clients</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{clients.length}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+              <Building className={`w-6 h-6 ${darkTheme ? 'text-purple-400' : 'text-purple-600'}`} />
+            </div>
+          </div>
+        </div>
+        
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Active</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{activeClients}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-green-900/30' : 'bg-green-100'}`}>
+              <Check className={`w-6 h-6 ${darkTheme ? 'text-green-400' : 'text-green-600'}`} />
+            </div>
+          </div>
+        </div>
+        
+        <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-medium ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Archived</p>
+              <p className={`text-3xl font-bold mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{archivedClients}</p>
+            </div>
+            <div className={`p-3 rounded-full ${darkTheme ? 'bg-slate-700/30' : 'bg-gray-200'}`}>
+              <Archive className={`w-6 h-6 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className={`p-6 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
           <h2 className={`text-lg font-semibold flex items-center gap-2 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
@@ -977,6 +1108,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
       )}
     </div>
   );
+  };
 
   return (
     <div className="space-y-6 relative">
