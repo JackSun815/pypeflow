@@ -81,9 +81,10 @@ export default function ManagerMeetingHistory({
   const [commissionData, setCommissionData] = useState<any[]>([]);
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionSortBy, setCommissionSortBy] = useState<'name' | 'setMeetings' | 'heldMeetings' | 'setPercent' | 'heldPercent' | 'commission'>('commission');
-  const [commissionSortOrder, setCommissionSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [chartView, setChartView] = useState<'current' | 'trend'>('current');
-  const [trendData, setTrendData] = useState<any[]>([]);
+    const [commissionSortOrder, setCommissionSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [chartView, setChartView] = useState<'current' | 'trend'>('current');
+    const [trendData, setTrendData] = useState<any[]>([]);
+    const [trendLoading, setTrendLoading] = useState(false);
 
   const columnOptions = [
     { key: 'sdr', label: 'SDR Name' },
@@ -97,12 +98,18 @@ export default function ManagerMeetingHistory({
   ];
 
   // Fetch commission data when view mode changes to commissions
-  useEffect(() => {
-    if (viewMode === 'commissions') {
-      fetchCommissionData();
-      fetchTrendData();
-    }
-  }, [viewMode, selectedMonth, agency?.id]);
+    useEffect(() => {
+      if (viewMode === 'commissions') {
+        fetchCommissionData();
+      }
+    }, [viewMode, selectedMonth, agency?.id]);
+
+    // Fetch trend data only when switching to trend view
+    useEffect(() => {
+      if (viewMode === 'commissions' && chartView === 'trend' && trendData.length === 0) {
+        fetchTrendData();
+      }
+    }, [chartView, viewMode, agency?.id]);
 
   async function fetchCommissionData() {
     if (!agency?.id) return;
@@ -334,22 +341,23 @@ export default function ManagerMeetingHistory({
     return result;
   }
 
-  async function fetchTrendData() {
-    if (!agency?.id) return;
-    
-    try {
-      console.log('📈 Fetching trend data for agency:', agency.id);
-      
-      // Get last 12 months for scrolling, but display will show 6 at a time
-      const months: string[] = [];
-      const now = new Date();
-      
-      for (let i = 11; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        months.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
-      }
-      
-      console.log('📅 Fetching data for months:', months);
+   async function fetchTrendData() {
+     if (!agency?.id) return;
+     
+     setTrendLoading(true);
+     try {
+       console.log('📈 Fetching trend data for agency:', agency.id);
+       
+       // Get last 6 months only for faster loading
+       const months: string[] = [];
+       const now = new Date();
+       
+       for (let i = 5; i >= 0; i--) {
+         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+         months.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+       }
+       
+       console.log('📅 Fetching data for months:', months);
       
       // Fetch data for each month
       const monthlyData = await Promise.all(
@@ -389,12 +397,14 @@ export default function ManagerMeetingHistory({
         })
       );
       
-      console.log('📊 Trend data:', monthlyData);
-      setTrendData(monthlyData);
-    } catch (err) {
-      console.error('❌ Failed to fetch trend data:', err);
-    }
-  }
+       console.log('📊 Trend data:', monthlyData);
+       setTrendData(monthlyData);
+     } catch (err) {
+       console.error('❌ Failed to fetch trend data:', err);
+     } finally {
+       setTrendLoading(false);
+     }
+   }
 
   async function calculateSDRCommissionForMonth(sdrId: string, monthStart: Date, nextMonthStart: Date) {
     try {
@@ -1409,7 +1419,16 @@ export default function ManagerMeetingHistory({
               </div>
               
               <div style={{ height: '400px' }}>
-                {chartView === 'current' ? (
+                {trendLoading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4" />
+                      <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                        Loading trend data...
+                      </p>
+                    </div>
+                  </div>
+                ) : chartView === 'current' ? (
                   <Bar
                     data={{
                       labels: sortedCommissionData.filter(sdr => sdr.commission > 0).map(sdr => sdr.name),
@@ -1472,19 +1491,19 @@ export default function ManagerMeetingHistory({
                       },
                     }}
                   />
-                ) : (
-                  <div className="relative">
-                    <div 
-                      className={`overflow-x-auto overflow-y-hidden pb-4 ${
-                        darkTheme 
-                          ? 'scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800' 
-                          : 'scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200'
-                      }`}
-                      style={{
-                        height: '440px',
-                      }}
-                    >
-                      <div style={{ width: `${trendData.length * 100}px`, height: '400px' }}>
+                 ) : (
+                   <div className="relative">
+                     <div 
+                       className={`overflow-x-auto overflow-y-hidden pb-4 ${
+                         darkTheme 
+                           ? 'scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800' 
+                           : 'scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200'
+                       }`}
+                       style={{
+                         height: '440px',
+                       }}
+                     >
+                       <div style={{ minWidth: '100%', height: '400px' }}>
                         <Line
                           data={{
                             labels: trendData.map(d => d.monthLabel),
@@ -1616,11 +1635,14 @@ export default function ManagerMeetingHistory({
                   ))}
                 </select>
                 <button
-                  className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium shadow transition"
                   onClick={exportCommissionsCSV}
-                  title="Export commission report"
+                  className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-blue-100 border ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-800/50 hover:bg-blue-900/50' : 'text-blue-700 bg-blue-50 border-blue-200'}`}
+                  title="Export commission report to CSV"
                 >
-                  <Download className="w-4 h-4" /> Export CSV
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export
                 </button>
               </div>
             </div>
