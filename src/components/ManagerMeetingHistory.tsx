@@ -1,11 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Calendar, CheckCircle, AlertCircle, Target, Clock, Search, Download, Hourglass, DollarSign, TrendingUp, Users as UsersIcon } from 'lucide-react';
+import { Calendar, CheckCircle, AlertCircle, Target, Clock, Search, Download, Hourglass, DollarSign, TrendingUp, Users as UsersIcon, BarChart2 } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { MeetingCard } from './MeetingCard';
 import type { Meeting } from '../types/database';
 import { DateTime } from 'luxon';
 import { supabase } from '../lib/supabase';
 import { useAgency } from '../contexts/AgencyContext';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar, Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface MeetingStats {
   totalBooked: number;
@@ -59,6 +82,8 @@ export default function ManagerMeetingHistory({
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionSortBy, setCommissionSortBy] = useState<'name' | 'setMeetings' | 'heldMeetings' | 'setPercent' | 'heldPercent' | 'commission'>('commission');
   const [commissionSortOrder, setCommissionSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [chartView, setChartView] = useState<'current' | 'trend'>('current');
+  const [trendData, setTrendData] = useState<any[]>([]);
 
   const columnOptions = [
     { key: 'sdr', label: 'SDR Name' },
@@ -75,6 +100,7 @@ export default function ManagerMeetingHistory({
   useEffect(() => {
     if (viewMode === 'commissions') {
       fetchCommissionData();
+      fetchTrendData();
     }
   }, [viewMode, selectedMonth, agency?.id]);
 
@@ -306,6 +332,149 @@ export default function ManagerMeetingHistory({
 
     console.log(`  📋 Result:`, result);
     return result;
+  }
+
+  async function fetchTrendData() {
+    if (!agency?.id) return;
+    
+    try {
+      console.log('📈 Fetching trend data for agency:', agency.id);
+      
+      // Get last 12 months for scrolling, but display will show 6 at a time
+      const months: string[] = [];
+      const now = new Date();
+      
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+      }
+      
+      console.log('📅 Fetching data for months:', months);
+      
+      // Fetch data for each month
+      const monthlyData = await Promise.all(
+        months.map(async (month) => {
+          const [year, monthNum] = month.split('-').map(Number);
+          const monthStart = new Date(Date.UTC(year, monthNum - 1, 1));
+          const nextMonthStart = new Date(Date.UTC(year, monthNum, 1));
+          
+          // Fetch all SDRs
+          const { data: sdrs } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('agency_id', agency.id)
+            .eq('role', 'sdr');
+          
+          if (!sdrs) return { month, total: 0, average: 0, count: 0 };
+          
+          // Calculate commissions for all SDRs
+          let totalCommission = 0;
+          let sdrCount = 0;
+          
+          for (const sdr of sdrs) {
+            const comm = await calculateSDRCommissionForMonth(sdr.id, monthStart, nextMonthStart);
+            if (comm > 0) {
+              totalCommission += comm;
+              sdrCount++;
+            }
+          }
+          
+          return {
+            month,
+            monthLabel: format(monthStart, 'MMM yyyy'),
+            total: totalCommission,
+            average: sdrCount > 0 ? totalCommission / sdrCount : 0,
+            count: sdrCount
+          };
+        })
+      );
+      
+      console.log('📊 Trend data:', monthlyData);
+      setTrendData(monthlyData);
+    } catch (err) {
+      console.error('❌ Failed to fetch trend data:', err);
+    }
+  }
+
+  async function calculateSDRCommissionForMonth(sdrId: string, monthStart: Date, nextMonthStart: Date) {
+    try {
+      // Fetch meetings for this SDR and month
+      const { data: sdrMeetings } = await supabase
+        .from('meetings')
+        .select('*')
+        .eq('sdr_id', sdrId)
+        .eq('agency_id', agency?.id);
+
+      if (!sdrMeetings) return 0;
+
+      // Meetings HELD
+      const meetingsHeld = sdrMeetings.filter((meeting: any) => {
+        if (!meeting.held_at || meeting.no_show || meeting.no_longer_interested) return false;
+        const scheduledDate = new Date(meeting.scheduled_date);
+        const isInMonth = scheduledDate >= monthStart && scheduledDate < nextMonthStart;
+        const icpStatus = meeting.icp_status;
+        const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+        return isInMonth && !isICPDisqualified;
+      });
+
+      // Get held goal
+      const monthString = `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, '0')}`;
+      const { data: assignments } = await supabase
+        .from('assignments')
+        .select('monthly_hold_target')
+        .eq('sdr_id', sdrId)
+        .eq('month', monthString)
+        .eq('agency_id', agency?.id);
+
+      const heldGoal = assignments?.reduce((sum, a) => sum + (a.monthly_hold_target || 0), 0) || 0;
+
+      // Get compensation structure
+      const { data: structure } = await supabase
+        .from('compensation_structures')
+        .select('*')
+        .eq('sdr_id', sdrId)
+        .eq('agency_id', agency?.id)
+        .maybeSingle();
+
+      // Check for override
+      const { data: commissionGoalOverride } = await supabase
+        .from('commission_goal_overrides')
+        .select('*')
+        .eq('sdr_id', sdrId)
+        .maybeSingle();
+
+      const finalHeldGoal = commissionGoalOverride?.commission_goal ?? heldGoal;
+
+      // Calculate commission
+      let commission = 0;
+      if (structure) {
+        if (structure.commission_type === 'per_meeting') {
+          const heldCount = meetingsHeld.length;
+          if (finalHeldGoal > 0 && heldCount > finalHeldGoal) {
+            const meetingsUpToGoal = finalHeldGoal;
+            const meetingsBeyondGoal = heldCount - finalHeldGoal;
+            commission = meetingsUpToGoal * structure.meeting_rates.booked + 
+                        meetingsBeyondGoal * (structure.meeting_rates.booked + structure.meeting_rates.held);
+          } else {
+            commission = heldCount * structure.meeting_rates.booked;
+          }
+        } else if (structure.commission_type === 'goal_based' || structure.commission_type === 'goal_percentage') {
+          const percentageAchieved = finalHeldGoal > 0 ? (meetingsHeld.length / finalHeldGoal) * 100 : 0;
+          const sortedTiers = [...structure.goal_tiers].sort((a, b) => b.percentage - a.percentage);
+          for (const tier of sortedTiers) {
+            if (percentageAchieved >= tier.percentage) {
+              commission = tier.bonus;
+              break;
+            }
+          }
+        }
+      }
+
+      return commission;
+    } catch (err) {
+      console.error('Error calculating commission for month:', err);
+      return 0;
+    }
   }
 
   function getMeetingField(meeting: Meeting, key: string) {
@@ -1196,6 +1365,239 @@ export default function ManagerMeetingHistory({
               </div>
             </div>
           </div>
+
+          {/* Commission Chart */}
+          {commissionData.length > 0 && (
+            <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <BarChart2 className={`w-5 h-5 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`} />
+                  <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
+                    {chartView === 'current' ? 'Commission Breakdown' : 'Commission Trends'}
+                  </h2>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setChartView('current')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      chartView === 'current'
+                        ? darkTheme
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-indigo-600 text-white'
+                        : darkTheme
+                        ? 'bg-[#1d1f24] text-slate-300 hover:bg-[#2d3139]'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Current Month
+                  </button>
+                  <button
+                    onClick={() => setChartView('trend')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      chartView === 'trend'
+                        ? darkTheme
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-indigo-600 text-white'
+                        : darkTheme
+                        ? 'bg-[#1d1f24] text-slate-300 hover:bg-[#2d3139]'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    6-Month Trend
+                  </button>
+                </div>
+              </div>
+              
+              <div style={{ height: '400px' }}>
+                {chartView === 'current' ? (
+                  <Bar
+                    data={{
+                      labels: sortedCommissionData.filter(sdr => sdr.commission > 0).map(sdr => sdr.name),
+                      datasets: [
+                        {
+                          label: 'Commission ($)',
+                          data: sortedCommissionData.filter(sdr => sdr.commission > 0).map(sdr => sdr.commission),
+                          backgroundColor: darkTheme 
+                            ? 'rgba(34, 197, 94, 0.6)' 
+                            : 'rgba(34, 197, 94, 0.8)',
+                          borderColor: 'rgba(34, 197, 94, 1)',
+                          borderWidth: 1,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              const sdr = sortedCommissionData.filter(s => s.commission > 0)[context.dataIndex];
+                              return [
+                                `Commission: $${context.parsed.y.toFixed(2)}`,
+                                `Meetings Set: ${sdr.setMeetings}`,
+                                `Meetings Held: ${sdr.heldMeetings}`,
+                                `Held Goal: ${sdr.heldGoal}`,
+                              ];
+                            },
+                          },
+                        },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            callback: function(value) {
+                              return '$' + value;
+                            },
+                            color: darkTheme ? '#94a3b8' : '#64748b',
+                          },
+                          grid: {
+                            color: darkTheme ? '#2d3139' : '#e5e7eb',
+                          },
+                        },
+                        x: {
+                          ticks: {
+                            color: darkTheme ? '#94a3b8' : '#64748b',
+                            maxRotation: 45,
+                            minRotation: 45,
+                          },
+                          grid: {
+                            color: darkTheme ? '#2d3139' : '#e5e7eb',
+                          },
+                        },
+                      },
+                    }}
+                  />
+                ) : (
+                  <div className="relative">
+                    <div 
+                      className={`overflow-x-auto overflow-y-hidden pb-4 ${
+                        darkTheme 
+                          ? 'scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800' 
+                          : 'scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200'
+                      }`}
+                      style={{
+                        height: '440px',
+                      }}
+                    >
+                      <div style={{ width: `${trendData.length * 100}px`, height: '400px' }}>
+                        <Line
+                          data={{
+                            labels: trendData.map(d => d.monthLabel),
+                            datasets: [
+                              {
+                                label: 'Total Commissions',
+                                data: trendData.map(d => d.total),
+                                borderColor: 'rgba(34, 197, 94, 1)',
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                borderWidth: 3,
+                                pointRadius: 6,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                tension: 0.3,
+                                fill: true,
+                              },
+                              {
+                                label: 'Average Commission',
+                                data: trendData.map(d => d.average),
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 3,
+                                pointRadius: 6,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                tension: 0.3,
+                                fill: true,
+                              },
+                            ],
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                  color: darkTheme ? '#94a3b8' : '#64748b',
+                                  usePointStyle: true,
+                                  pointStyle: 'circle',
+                                  padding: 15,
+                                },
+                              },
+                              tooltip: {
+                                backgroundColor: darkTheme ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                titleColor: darkTheme ? '#fff' : '#000',
+                                bodyColor: darkTheme ? '#94a3b8' : '#64748b',
+                                borderColor: darkTheme ? '#2d3139' : '#e5e7eb',
+                                borderWidth: 1,
+                                padding: 12,
+                                callbacks: {
+                                  label: function(context) {
+                                    const data = trendData[context.dataIndex];
+                                    if (context.datasetIndex === 0) {
+                                      return [
+                                        `Total: $${context.parsed.y.toFixed(2)}`,
+                                        `# of SDRs: ${data.count}`,
+                                      ];
+                                    } else {
+                                      return `Average: $${context.parsed.y.toFixed(2)}`;
+                                    }
+                                  },
+                                },
+                              },
+                            },
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                                ticks: {
+                                  callback: function(value) {
+                                    return '$' + value;
+                                  },
+                                  color: darkTheme ? '#94a3b8' : '#64748b',
+                                  padding: 10,
+                                  font: {
+                                    size: 12,
+                                  },
+                                },
+                                grid: {
+                                  color: darkTheme ? '#2d3139' : '#e5e7eb',
+                                },
+                              },
+                              x: {
+                                ticks: {
+                                  color: darkTheme ? '#94a3b8' : '#64748b',
+                                  padding: 10,
+                                  font: {
+                                    size: 12,
+                                  },
+                                },
+                                grid: {
+                                  color: darkTheme ? '#2d3139' : '#e5e7eb',
+                                },
+                              },
+                            },
+                            interaction: {
+                              mode: 'index',
+                              intersect: false,
+                            },
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Commission Table */}
           <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
