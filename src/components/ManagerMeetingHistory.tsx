@@ -85,27 +85,61 @@ export default function ManagerMeetingHistory({
     try {
       console.log('🔍 Fetching commission data for month:', selectedMonth, 'agency:', agency.id);
       
-      // Fetch all SDRs in the agency
-      const { data: sdrs, error: sdrsError } = await supabase
+      // Parse selected month to get date range
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const monthStart = new Date(Date.UTC(year, month - 1, 1));
+      const nextMonthStart = new Date(Date.UTC(year, month, 1));
+      
+      // Fetch all SDRs in the agency with their active status and updated_at
+      const { data: allSDRs, error: sdrsError } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, active, updated_at')
         .eq('agency_id', agency.id)
         .eq('role', 'sdr')
         .order('full_name');
 
       if (sdrsError) throw sdrsError;
 
-      console.log('👥 Found SDRs:', sdrs?.length);
+      console.log('👥 Found all SDRs:', allSDRs?.length);
+
+      // Filter SDRs to only include those who were active during the selected month
+      // Logic: Include SDR if:
+      // 1. They are currently active, OR
+      // 2. They were deactivated AFTER the selected month ended, OR
+      // 3. They have meetings/assignments in the selected month (will be checked during commission calc)
+      const sdrs = (allSDRs || []).filter((sdr) => {
+        // If currently active, always include
+        if (sdr.active) return true;
+        
+        // If inactive, check if they were deactivated after the selected month
+        if (sdr.updated_at) {
+          const deactivationDate = new Date(sdr.updated_at);
+          // If deactivation date is after the month ended, they were active during the month
+          if (deactivationDate >= nextMonthStart) {
+            return true;
+          }
+        }
+        
+        // Otherwise, we'll check if they have meetings in the month (include for now, filter later)
+        return true;
+      });
+
+      console.log('👥 SDRs active during selected month:', sdrs.length);
 
       // Calculate commission for each SDR
       const commissions = await Promise.all(
-        (sdrs || []).map(async (sdr) => {
+        sdrs.map(async (sdr) => {
           return await calculateSDRCommission(sdr.id, sdr.full_name, sdr.email);
         })
       );
 
-      console.log('💰 Commission data:', commissions);
-      setCommissionData(commissions);
+      // Filter out SDRs with no meetings or assignments in the selected month
+      const filteredCommissions = commissions.filter(
+        (comm) => comm.setMeetings > 0 || comm.heldMeetings > 0 || comm.heldGoal > 0
+      );
+
+      console.log('💰 Commission data (filtered):', filteredCommissions);
+      setCommissionData(filteredCommissions);
     } catch (err) {
       console.error('❌ Failed to fetch commission data:', err);
     } finally {
