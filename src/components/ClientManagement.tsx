@@ -209,7 +209,6 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           );
           
           if (hasHiddenMarker) {
-            console.log(`🔍 Client "${client.name}" excluded: has hidden marker`);
             return false; // Exclude clients with hidden markers
           }
           
@@ -221,13 +220,15 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             a.is_active !== false
           );
           
-          // Show newly created clients in the month they were created (even without assignments)
-          const clientCreatedDate = new Date(client.created_at);
-          const clientCreatedMonth = format(clientCreatedDate, 'yyyy-MM');
-          const isCreatedThisMonth = clientCreatedMonth === selectedMonth;
+          // Check if client has monthly targets set for this month
+          // This ensures clients remain visible even after all assignments are removed
+          const hasMonthlyTarget = (clientTargetsData || []).some((t: any) => 
+            t.client_id === client.id && 
+            t.month === selectedMonth
+          );
           
-          // Show client if it has assignments OR if it was created this month
-          return hasAssignments || isCreatedThisMonth;
+          // Show client if it has assignments OR has monthly targets for this month
+          return hasAssignments || hasMonthlyTarget;
         });
 
       let sortedClients = [...processedClients];
@@ -436,6 +437,25 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
 
     if (insertError) throw insertError;
 
+    // Create a monthly target entry for the selected month
+    // This ensures the client is visible in this month even without assignments
+    const { error: monthlyTargetError } = await supabase
+      .from('client_monthly_targets')
+      .upsert([{
+        client_id: insertedClient.id,
+        month: selectedMonth,
+        agency_id: agency?.id,
+        monthly_set_target: typeof newClientSetTarget === 'string' ? parseInt(newClientSetTarget) || 0 : newClientSetTarget,
+        monthly_hold_target: typeof newClientHoldTarget === 'string' ? parseInt(newClientHoldTarget) || 0 : newClientHoldTarget,
+      }], {
+        onConflict: 'client_id,month,agency_id'
+      });
+
+    if (monthlyTargetError) {
+      console.error('Error creating monthly target:', monthlyTargetError);
+      // Don't throw - the client was created successfully, just log the error
+    }
+
     // Log client creation
     await logger.logClientAction(
       'create',
@@ -641,6 +661,28 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           clientId: String(selectedClient),
           sdrId: String(selectedSDR)
         });
+      }
+    }
+
+    // Ensure the client has a monthly target entry for this month
+    // This makes the client visible even if all assignments are later removed
+    const client = allClients.find(c => c.id === selectedClient);
+    if (client) {
+      const { error: monthlyTargetError } = await supabase
+        .from('client_monthly_targets')
+        .upsert([{
+          client_id: selectedClient,
+          month: currentMonth,
+          agency_id: agency?.id,
+          monthly_set_target: client.monthly_set_target || 0,
+          monthly_hold_target: client.monthly_hold_target || 0,
+        }], {
+          onConflict: 'client_id,month,agency_id'
+        });
+
+      if (monthlyTargetError) {
+        console.error('Error creating/updating monthly target:', monthlyTargetError);
+        // Don't throw - the assignment was successful, just log the error
       }
     }
 
