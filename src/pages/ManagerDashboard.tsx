@@ -227,6 +227,7 @@ export default function ManagerDashboard() {
   const [allSDRs, setAllSDRs] = useState<any[]>([]);
   const [expandedSDRs, setExpandedSDRs] = useState<Record<string, boolean>>({});
   const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
+  const [expandedOtherHeldMeetings, setExpandedOtherHeldMeetings] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'set' | 'held' | 'pending' | 'sdrs' | 'setTarget' | 'heldTarget' | 'sdrClientMeetings' | null>(null);
@@ -2187,39 +2188,86 @@ export default function ManagerDashboard() {
                                       return acc;
                                     }, {} as Record<string, typeof otherHeldMeetings>);
                                     
+                                    const isOtherExpanded = expandedOtherHeldMeetings[sdr.id];
+                                    
                                     return (
                                       <div className={`mt-4 pt-4 border-t ${darkTheme ? 'border-slate-600' : 'border-gray-300'}`}>
-                                        <h5 className={`text-xs font-semibold mb-2 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
-                                          Other Held Meetings ({otherHeldMeetings.length})
-                                        </h5>
+                                        <button
+                                          onClick={() => setExpandedOtherHeldMeetings(prev => ({
+                                            ...prev,
+                                            [sdr.id]: !prev[sdr.id]
+                                          }))}
+                                          className={`w-full flex items-center justify-between mb-2 p-2 rounded-md transition-colors hover:${darkTheme ? 'bg-[#2d3139]' : 'bg-gray-100'}`}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            {isOtherExpanded ? (
+                                              <ChevronDown className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
+                                            ) : (
+                                              <ChevronRight className={`w-4 h-4 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`} />
+                                            )}
+                                            <h5 className={`text-xs font-semibold ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                                              Other Held Meetings ({otherHeldMeetings.length})
+                                            </h5>
+                                          </div>
+                                        </button>
                                         <p className={`text-xs mb-3 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
                                           Meetings held this month for clients not in current assignments
                                         </p>
-                                        <div className="space-y-2">
-                                          {Object.entries(meetingsByClient).map(([clientId, clientMeetings]) => {
-                                            const client = clients.find(c => c.id === clientId);
-                                            const clientName = client?.name || 'Unknown Client';
-                                            
-                                            return (
-                                              <div
-                                                key={clientId}
-                                                className={`flex items-center justify-between p-2 rounded-md ${darkTheme ? 'bg-[#2d3139]' : 'bg-gray-100'}`}
-                                              >
-                                                <div>
-                                                  <p className={`text-xs font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
-                                                    {clientName}
-                                                  </p>
-                                                  <p className={`text-xs mt-0.5 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
-                                                    {clientMeetings.length} meeting{clientMeetings.length !== 1 ? 's' : ''} held
-                                                  </p>
+                                        
+                                        {isOtherExpanded && (
+                                          <div className="space-y-2">
+                                            {Object.entries(meetingsByClient).map(([clientId, clientMeetings]) => {
+                                              const client = clients.find(c => c.id === clientId);
+                                              const clientName = client?.name || 'Unknown Client';
+                                              
+                                              return (
+                                                <div key={clientId} className="space-y-2">
+                                                  <div className={`flex items-center justify-between p-2 rounded-md ${darkTheme ? 'bg-[#2d3139]' : 'bg-gray-100'}`}>
+                                                    <div>
+                                                      <p className={`text-xs font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
+                                                        {clientName}
+                                                      </p>
+                                                      <p className={`text-xs mt-0.5 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                                                        {clientMeetings.length} meeting{clientMeetings.length !== 1 ? 's' : ''} held
+                                                      </p>
+                                                    </div>
+                                                    <span className={`text-xs font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+                                                      {clientMeetings.length}
+                                                    </span>
+                                                  </div>
+                                                  {/* Show meeting details */}
+                                                  <div className={`ml-4 space-y-1.5 ${darkTheme ? 'border-l-2 border-slate-600' : 'border-l-2 border-gray-300'} pl-3`}>
+                                                    {clientMeetings.map((meeting: any) => (
+                                                      <div
+                                                        key={meeting.id}
+                                                        className={`p-2 rounded text-xs ${darkTheme ? 'bg-[#23262d]' : 'bg-gray-50'}`}
+                                                      >
+                                                        <div className="flex items-center justify-between mb-1">
+                                                          <span className={`font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                                                            {meeting.contact_full_name || 'No contact name'}
+                                                          </span>
+                                                          <span className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                                                            {meeting.scheduled_date ? format(new Date(meeting.scheduled_date), 'MMM d, yyyy') : 'No date'}
+                                                          </span>
+                                                        </div>
+                                                        {meeting.company && (
+                                                          <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                                                            {meeting.company}
+                                                          </p>
+                                                        )}
+                                                        {meeting.title && (
+                                                          <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                                                            {meeting.title}
+                                                          </p>
+                                                        )}
+                                                      </div>
+                                                    ))}
+                                                  </div>
                                                 </div>
-                                                <span className={`text-xs font-medium ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
-                                                  {clientMeetings.length}
-                                                </span>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   })()}
