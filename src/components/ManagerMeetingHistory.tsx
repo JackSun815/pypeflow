@@ -853,9 +853,9 @@ export default function ManagerMeetingHistory({
 
       {viewMode === 'meetings' && (
         <>
-          {/* All-time Stats */}
-          <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
-            <h2 className={`text-xl font-semibold mb-6 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>All-time Team Performance</h2>
+      {/* All-time Stats */}
+      <div className={`rounded-lg shadow-md p-6 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+        <h2 className={`text-xl font-semibold mb-6 ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>All-time Team Performance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div>
             <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Total Meetings Booked</p>

@@ -332,6 +332,9 @@ export default function ManagerDashboard() {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
+  // Month-specific client targets (from client_monthly_targets)
+  const [clientMonthlyTargets, setClientMonthlyTargets] = useState<Record<string, { monthly_set_target: number; monthly_hold_target: number }>>({});
+
   // State for client progress visualization
   const [progressGoalType, setProgressGoalType] = useState<'set' | 'held' | 'setProgress' | 'heldProgress'>('set');
 
@@ -369,6 +372,40 @@ export default function ManagerDashboard() {
     }
 
     fetchAssignments();
+  }, [selectedMonth, agency?.id]);
+
+  // Fetch month-specific client targets for the selected month
+  useEffect(() => {
+    async function fetchClientMonthlyTargets() {
+      try {
+        if (!agency?.id) {
+          setClientMonthlyTargets({});
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('client_monthly_targets')
+          .select('client_id, monthly_set_target, monthly_hold_target')
+          .eq('agency_id', agency.id as any)
+          .eq('month', selectedMonth as any);
+
+        if (error) throw error;
+
+        const map: Record<string, { monthly_set_target: number; monthly_hold_target: number }> = {};
+        for (const row of data || []) {
+          map[String((row as any).client_id)] = {
+            monthly_set_target: Number((row as any).monthly_set_target) || 0,
+            monthly_hold_target: Number((row as any).monthly_hold_target) || 0,
+          };
+        }
+        setClientMonthlyTargets(map);
+      } catch (err) {
+        console.error('Error fetching client monthly targets:', err);
+        setClientMonthlyTargets({});
+      }
+    }
+
+    fetchClientMonthlyTargets();
   }, [selectedMonth, agency?.id]);
 
 
@@ -2895,7 +2932,8 @@ export default function ManagerDashboard() {
                     !(assignment.sdr_id === null && assignment.monthly_set_target === -1) && // Exclude hidden markers
                     assignment.is_active !== false // Exclude inactive assignments
                   );
-                  return hasAssignments;
+                  const hasMonthlyTarget = !!clientMonthlyTargets[String(client.id)];
+                  return hasAssignments || hasMonthlyTarget;
                 });
 
                 // console.log('📊 Client Progress Visualization Debug:');
@@ -2917,6 +2955,11 @@ export default function ManagerDashboard() {
 
                   const totalAssignedSet = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
                   const totalAssignedHeld = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
+
+                  // Use month-specific targets when available (prevents mixing global targets with month-specific assignments)
+                  const monthTargets = clientMonthlyTargets[String(client.id)];
+                  const monthSetTarget = monthTargets?.monthly_set_target ?? (client as any).monthly_set_target ?? 0;
+                  const monthHeldTarget = monthTargets?.monthly_hold_target ?? (client as any).monthly_hold_target ?? 0;
 
                   // Calculate actual meetings for this client in the selected month
                   // Use UTC dates to avoid timezone issues
@@ -2966,15 +3009,18 @@ export default function ManagerDashboard() {
 
                   const actualMeetingsHeld = clientMeetingsHeld.length;
 
-                  const setProgress = client.monthly_set_target > 0 ? (totalAssignedSet / client.monthly_set_target) * 100 : 0;
-                  const heldProgress = client.monthly_hold_target > 0 ? (totalAssignedHeld / client.monthly_hold_target) * 100 : 0;
+                  const setProgress = monthSetTarget > 0 ? (totalAssignedSet / monthSetTarget) * 100 : 0;
+                  const heldProgress = monthHeldTarget > 0 ? (totalAssignedHeld / monthHeldTarget) * 100 : 0;
                   
                   // Calculate actual progress percentages (meetings vs goals)
-                  const setProgressActual = client.monthly_set_target > 0 ? (actualMeetingsSet / client.monthly_set_target) * 100 : 0;
-                  const heldProgressActual = client.monthly_hold_target > 0 ? (actualMeetingsHeld / client.monthly_hold_target) * 100 : 0;
+                  const setProgressActual = monthSetTarget > 0 ? (actualMeetingsSet / monthSetTarget) * 100 : 0;
+                  const heldProgressActual = monthHeldTarget > 0 ? (actualMeetingsHeld / monthHeldTarget) * 100 : 0;
 
                   return {
                     ...client,
+                    // override targets for this visualization so the chart uses month-correct values
+                    monthly_set_target: monthSetTarget,
+                    monthly_hold_target: monthHeldTarget,
                     setProgress: Math.min(setProgress, 100), // Cap at 100%
                     heldProgress: Math.min(heldProgress, 100), // Cap at 100%
                     setProgressActual: Math.min(setProgressActual, 100), // Cap at 100%
@@ -2983,8 +3029,8 @@ export default function ManagerDashboard() {
                     totalAssignedHeld,
                     actualMeetingsSet,
                     actualMeetingsHeld,
-                    unassignedSet: Math.max(0, client.monthly_set_target - totalAssignedSet),
-                    unassignedHeld: Math.max(0, client.monthly_hold_target - totalAssignedHeld)
+                    unassignedSet: Math.max(0, monthSetTarget - totalAssignedSet),
+                    unassignedHeld: Math.max(0, monthHeldTarget - totalAssignedHeld)
                   };
                 });
 

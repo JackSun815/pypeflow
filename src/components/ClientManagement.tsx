@@ -190,14 +190,14 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
           const monthly_hold_target = monthlyTarget?.monthly_hold_target ?? client.monthly_hold_target ?? 0;
           
           return {
-            ...client,
+          ...client,
             monthly_set_target, // Override with month-specific target
             monthly_hold_target, // Override with month-specific target
-            assignments: (assignmentsData || []).filter((a: any) => 
-              a.client_id === client.id && 
-              !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude hidden markers
-              a.is_active !== false // Exclude inactive assignments
-            )
+          assignments: (assignmentsData || []).filter((a: any) => 
+            a.client_id === client.id && 
+            !(a.sdr_id === null && a.monthly_set_target === -1) && // Exclude hidden markers
+            a.is_active !== false // Exclude inactive assignments
+          )
           };
         })
         .filter((client: any) => {
@@ -292,11 +292,11 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         // Update existing target
         const { error } = await supabase
           .from('client_monthly_targets')
-          .update({
-            monthly_set_target: newSetTarget,
+        .update({ 
+          monthly_set_target: newSetTarget,
             monthly_hold_target: newHoldTarget,
             updated_at: new Date().toISOString()
-          })
+        })
           .eq('id', existingTarget.id);
         updateError = error;
       } else {
@@ -455,7 +455,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       console.error('Error creating monthly target:', monthlyTargetError);
       // Don't throw - the client was created successfully, just log the error
     }
-
+    
     // Log client creation
     await logger.logClientAction(
       'create',
@@ -879,7 +879,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         setError('Agency information not available');
         return;
       }
-
+      
       // Read the CSV file
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
@@ -895,7 +895,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       // Validate required headers
       const requiredHeaders = ['Client Name', 'Client ID', 'SDR ID', 'Monthly Set Target', 'Monthly Hold Target'];
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-      
+
       if (missingHeaders.length > 0) {
         setError(`Missing required columns: ${missingHeaders.join(', ')}`);
         return;
@@ -908,7 +908,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        
+
         // Handle CSV parsing with proper quote handling
         const values = [];
         let currentValue = '';
@@ -988,13 +988,13 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         }
 
         // Delete existing assignments
-        const { error: deleteError } = await supabase
-          .from('assignments')
-          .delete()
-          .eq('agency_id', agency.id)
-          .eq('month', selectedMonth);
+      const { error: deleteError } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('agency_id', agency.id)
+        .eq('month', selectedMonth);
 
-        if (deleteError) throw deleteError;
+      if (deleteError) throw deleteError;
       }
 
       // Insert new assignments
