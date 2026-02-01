@@ -436,158 +436,26 @@ export default function ManagerDashboard() {
       new Date(meeting.confirmed_at).toDateString() === new Date().toDateString()
   );
 
-  async function exportMeetings() {
-    try {
-      // Apply filters to meetings
-      let filteredMeetings = [...meetings];
-      
-      // Filter by date range
-      if (exportFilters.dateRange === 'currentMonth') {
-        const now = new Date();
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        filteredMeetings = filteredMeetings.filter(meeting => {
-          const meetingDate = new Date(meeting.scheduled_date);
-          return meetingDate >= monthStart && meetingDate <= monthEnd;
-        });
-      } else if (exportFilters.dateRange === 'custom' && exportFilters.startDate && exportFilters.endDate) {
-        filteredMeetings = filteredMeetings.filter(meeting => {
-          const meetingDate = new Date(meeting.scheduled_date);
-          const startDate = new Date(exportFilters.startDate);
-          const endDate = new Date(exportFilters.endDate);
-          return meetingDate >= startDate && meetingDate <= endDate;
-        });
-      }
-      
-      // Filter by status
-      if (exportFilters.status !== 'all') {
-        filteredMeetings = filteredMeetings.filter(meeting => {
-          if (exportFilters.status === 'noShow') return meeting.no_show;
-          return meeting.status === exportFilters.status;
-        });
-      }
-      
-      // Filter by client
-      if (exportFilters.clientIds.length > 0) {
-        filteredMeetings = filteredMeetings.filter(meeting => 
-          exportFilters.clientIds.includes(meeting.client_id)
-        );
-      }
-      
-      // Filter by SDR
-      if (exportFilters.sdrIds.length > 0) {
-        filteredMeetings = filteredMeetings.filter(meeting => 
-          meeting.sdr_id !== null && exportFilters.sdrIds.includes(meeting.sdr_id)
-        );
-      }
-      
-      // Prepare export data
-      const exportData = filteredMeetings.map(meeting => {
-        const sdr = meeting.sdr_id ? sdrs.find(s => s.id === meeting.sdr_id) : null;
-        const client = clients.find(c => c.id === meeting.client_id);
-        
-        const row: any = {};
-        
-        if (exportFilters.includeFields.meetingDetails) {
-          row['Status'] = meeting.status;
-          row['Scheduled Date'] = meeting.scheduled_date ? new Date(meeting.scheduled_date).toLocaleDateString() : '';
-          row['No Show'] = meeting.no_show ? 'Yes' : 'No';
-          row['Notes'] = meeting.notes || '';
-        }
-        
-        if (exportFilters.includeFields.clientInfo) {
-          row['Client Name'] = client?.name || 'Unknown Client';
-        }
-        
-        if (exportFilters.includeFields.sdrInfo) {
-          row['SDR Name'] = sdr?.full_name || 'Unknown SDR';
-        }
-        
-        if (exportFilters.includeFields.targets) {
-          // Find SDR's target for this client
-          const sdrClient = sdr?.clients.find(c => c.id === meeting.client_id);
-          row['Monthly Set Target'] = sdrClient?.monthly_set_target || 0;
-          row['Monthly Hold Target'] = sdrClient?.monthly_hold_target || 0;
-        }
-        
-        if (exportFilters.includeFields.timestamps) {
-          row['Created'] = new Date(meeting.created_at).toLocaleDateString();
-          row['Confirmed'] = meeting.confirmed_at ? new Date(meeting.confirmed_at).toLocaleDateString() : '';
-          row['Held'] = meeting.held_at ? new Date(meeting.held_at).toLocaleDateString() : '';
-        }
-        
-        return row;
-      });
-      
-      // Convert to CSV and download
-      if (exportData.length === 0) {
-        alert('No meetings match the selected filters.');
-        return;
-      }
-      
-      const headers = Object.keys(exportData[0]);
-      
-      // Helper function to properly escape CSV values
-      const escapeCSVValue = (value: any): string => {
-        if (value === null || value === undefined) {
-          return '';
-        }
-        
-        const stringValue = String(value);
-        
-        // If the value contains comma, quote, or newline, wrap in quotes and escape internal quotes
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
-        }
-        
-        return stringValue;
-      };
-
-      const csvContent = [
-        headers.map(escapeCSVValue).join(','),
-        ...exportData.map(row => 
-          headers.map(header => escapeCSVValue(row[header])).join(',')
-        )
-      ].join('\n');
-      
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `meetings_export_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      setExportModalOpen(false);
-    } catch (err) {
-      console.error('Export failed:', err);
-      alert('Export failed. Please try again.');
-    }
-  }
-
   // Export SDR Performance function
   async function exportSDRPerformance() {
     try {
       // Calculate SDR performance metrics
       const sdrPerformanceData = sdrs.map(sdr => {
-        const sdrMeetings = meetings.filter(meeting => meeting.sdr_id === sdr.id);
-
-        // Derive year/month from selectedMonth (format: yyyy-MM)
+        // Derive year/month from selectedMonth (format: yyyy-MM) to match dashboard month selection
         const [yearStr, monthStr] = String(selectedMonth || '').split('-');
         const year = Number(yearStr);
         const monthIndex = Number(monthStr) - 1; // 0-based month
-        
-        // Fallback: if parsing fails, use current month
+
         const fallbackNow = new Date();
         const effectiveYear = Number.isFinite(year) ? year : fallbackNow.getFullYear();
-        const effectiveMonthIndex = Number.isFinite(monthIndex) && monthIndex >= 0 && monthIndex <= 11
-          ? monthIndex
-          : fallbackNow.getMonth();
+        const effectiveMonthIndex =
+          Number.isFinite(monthIndex) && monthIndex >= 0 && monthIndex <= 11
+            ? monthIndex
+            : fallbackNow.getMonth();
 
-        // Meetings SET: Filter by created_at (when SDR booked it)
+        const sdrMeetings = meetings.filter(meeting => meeting.sdr_id === sdr.id);
+
+        // Meetings SET: Filter by created_at (when meeting was booked) using selected month
         const monthlyMeetingsSet = sdrMeetings.filter(meeting => {
           const createdDate = new Date(meeting.created_at);
           const monthStart = new Date(effectiveYear, effectiveMonthIndex, 1);
@@ -3016,8 +2884,8 @@ export default function ManagerDashboard() {
 
                   const setProgress = monthSetTarget > 0 ? (totalAssignedSet / monthSetTarget) * 100 : 0;
                   const heldProgress = monthHeldTarget > 0 ? (totalAssignedHeld / monthHeldTarget) * 100 : 0;
-                  
-                  // Calculate actual progress percentages (meetings vs goals)
+
+                  // Actual progress percentages (meetings vs goals) - keep uncapped for display/sorting
                   const setProgressActual = monthSetTarget > 0 ? (actualMeetingsSet / monthSetTarget) * 100 : 0;
                   const heldProgressActual = monthHeldTarget > 0 ? (actualMeetingsHeld / monthHeldTarget) * 100 : 0;
 
@@ -3026,10 +2894,12 @@ export default function ManagerDashboard() {
                     // override targets for this visualization so the chart uses month-correct values
                     monthly_set_target: monthSetTarget,
                     monthly_hold_target: monthHeldTarget,
-                    setProgress: Math.min(setProgress, 100), // Cap at 100%
-                    heldProgress: Math.min(heldProgress, 100), // Cap at 100%
-                    setProgressActual: Math.min(setProgressActual, 100), // Cap at 100%
-                    heldProgressActual: Math.min(heldProgressActual, 100), // Cap at 100%
+                    // keep capped values for the assignment-based progress (useful for some views)
+                    setProgress: Math.min(setProgress, 100),
+                    heldProgress: Math.min(heldProgress, 100),
+                    // keep actual progress UNCAPPED so numeric display and sorting reflect true values
+                    setProgressActual,
+                    heldProgressActual,
                     totalAssignedSet,
                     totalAssignedHeld,
                     actualMeetingsSet,
@@ -3039,34 +2909,20 @@ export default function ManagerDashboard() {
                   };
                 });
 
-                // Sort by progress (least to most)
-                const sortedClients = clientsWithProgress.sort((a, b) => {
-                  let aProgress, bProgress;
-                  
-                  switch (progressGoalType) {
-                    case 'set':
-                      aProgress = a.setProgress;
-                      bProgress = b.setProgress;
-                      break;
-                    case 'held':
-                      aProgress = a.heldProgress;
-                      bProgress = b.heldProgress;
-                      break;
-                    case 'setProgress':
-                      aProgress = a.setProgressActual;
-                      bProgress = b.setProgressActual;
-                      break;
-                    case 'heldProgress':
-                      aProgress = a.heldProgressActual;
-                      bProgress = b.heldProgressActual;
-                      break;
-                    default:
-                      aProgress = a.setProgress;
-                      bProgress = b.setProgress;
-                  }
-                  
-                  return aProgress - bProgress;
+                // Sort by progress (least to most) using UNCAPPED actual percentages for 'set' and 'held'
+                const sortedClients = clientsWithProgress.slice().sort((a, b) => {
+                  const aProgress = (progressGoalType === 'held' || progressGoalType === 'heldProgress') ? (a.heldProgressActual ?? 0) : (a.setProgressActual ?? 0);
+                  const bProgress = (progressGoalType === 'held' || progressGoalType === 'heldProgress') ? (b.heldProgressActual ?? 0) : (b.setProgressActual ?? 0);
+                  return (aProgress || 0) - (bProgress || 0);
                 });
+
+                // Compute dynamic max percent (at least 100%) for axis labels and scaling
+                const maxProgressValue = sortedClients.reduce((max, client) => {
+                  const p = (progressGoalType === 'held' || progressGoalType === 'heldProgress') ? (client.heldProgressActual ?? 0) : (client.setProgressActual ?? 0);
+                  return Math.max(max, p || 0);
+                }, 0);
+                const maxLabel = Math.max(100, Math.ceil(maxProgressValue / 25) * 25);
+                const maxLabelForScale = maxLabel;
 
                 return (
                   <div className="w-full">
@@ -3081,14 +2937,14 @@ export default function ManagerDashboard() {
                         <div id="client-progress-chart" className="bg-white border border-gray-300 rounded-lg p-6">
                           {/* Y-axis and Chart */}
                           <div className="flex">
-                            {/* Y-axis labels */}
-                            <div className="w-16 flex flex-col justify-between h-64 text-sm text-gray-600 font-medium">
-                              <div className="text-right">100%</div>
-                              <div className="text-right">75%</div>
-                              <div className="text-right">50%</div>
-                              <div className="text-right">25%</div>
-                              <div className="text-right">0%</div>
-                            </div>
+                                {/* Y-axis labels - fixed at 0-100% */}
+                                <div className="w-16 flex flex-col justify-between h-64 text-sm text-gray-600 font-medium">
+                                  <div className="text-right">100%</div>
+                                  <div className="text-right">75%</div>
+                                  <div className="text-right">50%</div>
+                                  <div className="text-right">25%</div>
+                                  <div className="text-right">0%</div>
+                                </div>
                             
                             {/* Chart area with horizontal scroll */}
                             <div className="flex-1 overflow-x-auto">
@@ -3110,18 +2966,21 @@ export default function ManagerDashboard() {
                                       let progress, totalAssigned, totalTarget, unassigned, actualMeetings;
                                       
                                       switch (progressGoalType) {
+                                        // For the 'set' and 'held' goal views we want the chart to reflect
+                                        // actual meetings (how many were set/held) compared to the target.
+                                        // This allows percentages > 100% when actual > target.
                                         case 'set':
-                                          progress = client.setProgress;
-                                          totalAssigned = client.totalAssignedSet;
+                                          progress = client.setProgressActual; // actual/target
+                                          totalAssigned = client.actualMeetingsSet; // show actual meetings as 'Assigned'
                                           totalTarget = client.monthly_set_target;
-                                          unassigned = client.unassignedSet;
+                                          unassigned = Math.max(0, client.monthly_set_target - client.actualMeetingsSet);
                                           actualMeetings = client.actualMeetingsSet;
                                           break;
                                         case 'held':
-                                          progress = client.heldProgress;
-                                          totalAssigned = client.totalAssignedHeld;
+                                          progress = client.heldProgressActual;
+                                          totalAssigned = client.actualMeetingsHeld;
                                           totalTarget = client.monthly_hold_target;
-                                          unassigned = client.unassignedHeld;
+                                          unassigned = Math.max(0, client.monthly_hold_target - client.actualMeetingsHeld);
                                           actualMeetings = client.actualMeetingsHeld;
                                           break;
                                         case 'setProgress':
@@ -3154,7 +3013,9 @@ export default function ManagerDashboard() {
                                         return 'bg-red-500';
                                       };
 
-                                      const barHeight = Math.min(progress, 100) * 2.56; // 256px / 100% = 2.56px per %
+                                      // Cap bar height at 100% visually (256px = h-64), but show actual percentage in label
+                                      const barHeightPercent = Math.min(progress, 100);
+                                      const barHeight = (barHeightPercent / 100) * 256;
                                       const isOver100 = progress > 100;
 
                                       return (
