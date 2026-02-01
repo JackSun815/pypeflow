@@ -2956,10 +2956,15 @@ export default function ManagerDashboard() {
                   const totalAssignedSet = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
                   const totalAssignedHeld = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
 
-                  // Use month-specific targets when available (prevents mixing global targets with month-specific assignments)
+                  // Use month-specific targets when available. If not present, prefer the sum of
+                  // month-specific assignment targets for this client (so chart and table agree).
+                  // Fall back to the client-level default only if neither is present.
                   const monthTargets = clientMonthlyTargets[String(client.id)];
-                  const monthSetTarget = monthTargets?.monthly_set_target ?? (client as any).monthly_set_target ?? 0;
-                  const monthHeldTarget = monthTargets?.monthly_hold_target ?? (client as any).monthly_hold_target ?? 0;
+                  const assignmentSetTarget = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
+                  const assignmentHeldTarget = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
+
+                  const monthSetTarget = monthTargets?.monthly_set_target ?? (assignmentSetTarget || (client as any).monthly_set_target || 0);
+                  const monthHeldTarget = monthTargets?.monthly_hold_target ?? (assignmentHeldTarget || (client as any).monthly_hold_target || 0);
 
                   // Calculate actual meetings for this client in the selected month
                   // Use UTC dates to avoid timezone issues
