@@ -1624,11 +1624,12 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                     <h4 className={`text-sm font-semibold mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>SDR Assignments</h4>
                     {client.assignments.map((assignment, index) => {
                       const sdr = sdrs.find((s) => s.id === assignment.sdr_id);
-                      const assignmentSetPercentage = client.monthly_set_target > 0
-                        ? (assignment.monthly_set_target / client.monthly_set_target) * 100
+                      // Calculate percentage based on total assigned, not client goal
+                      const assignmentSetPercentage = totalAssignedSetTarget > 0
+                        ? (assignment.monthly_set_target / totalAssignedSetTarget) * 100
                         : 0;
-                      const assignmentHoldPercentage = client.monthly_hold_target > 0
-                        ? (assignment.monthly_hold_target / client.monthly_hold_target) * 100
+                      const assignmentHoldPercentage = totalAssignedHoldTarget > 0
+                        ? (assignment.monthly_hold_target / totalAssignedHoldTarget) * 100
                         : 0;
 
                       // Color scheme for SDR cards - 10 unique colors

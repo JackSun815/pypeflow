@@ -2885,9 +2885,9 @@ export default function ManagerDashboard() {
                   const setProgress = monthSetTarget > 0 ? (totalAssignedSet / monthSetTarget) * 100 : 0;
                   const heldProgress = monthHeldTarget > 0 ? (totalAssignedHeld / monthHeldTarget) * 100 : 0;
 
-                  // Actual progress percentages (meetings vs goals) - keep uncapped for display/sorting
-                  const setProgressActual = monthSetTarget > 0 ? (actualMeetingsSet / monthSetTarget) * 100 : 0;
-                  const heldProgressActual = monthHeldTarget > 0 ? (actualMeetingsHeld / monthHeldTarget) * 100 : 0;
+                  // Actual progress percentages (meetings vs assigned targets) - keep uncapped for display/sorting
+                  const setProgressActual = totalAssignedSet > 0 ? (actualMeetingsSet / totalAssignedSet) * 100 : 0;
+                  const heldProgressActual = totalAssignedHeld > 0 ? (actualMeetingsHeld / totalAssignedHeld) * 100 : 0;
 
                   return {
                     ...client,
