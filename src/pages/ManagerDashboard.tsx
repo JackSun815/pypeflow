@@ -2909,16 +2909,45 @@ export default function ManagerDashboard() {
                   };
                 });
 
-                // Sort by progress (least to most) using UNCAPPED actual percentages for 'set' and 'held'
+                // Sort by progress (least to most) using the appropriate progress metric for each goal type
                 const sortedClients = clientsWithProgress.slice().sort((a, b) => {
-                  const aProgress = (progressGoalType === 'held' || progressGoalType === 'heldProgress') ? (a.heldProgressActual ?? 0) : (a.setProgressActual ?? 0);
-                  const bProgress = (progressGoalType === 'held' || progressGoalType === 'heldProgress') ? (b.heldProgressActual ?? 0) : (b.setProgressActual ?? 0);
+                  let aProgress, bProgress;
+                  
+                  if (progressGoalType === 'set') {
+                    aProgress = a.setProgress ?? 0;
+                    bProgress = b.setProgress ?? 0;
+                  } else if (progressGoalType === 'held') {
+                    aProgress = a.heldProgress ?? 0;
+                    bProgress = b.heldProgress ?? 0;
+                  } else if (progressGoalType === 'setProgress') {
+                    aProgress = a.setProgressActual ?? 0;
+                    bProgress = b.setProgressActual ?? 0;
+                  } else if (progressGoalType === 'heldProgress') {
+                    aProgress = a.heldProgressActual ?? 0;
+                    bProgress = b.heldProgressActual ?? 0;
+                  } else {
+                    // default to setProgress
+                    aProgress = a.setProgress ?? 0;
+                    bProgress = b.setProgress ?? 0;
+                  }
+                  
                   return (aProgress || 0) - (bProgress || 0);
                 });
 
                 // Compute dynamic max percent (at least 100%) for axis labels and scaling
                 const maxProgressValue = sortedClients.reduce((max, client) => {
-                  const p = (progressGoalType === 'held' || progressGoalType === 'heldProgress') ? (client.heldProgressActual ?? 0) : (client.setProgressActual ?? 0);
+                  let p;
+                  if (progressGoalType === 'set') {
+                    p = client.setProgress ?? 0;
+                  } else if (progressGoalType === 'held') {
+                    p = client.heldProgress ?? 0;
+                  } else if (progressGoalType === 'setProgress') {
+                    p = client.setProgressActual ?? 0;
+                  } else if (progressGoalType === 'heldProgress') {
+                    p = client.heldProgressActual ?? 0;
+                  } else {
+                    p = client.setProgress ?? 0;
+                  }
                   return Math.max(max, p || 0);
                 }, 0);
                 const maxLabel = Math.max(100, Math.ceil(maxProgressValue / 25) * 25);
@@ -2966,35 +2995,36 @@ export default function ManagerDashboard() {
                                       let progress, totalAssigned, totalTarget, unassigned, actualMeetings;
                                       
                                       switch (progressGoalType) {
-                                        // For the 'set' and 'held' goal views we want the chart to reflect
-                                        // actual meetings (how many were set/held) compared to the target.
-                                        // This allows percentages > 100% when actual > target.
+                                        // For 'set' and 'held' goal views, show assignment progress
+                                        // (how much of the client's goal has been assigned to SDRs)
                                         case 'set':
-                                          progress = client.setProgressActual; // actual/target
-                                          totalAssigned = client.actualMeetingsSet; // show actual meetings as 'Assigned'
-                                          totalTarget = client.monthly_set_target;
-                                          unassigned = Math.max(0, client.monthly_set_target - client.actualMeetingsSet);
+                                          progress = client.setProgress; // totalAssignedSet/monthSetTarget
+                                          totalAssigned = client.totalAssignedSet; // total assigned to SDRs
+                                          totalTarget = client.monthly_set_target; // client's total goal
+                                          unassigned = client.unassignedSet;
                                           actualMeetings = client.actualMeetingsSet;
                                           break;
                                         case 'held':
-                                          progress = client.heldProgressActual;
-                                          totalAssigned = client.actualMeetingsHeld;
-                                          totalTarget = client.monthly_hold_target;
-                                          unassigned = Math.max(0, client.monthly_hold_target - client.actualMeetingsHeld);
+                                          progress = client.heldProgress; // totalAssignedHeld/monthHeldTarget
+                                          totalAssigned = client.totalAssignedHeld; // total assigned to SDRs
+                                          totalTarget = client.monthly_hold_target; // client's total goal
+                                          unassigned = client.unassignedHeld;
                                           actualMeetings = client.actualMeetingsHeld;
                                           break;
+                                        // For 'setProgress' and 'heldProgress', show meeting performance
+                                        // (how well SDRs are performing against their assigned targets)
                                         case 'setProgress':
                                           progress = client.setProgressActual;
                                           totalAssigned = client.actualMeetingsSet;
-                                          totalTarget = client.monthly_set_target;
-                                          unassigned = Math.max(0, client.monthly_set_target - client.actualMeetingsSet);
+                                          totalTarget = client.totalAssignedSet;
+                                          unassigned = Math.max(0, client.totalAssignedSet - client.actualMeetingsSet);
                                           actualMeetings = client.actualMeetingsSet;
                                           break;
                                         case 'heldProgress':
                                           progress = client.heldProgressActual;
                                           totalAssigned = client.actualMeetingsHeld;
-                                          totalTarget = client.monthly_hold_target;
-                                          unassigned = Math.max(0, client.monthly_hold_target - client.actualMeetingsHeld);
+                                          totalTarget = client.totalAssignedHeld;
+                                          unassigned = Math.max(0, client.totalAssignedHeld - client.actualMeetingsHeld);
                                           actualMeetings = client.actualMeetingsHeld;
                                           break;
                                         default:
