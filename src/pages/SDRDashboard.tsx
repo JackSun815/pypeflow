@@ -917,6 +917,98 @@ function SDRDashboardContent() {
     return values;
   };
 
+  // Export meetings to CSV
+  const exportMeetingsToCSV = () => {
+    try {
+      // Prepare CSV headers
+      const headers = [
+        'Client',
+        'Contact Name',
+        'Contact Email',
+        'Contact Phone',
+        'Company',
+        'Title',
+        'Meeting Date',
+        'Meeting Time',
+        'Status',
+        'Booked Date',
+        'Confirmed Date',
+        'Held Date',
+        'No Show',
+        'LinkedIn',
+        'Notes',
+        'Timezone'
+      ];
+
+      // Sort meetings by client name
+      const sortedMeetings = [...meetings].sort((a, b) => {
+        const clientA = clients.find(c => c.id === a.client_id);
+        const clientB = clients.find(c => c.id === b.client_id);
+        const nameA = clientA?.name || '';
+        const nameB = clientB?.name || '';
+        return nameA.localeCompare(nameB);
+      });
+
+      // Track last client to group meetings
+      let lastClientId: string | null = null;
+
+      // Prepare CSV rows
+      const rows = sortedMeetings.map(meeting => {
+        const client = clients.find(c => c.id === meeting.client_id);
+        const scheduledDate = new Date(meeting.scheduled_date);
+        const meetingDate = scheduledDate.toLocaleDateString('en-US');
+        const meetingTime = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const bookedDate = meeting.booked_at ? new Date(meeting.booked_at).toLocaleDateString('en-US') : '';
+        const confirmedDate = meeting.confirmed_date ? new Date(meeting.confirmed_date).toLocaleDateString('en-US') : '';
+        const heldDate = meeting.held_at ? new Date(meeting.held_at).toLocaleDateString('en-US') : '';
+
+        // Only show client name if it's different from the last one (first occurrence)
+        const clientName = meeting.client_id !== lastClientId ? (client?.name || '') : '';
+        lastClientId = meeting.client_id;
+
+        return [
+          clientName,
+          meeting.contact_full_name || '',
+          meeting.contact_email || '',
+          meeting.contact_phone || '',
+          meeting.company || '',
+          meeting.title || '',
+          meetingDate,
+          meetingTime,
+          meeting.status || 'pending',
+          bookedDate,
+          confirmedDate,
+          heldDate,
+          meeting.no_show ? 'Yes' : 'No',
+          meeting.linkedin_page || '',
+          (meeting.notes || '').replace(/"/g, '""'), // Escape quotes
+          meeting.timezone || 'America/New_York'
+        ].map(field => `"${field}"`).join(',');
+      });
+
+      // Combine headers and rows
+      const csv = [headers.join(','), ...rows].join('\n');
+
+      // Create download link
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${sdrName?.replace(/\s+/g, '-') || 'SDR'}-meetings-${dateStr}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting meetings:', error);
+      alert('Failed to export meetings. Please try again.');
+    }
+  };
+
   async function handleAddMeeting(e: React.FormEvent) {
     e.preventDefault();
 
@@ -1631,11 +1723,23 @@ function SDRDashboardContent() {
                     <div className="px-4 py-3">
                       <button
                         onClick={() => setShowImportModal(true)}
-                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${darkTheme ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors mb-2 ${darkTheme ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                         title="Import meetings from Excel or CSV file"
                       >
                         <Upload className="w-4 h-4" />
                         <span>Import Meetings</span>
+                      </button>
+                      
+                      {/* Export Meetings Button */}
+                      <button
+                        onClick={exportMeetingsToCSV}
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${darkTheme ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                        title="Export all meetings to CSV"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Export Meetings</span>
                       </button>
                     </div>
                   </div>
