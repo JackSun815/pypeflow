@@ -2824,15 +2824,10 @@ export default function ManagerDashboard() {
                   const totalAssignedSet = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
                   const totalAssignedHeld = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
 
-                  // Use month-specific targets when available. If not present, prefer the sum of
-                  // month-specific assignment targets for this client (so chart and table agree).
-                  // Fall back to the client-level default only if neither is present.
+                  // Use month-specific targets when available, otherwise fall back to the client's default targets
                   const monthTargets = clientMonthlyTargets[String(client.id)];
-                  const assignmentSetTarget = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
-                  const assignmentHeldTarget = clientAssignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
-
-                  const monthSetTarget = monthTargets?.monthly_set_target ?? (assignmentSetTarget || (client as any).monthly_set_target || 0);
-                  const monthHeldTarget = monthTargets?.monthly_hold_target ?? (assignmentHeldTarget || (client as any).monthly_hold_target || 0);
+                  const monthSetTarget = monthTargets?.monthly_set_target ?? (client as any).monthly_set_target ?? 0;
+                  const monthHeldTarget = monthTargets?.monthly_hold_target ?? (client as any).monthly_hold_target ?? 0;
 
                   // Calculate actual meetings for this client in the selected month
                   // Use UTC dates to avoid timezone issues
@@ -3114,9 +3109,11 @@ export default function ManagerDashboard() {
                         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           {(() => {
                             const totalTarget = sortedClients.reduce((sum, client) => {
-                              return sum + (progressGoalType === 'set' || progressGoalType === 'setProgress' 
-                                ? client.monthly_set_target 
-                                : client.monthly_hold_target);
+                              if (progressGoalType === 'set') return sum + client.monthly_set_target;
+                              if (progressGoalType === 'held') return sum + client.monthly_hold_target;
+                              if (progressGoalType === 'setProgress') return sum + client.totalAssignedSet;
+                              if (progressGoalType === 'heldProgress') return sum + client.totalAssignedHeld;
+                              return sum + client.monthly_set_target;
                             }, 0);
                             
                             const totalAssigned = sortedClients.reduce((sum, client) => {
@@ -3130,8 +3127,8 @@ export default function ManagerDashboard() {
                             const totalUnassigned = sortedClients.reduce((sum, client) => {
                               if (progressGoalType === 'set') return sum + client.unassignedSet;
                               if (progressGoalType === 'held') return sum + client.unassignedHeld;
-                              if (progressGoalType === 'setProgress') return sum + Math.max(0, client.monthly_set_target - client.actualMeetingsSet);
-                              if (progressGoalType === 'heldProgress') return sum + Math.max(0, client.monthly_hold_target - client.actualMeetingsHeld);
+                              if (progressGoalType === 'setProgress') return sum + Math.max(0, client.totalAssignedSet - client.actualMeetingsSet);
+                              if (progressGoalType === 'heldProgress') return sum + Math.max(0, client.totalAssignedHeld - client.actualMeetingsHeld);
                               return sum;
                             }, 0);
                             

@@ -1327,30 +1327,6 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
         
         {/* Calculate overview metrics */}
         {(() => {
-          // Use the same calculation logic as the unassigned clients modal
-          const unassignedClients = clients.filter(client => {
-            const totalAssignedSetTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
-            const totalAssignedHoldTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
-            
-            const hasUnassignedSetTarget = client.monthly_set_target > totalAssignedSetTarget;
-            const hasUnassignedHoldTarget = client.monthly_hold_target > totalAssignedHoldTarget;
-            
-            return hasUnassignedSetTarget || hasUnassignedHoldTarget;
-          });
-
-          // Calculate unassigned amounts by adding up each client's unassigned amounts
-          const unassignedSetTarget = unassignedClients.reduce((sum, client) => {
-            const totalAssignedSetTarget = client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_set_target || 0), 0);
-            const unassignedAmount = client.monthly_set_target - totalAssignedSetTarget;
-            return sum + Math.max(0, unassignedAmount); // Only add positive unassigned amounts
-          }, 0);
-
-          const unassignedHeldTarget = unassignedClients.reduce((sum, client) => {
-            const totalAssignedHoldTarget = client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_hold_target || 0), 0);
-            const unassignedAmount = client.monthly_hold_target - totalAssignedHoldTarget;
-            return sum + Math.max(0, unassignedAmount); // Only add positive unassigned amounts
-          }, 0);
-
           // Calculate total client targets for display
           const totalClientSetTarget = clients.reduce((sum, client) => sum + (client.monthly_set_target || 0), 0);
           const totalClientHeldTarget = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
@@ -1363,8 +1339,29 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             sum + (client.assignments || []).reduce((acc, assignment) => acc + (assignment.monthly_hold_target || 0), 0), 0
           );
 
-          // Debug logging
-          // Debug logs removed for cleaner console output
+          // Calculate unassigned amounts for ALL clients (not just those with unassigned targets)
+          const unassignedSetTarget = clients.reduce((sum, client) => {
+            const totalAssignedSet = client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_set_target || 0), 0);
+            const unassignedAmount = client.monthly_set_target - totalAssignedSet;
+            return sum + Math.max(0, unassignedAmount); // Only add positive unassigned amounts
+          }, 0);
+
+          const unassignedHeldTarget = clients.reduce((sum, client) => {
+            const totalAssignedHeld = client.assignments.reduce((acc, assignment) => acc + (assignment.monthly_hold_target || 0), 0);
+            const unassignedAmount = client.monthly_hold_target - totalAssignedHeld;
+            return sum + Math.max(0, unassignedAmount); // Only add positive unassigned amounts
+          }, 0);
+
+          // Identify clients with unassigned targets for the clickable modal
+          const unassignedClients = clients.filter(client => {
+            const totalAssignedSetTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_set_target || 0), 0);
+            const totalAssignedHoldTarget = client.assignments.reduce((sum, assignment) => sum + (assignment.monthly_hold_target || 0), 0);
+            
+            const hasUnassignedSetTarget = client.monthly_set_target > totalAssignedSetTarget;
+            const hasUnassignedHoldTarget = client.monthly_hold_target > totalAssignedHoldTarget;
+            
+            return hasUnassignedSetTarget || hasUnassignedHoldTarget;
+          });
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
