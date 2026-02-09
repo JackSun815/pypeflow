@@ -12,6 +12,7 @@ import MeetingsHistory from './MeetingsHistory';
 import Commissions from './Commissions';
 import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff, Upload, FileSpreadsheet, X, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import html2canvas from 'html2canvas';
 import TimeSelector from '../components/TimeSelector';
 import UnifiedMeetingLists from '../components/UnifiedMeetingLists';
 import CalendarView from '../components/CalendarView';
@@ -314,6 +315,31 @@ function SDRDashboardContent() {
 
   const handleCancelEdit = () => {
     setEditingMeeting(null);
+  };
+
+  // Export dashboard as PNG
+  const exportDashboardAsPNG = async () => {
+    const dashboardContainer = document.getElementById('sdr-dashboard-charts');
+    if (!dashboardContainer) return;
+
+    try {
+      const canvas = await html2canvas(dashboardContainer, {
+        backgroundColor: darkTheme ? '#1e293b' : '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      const link = document.createElement('a');
+      const now = new Date();
+      const monthYear = now.toLocaleString('en-US', { month: 'short', year: 'numeric' }).replace(' ', '-');
+      link.download = `${sdrName?.replace(/\s+/g, '-') || 'SDR'}-dashboard-${monthYear}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error exporting dashboard:', error);
+      alert('Failed to export dashboard. Please try again.');
+    }
   };
 
   // Lock "current time" for demo mode so the dashboard always shows the same sample period
@@ -1962,9 +1988,26 @@ function SDRDashboardContent() {
                 const metrics = calculateMetrics();
 
                 return (
-                  <>
+                  <div id="sdr-dashboard-charts">
+                    {/* Export Button */}
+                    <div className="flex justify-end mb-4 mt-8">
+                      <button
+                        onClick={exportDashboardAsPNG}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          darkTheme 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export Dashboard
+                      </button>
+                    </div>
+                    
                     {chartVisibility.progressChart && (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-8">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         {/* Monthly Performance Chart */}
                         <div className={`rounded-lg shadow-md p-6 transition-colors ${darkTheme ? 'bg-slate-800/80 border border-blue-800/30' : 'bg-white'}`}>
                             <h3 className={`text-lg font-semibold mb-4 transition-colors ${darkTheme ? 'text-blue-100' : 'text-gray-900'}`}>Monthly Performance</h3>
@@ -2168,7 +2211,7 @@ function SDRDashboardContent() {
                         </div>
                       </div>
                     )}
-                  </>
+                  </div>
                 );
               })()}
             </>
