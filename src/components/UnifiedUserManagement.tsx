@@ -1010,7 +1010,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
                     Set Target: {client?.monthly_set_target || 0} | Hold Target: {client?.monthly_hold_target || 0}
                   </p>
                   <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
-                    Created {new Date(token.created_at).toLocaleDateString()}
+                    Created {client?.created_at ? new Date(client.created_at).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
