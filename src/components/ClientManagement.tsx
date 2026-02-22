@@ -1977,7 +1977,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                   type="number"
                   id="holdTarget"
                   min="0"
-                  value={monthlyHoldTarget === 0 ? '' : monthlyHoldTarget}
+                  value={monthlyHoldTarget}
                   onChange={e => {
                     const val = parseInt(e.target.value);
                     setMonthlyHoldTarget(!isNaN(val) ? val : 0);
@@ -1997,7 +1997,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                   type="number"
                   id="setTarget"
                   min="0"
-                  value={monthlySetTarget === 0 ? '' : monthlySetTarget}
+                  value={monthlySetTarget}
                   onChange={e => {
                     const val = parseInt(e.target.value);
                     setMonthlySetTarget(!isNaN(val) ? val : 0);
