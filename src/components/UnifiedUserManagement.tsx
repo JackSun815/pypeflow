@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase';
 import { useAgency } from '../contexts/AgencyContext';
-import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
+import { Mail, AlertCircle, Check, Link, UserPlus, Key, Building, Users, Shield, UserX, UserCheck, Archive, ArchiveRestore, Trash2, ArrowUpDown } from 'lucide-react';
 import CompensationManagement from './CompensationManagement';
 
 
@@ -71,6 +71,11 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
 
   // Client state
   const [clientTokens, setClientTokens] = useState<ClientToken[]>([]);
+
+  // Sort state
+  const [managerSort, setManagerSort] = useState<'asc' | 'desc'>('desc');
+  const [sdrSort, setSdrSort] = useState<'asc' | 'desc'>('desc');
+  const [clientSort, setClientSort] = useState<'asc' | 'desc'>('desc');
 
   // Load managers and client tokens when agency changes
   useEffect(() => {
@@ -620,9 +625,23 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
         </form>
 
         <div className="p-6">
-          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Current Managers</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Current Managers</h3>
+            <button
+              onClick={() => setManagerSort(managerSort === 'asc' ? 'desc' : 'asc')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${darkTheme ? 'text-slate-300 bg-[#1d1f24] hover:bg-[#2d3139]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+              title={`Sort by creation date (${managerSort === 'asc' ? 'oldest first' : 'newest first'})`}
+            >
+              <ArrowUpDown className="w-3 h-3" />
+              {managerSort === 'asc' ? 'Oldest' : 'Newest'}
+            </button>
+          </div>
           <div className="space-y-3">
-            {managers.map((manager) => (
+            {[...managers].sort((a, b) => {
+              const dateA = new Date(a.created_at).getTime();
+              const dateB = new Date(b.created_at).getTime();
+              return managerSort === 'asc' ? dateA - dateB : dateB - dateA;
+            }).map((manager) => (
               <div
                 key={manager.id}
                 className={`flex items-center justify-between p-4 rounded-lg ${darkTheme ? 'bg-[#1d1f24]' : 'bg-gray-50'}`}
@@ -811,9 +830,23 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
 
       <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
         <div className="p-6">
-          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active SDRs</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active SDRs</h3>
+            <button
+              onClick={() => setSdrSort(sdrSort === 'asc' ? 'desc' : 'asc')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${darkTheme ? 'text-slate-300 bg-[#1d1f24] hover:bg-[#2d3139]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+              title={`Sort by creation date (${sdrSort === 'asc' ? 'oldest first' : 'newest first'})`}
+            >
+              <ArrowUpDown className="w-3 h-3" />
+              {sdrSort === 'asc' ? 'Oldest' : 'Newest'}
+            </button>
+          </div>
           <div className="space-y-3">
-            {sdrs.filter(sdr => sdr.active).map((sdr) => (
+            {sdrs.filter(sdr => sdr.active).sort((a, b) => {
+              const dateA = new Date(a.created_at).getTime();
+              const dateB = new Date(b.created_at).getTime();
+              return sdrSort === 'asc' ? dateA - dateB : dateB - dateA;
+            }).map((sdr) => (
               <div
                 key={sdr.id}
                 className={`flex items-center justify-between p-4 rounded-lg border-l-4 ${darkTheme ? 'bg-[#1d1f24] border-green-600' : 'bg-gray-50 border-green-500'}`}
@@ -885,9 +918,23 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
       {sdrs.filter(sdr => !sdr.active).length > 0 && (
         <div className={`rounded-lg shadow-md overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
           <div className="p-6">
-            <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Inactive SDRs</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Inactive SDRs</h3>
+              <button
+                onClick={() => setSdrSort(sdrSort === 'asc' ? 'desc' : 'asc')}
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${darkTheme ? 'text-slate-300 bg-[#1d1f24] hover:bg-[#2d3139]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+                title={`Sort by creation date (${sdrSort === 'asc' ? 'oldest first' : 'newest first'})`}
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                {sdrSort === 'asc' ? 'Oldest' : 'Newest'}
+              </button>
+            </div>
             <div className="space-y-3">
-              {sdrs.filter(sdr => !sdr.active).map((sdr) => (
+              {sdrs.filter(sdr => !sdr.active).sort((a, b) => {
+                const dateA = new Date(a.created_at).getTime();
+                const dateB = new Date(b.created_at).getTime();
+                return sdrSort === 'asc' ? dateA - dateB : dateB - dateA;
+              }).map((sdr) => (
                 <div
                   key={sdr.id}
                   className={`flex items-center justify-between p-4 rounded-lg border-l-4 opacity-75 ${darkTheme ? 'bg-[#1d1f24] border-slate-600' : 'bg-gray-100 border-gray-400'}`}
@@ -992,11 +1039,27 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
         </div>
 
         <div className="p-6">
-          <h3 className={`text-sm font-medium mb-4 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active Clients</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active Clients</h3>
+            <button
+              onClick={() => setClientSort(clientSort === 'asc' ? 'desc' : 'asc')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${darkTheme ? 'text-slate-300 bg-[#1d1f24] hover:bg-[#2d3139]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+              title={`Sort by creation date (${clientSort === 'asc' ? 'oldest first' : 'newest first'})`}
+            >
+              <ArrowUpDown className="w-3 h-3" />
+              {clientSort === 'asc' ? 'Oldest' : 'Newest'}
+            </button>
+          </div>
           <div className="space-y-3">
             {clientTokens.filter(token => {
               const client = clients.find(c => c.id === token.client_id);
               return !client?.archived_at;
+            }).sort((a, b) => {
+              const clientA = clients.find(c => c.id === a.client_id);
+              const clientB = clients.find(c => c.id === b.client_id);
+              const dateA = clientA?.created_at ? new Date(clientA.created_at).getTime() : 0;
+              const dateB = clientB?.created_at ? new Date(clientB.created_at).getTime() : 0;
+              return clientSort === 'asc' ? dateA - dateB : dateB - dateA;
             }).map((token) => {
               const client = clients.find(c => c.id === token.client_id);
               return (
