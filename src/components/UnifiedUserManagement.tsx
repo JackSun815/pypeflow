@@ -629,7 +629,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
             <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Current Managers</h3>
             <button
               onClick={() => setManagerSort(managerSort === 'asc' ? 'desc' : 'asc')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${darkTheme ? 'text-slate-300 bg-[#1d1f24] hover:bg-[#2d3139]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${darkTheme ? 'text-slate-300 bg-[#1d1f24] border-[#2d3139] hover:bg-[#2d3139]' : 'text-gray-600 bg-gray-50 border-gray-300 hover:bg-gray-100'}`}
               title={`Sort by creation date (${managerSort === 'asc' ? 'oldest first' : 'newest first'})`}
             >
               <ArrowUpDown className="w-3 h-3" />
@@ -834,7 +834,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
             <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active SDRs</h3>
             <button
               onClick={() => setSdrSort(sdrSort === 'asc' ? 'desc' : 'asc')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${darkTheme ? 'text-slate-300 bg-[#1d1f24] hover:bg-[#2d3139]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${darkTheme ? 'text-slate-300 bg-[#1d1f24] border-[#2d3139] hover:bg-[#2d3139]' : 'text-gray-600 bg-gray-50 border-gray-300 hover:bg-gray-100'}`}
               title={`Sort by creation date (${sdrSort === 'asc' ? 'oldest first' : 'newest first'})`}
             >
               <ArrowUpDown className="w-3 h-3" />
@@ -1043,7 +1043,7 @@ export default function UnifiedUserManagement({ sdrs, clients, onUpdate, darkThe
             <h3 className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Active Clients</h3>
             <button
               onClick={() => setClientSort(clientSort === 'asc' ? 'desc' : 'asc')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${darkTheme ? 'text-slate-300 bg-[#1d1f24] hover:bg-[#2d3139]' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'}`}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${darkTheme ? 'text-slate-300 bg-[#1d1f24] border-[#2d3139] hover:bg-[#2d3139]' : 'text-gray-600 bg-gray-50 border-gray-300 hover:bg-gray-100'}`}
               title={`Sort by creation date (${clientSort === 'asc' ? 'oldest first' : 'newest first'})`}
             >
               <ArrowUpDown className="w-3 h-3" />

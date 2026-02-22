@@ -6,7 +6,7 @@ import { useMeetings } from '../hooks/useMeetings';
 import { useAllClients } from '../hooks/useAllClients';
 import { useAgency } from '../contexts/AgencyContext';
 import { useDemo } from '../contexts/DemoContext';
-import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock, Filter, ArrowUpDown, Layers, HelpCircle, FileText } from 'lucide-react';
+import { Users, Target, Calendar, AlertCircle, LogOut, ChevronDown, ChevronRight, Link, ListChecks, CheckCircle, XCircle, Clock, History, Shield, Rocket, Sun, Moon, Eye, EyeOff, BarChart2, Building, Lock, ArrowUpDown, Layers, HelpCircle, FileText } from 'lucide-react';
 import ClientManagement from '../components/ClientManagement';
 import UnifiedUserManagement from '../components/UnifiedUserManagement';
 import TeamMeetings from './TeamMeetings';
@@ -238,6 +238,15 @@ export default function ManagerDashboard() {
   // Filter and sort/group state for meetings modal
   const [meetingFilter, setMeetingFilter] = useState<'all' | string>('all'); // 'all' or client_id or sdr_id
   const [meetingSortBy, setMeetingSortBy] = useState<'date' | 'client' | 'sdr'>('date');
+  
+  // Client date filter
+  const [clientDateFilter, setClientDateFilter] = useState<'all' | 'last7days' | 'last30days' | 'last90days'>('all');
+  
+  // Client creation date sort
+  const [clientCreationSort, setClientCreationSort] = useState<'none' | 'asc' | 'desc'>('none');
+  
+  // SDR creation date sort
+  const [sdrCreationSort, setSdrCreationSort] = useState<'asc' | 'desc'>('desc');
   const [meetingSortOrder, setMeetingSortOrder] = useState<'asc' | 'desc'>('desc');
   const [meetingGroupBy, setMeetingGroupBy] = useState<'none' | 'client' | 'sdr'>('none');
   
@@ -2197,7 +2206,7 @@ export default function ManagerDashboard() {
               // For past months: show all clients with assignments (to preserve historical data)
               const isCurrentMonth = selectedMonth === currentMonthForSelector;
               
-              const activeClientsForMonth = clients.filter(client => {
+              let activeClientsForMonth = clients.filter(client => {
                 // For current month, exclude archived clients
                 if (isCurrentMonth && client.archived_at !== null) {
                   return false;
@@ -2220,6 +2229,32 @@ export default function ManagerDashboard() {
                 // Show client if it has assignments OR was created this month
                 return hasAssignments || wasCreatedThisMonth;
               });
+              
+              // Apply date filter based on client creation date
+              if (clientDateFilter !== 'all') {
+                const now = new Date();
+                const daysMap = {
+                  'last7days': 7,
+                  'last30days': 30,
+                  'last90days': 90
+                };
+                const daysAgo = daysMap[clientDateFilter as keyof typeof daysMap];
+                const filterDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+                
+                activeClientsForMonth = activeClientsForMonth.filter(client => {
+                  const clientCreatedDate = new Date(client.created_at);
+                  return clientCreatedDate >= filterDate;
+                });
+              }
+              
+              // Apply sorting if enabled
+              if (clientCreationSort !== 'none') {
+                activeClientsForMonth = [...activeClientsForMonth].sort((a, b) => {
+                  const dateA = new Date(a.created_at).getTime();
+                  const dateB = new Date(b.created_at).getTime();
+                  return clientCreationSort === 'asc' ? dateA - dateB : dateB - dateA;
+                });
+              }
 
               return (
             <div className={`rounded-lg shadow-md overflow-hidden mb-8 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
@@ -2248,16 +2283,47 @@ export default function ManagerDashboard() {
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
                       )}
                     </div>
+                    <div className="flex items-center gap-2">
+                      <label className={`text-sm font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>Date Added:</label>
+                      <select
+                        value={clientDateFilter}
+                        onChange={(e) => setClientDateFilter(e.target.value as any)}
+                        className={`border rounded px-2 py-1 text-sm ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+                      >
+                        <option value="all">All Time</option>
+                        <option value="last7days">Last 7 Days</option>
+                        <option value="last30days">Last 30 Days</option>
+                        <option value="last90days">Last 90 Days</option>
+                      </select>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setClientPerformanceExportModalOpen(true)}
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors ${darkTheme ? 'text-purple-300 bg-purple-900/30 border border-purple-700/50 hover:bg-purple-900/40' : 'text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100'}`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (clientCreationSort === 'none') setClientCreationSort('desc');
+                        else if (clientCreationSort === 'desc') setClientCreationSort('asc');
+                        else setClientCreationSort('none');
+                      }}
+                      className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${
+                        clientCreationSort !== 'none'
+                          ? darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-700/50 hover:bg-blue-900/40' : 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100'
+                          : darkTheme ? 'text-slate-300 bg-[#1d1f24] border-[#2d3139] hover:bg-[#2d3139]' : 'text-gray-600 bg-gray-50 border-gray-300 hover:bg-gray-100'
+                      }`}
+                      title={clientCreationSort === 'none' ? 'Sort by creation date' : clientCreationSort === 'desc' ? 'Sorted: Newest first' : 'Sorted: Oldest first'}
+                    >
+                      <ArrowUpDown className="w-3 h-3" />
+                      {clientCreationSort === 'asc' ? 'Oldest' : 'Newest'}
+                    </button>
+                    <button
+                      onClick={() => setClientPerformanceExportModalOpen(true)}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors ${darkTheme ? 'text-purple-300 bg-purple-900/30 border border-purple-700/50 hover:bg-purple-900/40' : 'text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100'}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -2366,6 +2432,11 @@ export default function ManagerDashboard() {
                                   <div className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                     {client.name}
                                   </div>
+                                  {clientCreationSort !== 'none' && (
+                                    <div className={`text-xs mt-0.5 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`}>
+                                      Added {new Date(client.created_at).toLocaleDateString()}
+                                    </div>
+                                  )}
                                   {client.archived_at && (
                                     <div className="flex items-center gap-1 mt-1">
                                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-800'}`}>
@@ -2782,7 +2853,7 @@ export default function ManagerDashboard() {
                   </div>
                   <button
                     onClick={exportChartAsPNG}
-                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-700/50 hover:bg-blue-900/40' : 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100'}`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

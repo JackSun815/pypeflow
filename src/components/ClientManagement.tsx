@@ -1241,9 +1241,9 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             <button
               onClick={handleUndo}
               disabled={!canUndo}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border ${
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${
                 canUndo 
-                  ? darkTheme ? 'text-orange-300 bg-orange-900/30 hover:bg-orange-900/50 border-orange-800/50' : 'text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200'
+                  ? darkTheme ? 'text-orange-300 bg-orange-900/30 border-orange-700/50 hover:bg-orange-900/40' : 'text-orange-700 bg-orange-50 border-orange-200 hover:bg-orange-100'
                   : darkTheme ? 'text-slate-500 bg-[#1d1f24] border-[#2d3139] cursor-not-allowed' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
               }`}
               title={canUndo ? `Undo last action (${undoStack.length} actions available)` : 'No actions to undo'}
@@ -1259,7 +1259,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                   exportToExcel();
                 }
               }}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-blue-100 border ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-800/50 hover:bg-blue-900/50' : 'text-blue-700 bg-blue-50 border-blue-200'}`}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-700/50 hover:bg-blue-900/40' : 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100'}`}
               title="Export all clients and assignments to CSV"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1284,7 +1284,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-green-100 border ${darkTheme ? 'text-green-300 bg-green-900/30 border-green-800/50 hover:bg-green-900/50' : 'text-green-700 bg-green-50 border-green-200'}`}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${darkTheme ? 'text-green-300 bg-green-900/30 border-green-700/50 hover:bg-green-900/40' : 'text-green-700 bg-green-50 border-green-200 hover:bg-green-100'}`}
               title="Import client assignments from CSV"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1294,7 +1294,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
             </button>
             <button
               onClick={() => setShowAddClient(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Client
@@ -1529,10 +1529,10 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                           setShowAssignForm(true);
                         }}
                         disabled={clientEditMode === client.id}
-                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ${
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
                           clientEditMode === client.id
-                            ? darkTheme ? 'bg-[#2d3139] text-slate-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50 focus:ring-indigo-500 border border-indigo-800/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500 border border-indigo-200'
+                            ? darkTheme ? 'bg-[#2d3139] text-slate-500 cursor-not-allowed border-[#2d3139]' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+                            : darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/40 focus:ring-indigo-500 border-indigo-700/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500 border-indigo-200'
                         }`}
                       >
                         <Users className="w-4 h-4" />
@@ -1551,10 +1551,10 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                               setAssignmentDraftTargets(prev => ({ ...prev, ...draftAssignments }));
                             }}
                         disabled={clientEditMode === client.id}
-                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ${
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
                           clientEditMode === client.id
-                            ? darkTheme ? 'bg-[#2d3139] text-slate-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : darkTheme ? 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 focus:ring-blue-500 border border-blue-800/50' : 'text-blue-700 bg-blue-50 hover:bg-blue-100 focus:ring-blue-500 border border-blue-200'
+                            ? darkTheme ? 'bg-[#2d3139] text-slate-500 cursor-not-allowed border-[#2d3139]' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+                            : darkTheme ? 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/40 focus:ring-blue-500 border-blue-700/50' : 'text-blue-700 bg-blue-50 hover:bg-blue-100 focus:ring-blue-500 border-blue-200'
                         }`}
                       >
                         <Edit className="w-4 h-4" />
@@ -1578,7 +1578,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                           });
                           setClientEditMode(null);
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border text-white bg-green-600 border-green-600 hover:bg-green-700 transition-colors"
                       >
                         Save
                       </button>
@@ -1597,7 +1597,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                             return copy;
                           });
                         }}
-                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded hover:bg-gray-200 ${darkTheme ? 'text-slate-300 bg-[#2d3139] hover:bg-[#353941]' : 'text-gray-600 bg-gray-100'}`}
+                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${darkTheme ? 'text-slate-300 bg-[#1d1f24] border-[#2d3139] hover:bg-[#2d3139]' : 'text-gray-600 bg-gray-50 border-gray-300 hover:bg-gray-100'}`}
                       >
                         Cancel
                       </button>
@@ -1606,7 +1606,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                     
                     <button
                       onClick={() => handleDeleteClient(client.id)}
-                      className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${darkTheme ? 'text-red-300 bg-red-900/30 hover:bg-red-900/50' : 'text-red-700 bg-red-50 hover:bg-red-100'}`}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors ${darkTheme ? 'text-red-300 bg-red-900/30 border-red-700/50 hover:bg-red-900/40' : 'text-red-700 bg-red-50 border-red-200 hover:bg-red-100'}`}
                       title={`Remove from ${monthOptions.find(m => m.value === selectedMonth)?.label}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -2075,7 +2075,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
                               setShowAssignForm(true);
                               setShowUnassignedModal(false);
                             }}
-                            className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-800/50 hover:bg-blue-900/50' : 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100'}`}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-700/50 hover:bg-blue-900/40' : 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100'}`}
                           >
                             <Users className="w-4 h-4" />
                             Assign SDR
