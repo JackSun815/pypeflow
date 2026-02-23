@@ -102,10 +102,14 @@ export default function AgencyManagement() {
       }
 
       // Ensure we have admin client
+      console.log('Creating agency with admin client:', supabaseAdmin ? 'Available' : 'Not available');
+      
       if (!supabaseAdmin) {
-        setError('Admin operations are not available. Please configure VITE_SUPABASE_SERVICE_ROLE_KEY environment variable.');
+        setError('Admin operations are not available. Please configure VITE_SUPABASE_SERVICE_ROLE_KEY environment variable and restart the server.');
         return;
       }
+
+      console.log('Attempting to insert agency:', { name: newAgency.name, subdomain: newAgency.subdomain });
 
       const { data, error } = await supabaseAdmin
         .from('agencies')
@@ -118,6 +122,7 @@ export default function AgencyManagement() {
         .single();
 
       if (error) {
+        console.error('Insert error:', error);
         if (error.code === '23505') {
           setError('Subdomain already exists');
         } else {
@@ -125,6 +130,8 @@ export default function AgencyManagement() {
         }
         return;
       }
+      
+      console.log('Agency created successfully:', data);
       
       setAgencies(prev => [data, ...prev]);
       setShowCreateModal(false);
