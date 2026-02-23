@@ -1,0 +1,85 @@
+﻿Overview
+* As a Customer Solutions Engineer at Agave, you will lead structured onboarding sessions for new customers, ensuring they successfully adopt our platform, and troubleshooting any issues that arise. In this exercise, we want to see how you run an onboarding call for a product you already know well.
+* We understand this exercise requires time and effort. We’ve designed it to reflect the real challenges you’ll face in this role and help us get a better understanding of how you work.
+* Try to limit yourself to under 5 hours total. Do not use AI assistants, we’ll be able to tell.
+* Feel free to email Tom (tom@agaveapi.com) with questions.
+Directions
+* Create a copy of this doc (file → make a copy). you’ll need to log in to google to do this.
+   * Add your name in place of “{name}”, so the title is like “Agave CSE Case Study: John Doe”.
+* Book a meeting slot with an Agave team member using the link sent via email:
+   * Book this meeting to happen within 1-3 business days of receiving this.
+   * The call will likely take 20-30min. The extra time is for Q&A, buffer, and feedback.
+* Choose a product you feel confident explaining in depth. Traits for a “good” choice are:
+   * One you’re already familiar with (e.g. from your current company) and confident you can guide a new customer through without needing much research.
+   * Straightforward to cover with a new user in a short meeting.
+   * Reasonable for us to understand with no context going in.
+   * Allows you to show your understanding of the product’s nuances.
+   * Ideally is a B2B SaaS product, so it resembles what you’d be demoing at Agave.
+* Run a 30-minute onboarding call via Google Meet
+   * Assume we are a customer who just signed a contract and needs to get started. Run the call as if you are the onboarding lead for the product you selected. Your goals are to:
+      * Re-confirm our needs (you can make this part up).
+      * Explain the product and the value it will provide us + our team.
+      * Onboard us as a new user, setting us up on the new tool.
+      * Leave the call with clear next steps.
+* After the meeting, email Tom, treating him as the customer you just onboarded.
+Evaluation
+* We will evaluate your skills using these main criteria (and others):
+   1. Customer communication: can you clearly explain the product and guide setup?
+   2. Call management: do you keep the onboarding session organized and productive?
+   3. Problem solving: can you handle unexpected questions or blockers smoothly?
+   4. Expectation management: do you keep the customer engaged and set realistic next steps?
+   5. Confidence & professionalism: do you sound authoritative and trustworthy?
+
+
+
+
+
+Starting from here is what I wrote
+-----------
+
+Scenario Overview 
+* Product: PypeFlow
+* Customer: Founder of a rapidly expanding outsourced Sales Development Rep (SDR) agency
+* Customer is the manager and he needs to:
+   * Streamline SDR onboarding, management, and progress tracking 
+   * Track monthly meetings set, SDR performance, and client assignments in real time
+   * Scale processes as the team grows and move away from spreadsheets 
+
+
+Assumptions
+* Agency is hiring new SDRs weekly (current headcount 8, aim to be 20 by summer)
+* Bringing on multiple new clients each month 
+* Current process is manual and error-prone (spreadsheets)
+
+
+
+
+
+
+
+
+Onboarding Call Agenda (25 min) 
+1. opening (2 min) 
+   Agenda 
+   Define outcome for session 
+2. Re-confirm Needs (4 - 5 min) 
+   Product explanation and value proposition 
+   “From what you described, your agency is scaling fast — new SDRs weekly, new clients monthly — but operationally you’re still managing performance through spreadsheets and disconnected tools. As headcount grows, that system becomes fragile.
+
+   PypeFlow centralizes your outbound operation into a single system. We manage users and roles, automate meeting tracking workflows, and provide real-time dashboards for managers and clients. SDRs focus on selling. Managers get live visibility. Clients get transparency without manual reporting.
+
+   Instead of information being scattered, PypeFlow becomes the operational backbone of your agency.”
+
+3. Setup Walkthrough
+   Setup control layer: Create workspace + admin (manager)
+   Define roles and permissions: Manager vs. SDR vs. Client 
+   Configure workflow: Assign client goal → Book meetings
+   Validate data: Confirm metrics and dashboard update (data sync across all three dashboards) 
+
+
+
+
+
+
+
+Potential Questions

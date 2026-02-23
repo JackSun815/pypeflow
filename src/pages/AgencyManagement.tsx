@@ -65,8 +65,13 @@ export default function AgencyManagement() {
   async function fetchAgencies() {
     try {
       setLoading(true);
-      const client = supabaseAdmin || supabase;
-      const { data, error } = await client
+      
+      if (!supabaseAdmin) {
+        setError('Admin operations are not available. Please configure VITE_SUPABASE_SERVICE_ROLE_KEY environment variable.');
+        return;
+      }
+
+      const { data, error } = await supabaseAdmin
         .from('agencies')
         .select('*')
         .order('created_at', { ascending: false });
@@ -96,8 +101,13 @@ export default function AgencyManagement() {
         return;
       }
 
-      const client = supabaseAdmin || supabase;
-      const { data, error } = await client
+      // Ensure we have admin client
+      if (!supabaseAdmin) {
+        setError('Admin operations are not available. Please configure VITE_SUPABASE_SERVICE_ROLE_KEY environment variable.');
+        return;
+      }
+
+      const { data, error } = await supabaseAdmin
         .from('agencies')
         .insert([{
           name: newAgency.name.trim(),
@@ -128,8 +138,12 @@ export default function AgencyManagement() {
 
   async function toggleAgencyStatus(agencyId: string, isActive: boolean) {
     try {
-      const client = supabaseAdmin || supabase;
-      const { error } = await client
+      if (!supabaseAdmin) {
+        setError('Admin operations are not available. Please configure VITE_SUPABASE_SERVICE_ROLE_KEY environment variable.');
+        return;
+      }
+
+      const { error } = await supabaseAdmin
         .from('agencies')
         .update({ is_active: isActive })
         .eq('id', agencyId);
@@ -161,8 +175,12 @@ export default function AgencyManagement() {
         return;
       }
 
-      const client = supabaseAdmin || supabase;
-      const { data, error } = await client
+      if (!supabaseAdmin) {
+        setError('Admin operations are not available. Please configure VITE_SUPABASE_SERVICE_ROLE_KEY environment variable.');
+        return;
+      }
+
+      const { data, error } = await supabaseAdmin
         .from('agencies')
         .update({
           name: editingAgency.name.trim(),
