@@ -1045,7 +1045,19 @@ export default function ManagerDashboard() {
     return isInMonth && !isICPDisqualified;
   });
 
-  // Calculate total targets from all ACTIVE SDRs (separate set and held targets)
+  // Calculate total targets from all ACTIVE SDRs' assignments (separate set and held targets)
+  // This should match the sum of individual SDR assignment targets
+  console.log('📊 Manager Dashboard Debug:', {
+    totalSDRs: sdrs.length,
+    activeSDRs: sdrs.filter(sdr => sdr.active !== false).length,
+    sdrsWithClients: sdrs.map(sdr => ({
+      name: sdr.full_name,
+      active: sdr.active,
+      clients: sdr.clients,
+      clientCount: sdr.clients?.length || 0
+    }))
+  });
+  
   const totalSetTarget = sdrs
     .filter(sdr => sdr.active !== false)
     .reduce(
@@ -1059,6 +1071,8 @@ export default function ManagerDashboard() {
       (sum, sdr) => sum + sdr.clients.reduce((acc, client) => acc + (client.monthly_hold_target || 0), 0),
       0
     );
+  
+  console.log('📊 Calculated Targets:', { totalSetTarget, totalHeldTarget });
 
 
   // Calculate monthly metrics
