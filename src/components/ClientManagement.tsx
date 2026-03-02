@@ -423,11 +423,24 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       setError('Agency information not available. Please refresh the page and try again.');
       return;
     }
+
+    // Check if a client with the same name already exists (case-insensitive)
+    const trimmedName = newClientName.trim();
+    const existingClient = allClients.find(
+      client => client.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (existingClient) {
+      setError(`A client with the name "${existingClient.name}" already exists in the system.`);
+      setLoading(false);
+      return;
+    }
+
     // Insert the client with proper targets
     const { data: insertedClient, error: insertError } = await supabase
       .from('clients')
       .insert([{ 
-        name: newClientName,
+        name: trimmedName,
         monthly_set_target: typeof newClientSetTarget === 'string' ? parseInt(newClientSetTarget) || 0 : newClientSetTarget,
         monthly_hold_target: typeof newClientHoldTarget === 'string' ? parseInt(newClientHoldTarget) || 0 : newClientHoldTarget,
         agency_id: agency?.id
@@ -463,22 +476,22 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       undefined,
       undefined,
       {
-        name: newClientName,
+        name: insertedClient.name,
         monthly_set_target: insertedClient.monthly_set_target,
         monthly_hold_target: insertedClient.monthly_hold_target
       },
-      { client_name: newClientName }
+      { client_name: insertedClient.name }
     );
 
     // Add to undo stack after successful creation
     addToUndoStack('add_client', {
       clientId: insertedClient.id,
-      clientName: newClientName
+      clientName: insertedClient.name
     });
 
     // Client will now appear in the list immediately
     const selectedMonthName = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
-    setSuccess(`Client "${newClientName}" added successfully and is now visible in the ${selectedMonthName} list. You can now assign SDRs to this client.`);
+    setSuccess(`Client "${insertedClient.name}" added successfully and is now visible in the ${selectedMonthName} list. You can now assign SDRs to this client.`);
     setNewClientName('');
     setNewClientSetTarget(0);
     setNewClientHoldTarget(0);
