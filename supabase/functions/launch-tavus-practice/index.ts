@@ -84,6 +84,27 @@ function buildGreeting(meeting: any) {
   return `Hi, this is ${firstName}. Thanks for making time today.`
 }
 
+function mapTavusErrorMessage(rawMessage: string): string {
+  const normalized = rawMessage.toLowerCase()
+
+  if (/maximum concurrent conversations|out of concurrent/i.test(rawMessage)) {
+    return 'Your Tavus account is at the concurrent conversation limit. End an active call (or wait about a minute) and try again.'
+  }
+
+  if (
+    normalized.includes('out of credits') ||
+    normalized.includes('out of credit') ||
+    normalized.includes('insufficient credits') ||
+    normalized.includes('quota') ||
+    normalized.includes('usage limit') ||
+    normalized.includes('rate limit')
+  ) {
+    return 'Your Tavus account is out of available credits/quota. Please top up minutes or increase plan limits, then retry.'
+  }
+
+  return rawMessage
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders })
@@ -138,6 +159,26 @@ serve(async (req) => {
     const decodedToken = decodeSdrToken(sdrToken)
     if (decodedToken?.id && meeting.sdr_id && decodedToken.id !== meeting.sdr_id) {
       return new Response(JSON.stringify({ error: 'Meeting does not belong to this SDR' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    // Demo-only gate: Tavus practice is enabled only for demo agency.
+    const { data: meetingAgency, error: meetingAgencyError } = await supabaseAdmin
+      .from('agencies')
+      .select('id, subdomain, is_active')
+      .eq('id', meeting.agency_id)
+      .maybeSingle()
+
+    if (meetingAgencyError) {
+      throw new Error(meetingAgencyError.message)
+    }
+
+    if (!meetingAgency || !meetingAgency.is_active || meetingAgency.subdomain !== 'demo') {
+      return new Response(JSON.stringify({
+        error: 'Tavus practice is only enabled in the demo environment.',
+      }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
@@ -232,11 +273,11 @@ serve(async (req) => {
     const tavusJson = await tavusResponse.json()
 
     if (!tavusResponse.ok) {
-      const errorMessage = tavusJson?.error || tavusJson?.message || 'Failed to create Tavus conversation'
-      if (typeof errorMessage === 'string' && /maximum concurrent conversations/i.test(errorMessage)) {
-        throw new Error('You already have an active Tavus conversation. Please end that call first, or wait a minute and try again.')
+      const rawErrorMessage = tavusJson?.error || tavusJson?.message || 'Failed to create Tavus conversation'
+      if (typeof rawErrorMessage === 'string') {
+        throw new Error(mapTavusErrorMessage(rawErrorMessage))
       }
-      throw new Error(errorMessage)
+      throw new Error('Failed to create Tavus conversation')
     }
 
     const tavusConversationId = tavusJson?.conversation_id || tavusJson?.id

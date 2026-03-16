@@ -35,6 +35,8 @@ export function MeetingCard({
   showSDR = false,
   darkTheme = false,
 }: MeetingCardProps) {
+  const DEMO_AGENCY_ID = 'a6143f83-7af3-442f-9df6-b5249fcd3fa5';
+
   const isEditing = editingMeetingId === meeting.id;
   const [editedData, setEditedData] = useState({
     contact_full_name: meeting.contact_full_name || '',
@@ -57,6 +59,20 @@ export function MeetingCard({
   const [collapsed, setCollapsed] = useState(true);
   const [copied, setCopied] = useState(false);
   const location = useLocation();
+
+  const isDemoEnvironment = useMemo(() => {
+    // Primary gate: use the meeting row's tenant id.
+    if ((meeting as any).agency_id === DEMO_AGENCY_ID) {
+      return true;
+    }
+
+    // Fallbacks for routes where agency is inferred from URL/host.
+    const hostname = window.location.hostname.toLowerCase();
+    if (hostname === 'demo.pypeflow.com') return true;
+
+    const params = new URLSearchParams(window.location.search);
+    return params.get('agency')?.toLowerCase() === 'demo';
+  }, [meeting]);
 
   // Helper functions
   const getDatePart = (isoString: string) => isoString.split('T')[0];
@@ -321,7 +337,7 @@ export function MeetingCard({
                     {meeting.sdr_name && (
                       <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>SDR: {meeting.sdr_name}</p>
                     )}
-                    {!isEditing && practicePath && (
+                    {!isEditing && practicePath && isDemoEnvironment && (
                       <Link
                         to={practicePath}
                         className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition ${

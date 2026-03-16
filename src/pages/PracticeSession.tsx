@@ -54,6 +54,17 @@ function decodeSdrToken(token?: string) {
   }
 }
 
+function shouldFallbackToAlternateSlug(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+
+  const anyErr = err as any;
+  const status = anyErr?.context?.status ?? anyErr?.status;
+  if (status === 404) return true;
+
+  const message = err.message.toLowerCase();
+  return message.includes('404') || message.includes('not found');
+}
+
 export default function PracticeSession() {
   const { token, meetingId } = useParams();
   const [meeting, setMeeting] = useState<MeetingRecord | null>(null);
@@ -120,7 +131,7 @@ export default function PracticeSession() {
           body: invokePayload,
         });
 
-        if (launchError && !launchData) {
+        if (launchError && !launchData && shouldFallbackToAlternateSlug(launchError)) {
           const fallback = await functionClient.functions.invoke('launch-tavus-practice', {
             body: invokePayload,
           });
