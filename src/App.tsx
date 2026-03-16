@@ -18,6 +18,7 @@ import GoogleAnalytics from './components/GoogleAnalytics';
 import ManagerDemoPreview from './pages/ManagerDemoPreview';
 import Documentation from './pages/Documentation';
 import AuditLogs from './pages/AuditLogs';
+import PracticeSession from './pages/PracticeSession';
 
 // Component to initialize logger with user info
 function LoggerInitializer() {
@@ -118,6 +119,7 @@ function AppRoutes() {
       )}
       
       {/* Public SDR dashboard routes */}
+      <Route path="/dashboard/sdr/:token/practice/:meetingId" element={<PracticeSession />} />
       <Route path="/dashboard/sdr/:token/*" element={<SDRDashboard />} />
 
       {/* Public client dashboard routes */}
@@ -170,6 +172,16 @@ function AppRoutes() {
             element={
               profile.role === 'sdr' ? (
                 <SDRDashboard />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/practice/:meetingId"
+            element={
+              profile.role === 'sdr' ? (
+                <PracticeSession />
               ) : (
                 <Navigate to="/" replace />
               )

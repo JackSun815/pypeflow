@@ -52,16 +52,7 @@ const customFetch = async (url: string, options: RequestInit = {}): Promise<Resp
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
-      headers: {
-        ...options.headers,
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
 
     return response;
   } catch (error) {
@@ -97,6 +88,13 @@ const baseClientOptions: any = {
     headers: {
       'apikey': supabaseAnonKey
     }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2
+    },
+    heartbeatIntervalMs: 30000,
+    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 30000)
   },
   // Use custom fetch implementation with retry
   fetch: (url: string, options?: RequestInit) => withRetry(
@@ -137,23 +135,7 @@ const publicClientOptions: any = {
 export const supabasePublic = createClient<Database>(supabaseUrl, supabaseAnonKey, publicClientOptions);
 
 // Note: Agency-aware client is now handled in useAgencyClient hook
-
-// Add online/offline detection
-if (typeof window !== 'undefined') {
-  let reconnectTimeout: number;
-
-  window.addEventListener('online', () => {
-    console.log('Connection restored');
-    // Attempt to reconnect realtime subscriptions
-    supabase.removeAllChannels();
-    clearTimeout(reconnectTimeout);
-    reconnectTimeout = window.setTimeout(() => {
-      supabase.channel('system').subscribe();
-    }, 1000);
-  });
-
-  window.addEventListener('offline', () => {
-    console.warn('Connection lost');
-    clearTimeout(reconnectTimeout);
-  });
-}
+// Note: The Supabase JS client handles its own WebSocket reconnection internally.
+// Do not manually call removeAllChannels() or subscribe() on network events,
+// as doing so destroys subscriptions set up by hooks (useSDRs, useMeetings, etc.)
+// that won't be re-established.
