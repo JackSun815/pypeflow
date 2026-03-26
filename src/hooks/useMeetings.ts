@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAgency } from '../contexts/AgencyContext';
+import { logger } from '../lib/logger';
 import type { Meeting } from '../types/database';
-
-interface MeetingContact {
-  contact_full_name: string;
-  contact_email: string;
-  contact_phone?: string;
-}
 
 export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAll: boolean = false) {
   const { agency } = useAgency();
@@ -232,9 +227,17 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         console.log('ICP status column not available, skipping');
       }
 
-      const { error } = await client
+      let createdMeetingId: string | null = null;
+
+      const { data: insertedMeeting, error } = await client
         .from('meetings')
-        .insert([insertData]);
+        .insert([insertData])
+        .select('id')
+        .single();
+
+      if (insertedMeeting?.id) {
+        createdMeetingId = insertedMeeting.id;
+      }
 
       if (error) {
         // If the error is about missing ICP column, try again without it
@@ -242,9 +245,15 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
           console.log('Retrying without ICP status field');
           delete insertData.icp_status;
           
-          const { error: retryError } = await client
+          const { data: retryInsertedMeeting, error: retryError } = await client
             .from('meetings')
-            .insert([insertData]);
+            .insert([insertData])
+            .select('id')
+            .single();
+
+          if (retryInsertedMeeting?.id) {
+            createdMeetingId = retryInsertedMeeting.id;
+          }
             
           if (retryError) throw retryError;
         } else {
@@ -253,6 +262,25 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       }
       
       await fetchMeetings();
+      
+      // Log the action
+      console.log('[AuditDebug] meeting_create attempt', {
+        sdrId,
+        createdMeetingId,
+        clientId,
+      });
+      await logger.logMeetingAction('create', createdMeetingId || sdrId, {
+        contact: meetingDetails.contact_full_name || 'Unknown',
+        company: meetingDetails.company || 'N/A',
+        scheduled_date: scheduledDate
+      }, {
+        sdr_id: sdrId,
+        client_id: clientId,
+        contact: meetingDetails.contact_full_name || 'Unknown',
+        company: meetingDetails.company || 'N/A',
+        scheduled_date: scheduledDate
+      });
+      
       return null; // We don't need the returned data since we refresh the list
     } catch (err) {
       console.error('Error adding meeting:', err);
@@ -297,6 +325,21 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
 
     if (error) throw error;
     await fetchMeetings();
+    
+    // Log the update action
+    console.log('[AuditDebug] meeting_update attempt', {
+      meetingId: updatedMeeting.id,
+      sdrId: updatedMeeting.sdr_id,
+    });
+    await logger.logMeetingAction('update', updatedMeeting.id, {
+      contact: updatedMeeting.contact_full_name,
+      company: updatedMeeting.company,
+      status: updatedMeeting.status,
+      notes: updatedMeeting.notes
+    }, {
+      sdr_id: updatedMeeting.sdr_id,
+      contact_email: updatedMeeting.contact_email
+    });
   } catch (err) {
     console.error('Update meeting error:', err);
     throw new Error(err instanceof Error ? err.message : 'Failed to update meeting');
@@ -338,6 +381,19 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
 
       if (error) throw error;
       await fetchMeetings();
+      
+      // Log the action
+      console.log('[AuditDebug] meeting_update (held date) attempt', {
+        meetingId,
+        sdrId,
+      });
+      await logger.logMeetingAction('update', meetingId, {
+        held_at: heldDate || 'cleared',
+        action: heldDate ? 'marked_held' : 'cleared_held_date'
+      }, {
+        sdr_id: sdrId,
+        meeting_id: meetingId
+      });
     } catch (err) {
       console.error('Update meeting held date error:', err);
       throw new Error(err instanceof Error ? err.message : 'Failed to update meeting held date');
@@ -365,6 +421,19 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
 
       if (error) throw error;
       await fetchMeetings();
+      
+      // Log the action
+      console.log('[AuditDebug] meeting_update (confirmed date) attempt', {
+        meetingId,
+        sdrId,
+      });
+      await logger.logMeetingAction('update', meetingId, {
+        confirmed_at: confirmedDate || 'cleared',
+        status: confirmedDate ? 'confirmed' : 'pending'
+      }, {
+        sdr_id: sdrId,
+        meeting_id: meetingId
+      });
     } catch (err) {
       console.error('Update meeting confirmed date error:', err);
       throw new Error(err instanceof Error ? err.message : 'Failed to update meeting confirmed date');
@@ -379,6 +448,19 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
         .eq('id', meetingId as any);
 
       if (error) throw error;
+      
+      // Log the action before refresh
+      console.log('[AuditDebug] meeting_delete attempt', {
+        meetingId,
+        sdrId,
+      });
+      await logger.logMeetingAction('delete', meetingId, {
+        meeting_id: meetingId
+      }, {
+        sdr_id: sdrId,
+        meeting_id: meetingId
+      });
+      
       await fetchMeetings();
     } catch (err) {
       console.error('Delete meeting error:', err);

@@ -3,6 +3,7 @@ import { useParams, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { useMeetings } from '../hooks/useMeetings';
 import { supabasePublic } from '../lib/supabase';
+import { logger } from '../lib/logger';
 import { AgencyProvider } from '../contexts/AgencyContext';
 import { useDemo } from '../contexts/DemoContext';
 import ClientCard from '../components/ClientCard';
@@ -10,7 +11,8 @@ import MeetingsList from '../components/MeetingsList';
 import DashboardMetrics from '../components/DashboardMetrics';
 import MeetingsHistory from './MeetingsHistory';
 import Commissions from './Commissions';
-import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff, Upload, FileSpreadsheet, X, HelpCircle } from 'lucide-react';
+import SDRAuditTrail from './SDRAuditTrail';
+import { AlertCircle, Calendar, DollarSign, History, Info, Rocket, Sun, Moon, Eye, EyeOff, Upload, FileSpreadsheet, X, HelpCircle, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import html2canvas from 'html2canvas';
 import TimeSelector from '../components/TimeSelector';
@@ -276,6 +278,18 @@ function SDRDashboardContent() {
     }
     fetchAllSDRs();
   }, []);
+
+  // Initialize logger when SDR info is available
+  useEffect(() => {
+    if (sdrId && sdrEmail && sdrAgencyId) {
+      logger.setUserInfo({
+        userId: sdrId,
+        email: sdrEmail,
+        role: 'sdr',
+        agencyId: sdrAgencyId
+      });
+    }
+  }, [sdrId, sdrEmail, sdrAgencyId]);
 
   // Always call hooks at the top level
   const meetingsHook = useMeetings(sdrId, supabasePublic);
@@ -1247,10 +1261,6 @@ function SDRDashboardContent() {
       const icpStatus = (m as any).icp_status;
       const isNotQualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
       
-      if (icpStatus) {
-        console.log(`Meeting ${m.id} ICP status:`, icpStatus, 'Excluded:', isNotQualified);
-      }
-      
       return !isNotQualified;
     })
     .map(m => ({
@@ -1805,6 +1815,19 @@ function SDRDashboardContent() {
                 Commissions
               </span>
             </Link>
+            <Link
+              to="audit"
+              className={`${
+                location.pathname === `/dashboard/sdr/${token}/audit`
+                  ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
+                  : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
+              } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <span className="flex items-center gap-2">
+                <Clock className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/audit` ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-orange-500'}`} />
+                Audit Trail
+              </span>
+            </Link>
           </nav>
         </div>
       {(clientsError || meetingsError) && (
@@ -2335,6 +2358,7 @@ function SDRDashboardContent() {
           } 
         />
         <Route path="commissions" element={<Commissions sdrId={sdrId || ''} darkTheme={darkTheme} />} />
+        <Route path="audit" element={<SDRAuditTrail sdrId={sdrId || ''} darkTheme={darkTheme} />} />
         <Route path="calendar" element={
           <div className="space-y-8">
             {/* Calendar View */}

@@ -26,6 +26,12 @@ class Logger {
    */
   setUserInfo(userInfo: UserInfo | null) {
     this.userInfo = userInfo;
+    console.log('[AuditDebug] logger.setUserInfo', {
+      hasUserInfo: !!userInfo,
+      userId: userInfo?.userId,
+      role: userInfo?.role,
+      agencyId: userInfo?.agencyId,
+    });
   }
 
   /**
@@ -38,10 +44,14 @@ class Logger {
         return;
       }
 
-      // user_id must be UUID or NULL (for managers using localStorage, it will be NULL)
-      // Check if userId is a valid UUID format, otherwise set to null
-      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(this.userInfo.userId);
-      const userId = isValidUUID ? this.userInfo.userId : null;
+      // IMPORTANT: client-side token/local auth users are not guaranteed to exist in auth.users.
+      // Writing user_id can violate audit_logs_user_id_fkey and break logging, so keep it NULL.
+      const userId = null;
+
+      const mergedMetadata = {
+        ...(entry.metadata || {}),
+        actor_id: this.userInfo.userId,
+      };
 
       const auditLog = {
         user_id: userId,
@@ -54,9 +64,11 @@ class Logger {
         changes: entry.changes || null,
         old_values: entry.oldValues || null,
         new_values: entry.newValues || null,
-        metadata: entry.metadata || null,
+        metadata: mergedMetadata,
         status: entry.status || 'success',
       };
+
+      console.log('[AuditDebug] logger.audit payload', auditLog);
 
       const { data, error } = await supabase
         .from('audit_logs')
@@ -64,9 +76,14 @@ class Logger {
         .select();
 
       if (error) {
-        console.error('❌ AUDIT LOG ERROR:', error);
+        console.error('[AuditDebug] logger.audit insert error:', error);
       } else {
-        console.log('✅ Audit log created:', entry.action, entry.entityType);
+        console.log('[AuditDebug] logger.audit insert success:', {
+          action: entry.action,
+          entityType: entry.entityType,
+          insertedRows: data?.length || 0,
+          firstRow: data?.[0] || null,
+        });
       }
     } catch (error) {
       console.error('❌ AUDIT LOG ERROR:', error);
