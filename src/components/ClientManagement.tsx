@@ -45,6 +45,8 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
   // New client form state
   const [newClientName, setNewClientName] = useState('');
   const [showAddClient, setShowAddClient] = useState(false);
+  const [showAddExistingClientModal, setShowAddExistingClientModal] = useState(false);
+  const [existingClientSearch, setExistingClientSearch] = useState('');
 
   // Edit mode for client target
   const [clientEditMode, setClientEditMode] = useState<string | null>(null);
@@ -431,7 +433,7 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
     );
 
     if (existingClient) {
-      setError(`A client with the name "${existingClient.name}" already exists in the system.`);
+      setError(`"${existingClient.name}" already exists. Use "Add Existing" to add it to ${monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}.`);
       setLoading(false);
       return;
     }
@@ -505,6 +507,55 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
     setLoading(false);
   }
 }
+
+  async function handleAddExistingClientToMonth(client: Client) {
+    try {
+      if (!agency?.id) {
+        setError('Agency information not available. Please refresh the page and try again.');
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      // Remove hidden marker for this month if it exists.
+      const { error: unhideError } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('client_id', client.id)
+        .eq('month', selectedMonth)
+        .is('sdr_id', null)
+        .eq('monthly_set_target', -1);
+
+      if (unhideError) throw unhideError;
+
+      // Ensure month-specific target exists so client appears even with zero assignments.
+      const { error: monthlyTargetError } = await supabase
+        .from('client_monthly_targets')
+        .upsert([{
+          client_id: client.id,
+          month: selectedMonth,
+          agency_id: agency.id,
+          monthly_set_target: client.monthly_set_target || 0,
+          monthly_hold_target: client.monthly_hold_target || 0,
+        }], {
+          onConflict: 'client_id,month,agency_id'
+        });
+
+      if (monthlyTargetError) throw monthlyTargetError;
+
+      const selectedMonthName = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+      setSuccess(`"${client.name}" added to ${selectedMonthName}. You can assign SDRs now or leave it with 0 assignments.`);
+      await fetchClients();
+      onUpdate();
+      setShowAddExistingClientModal(false);
+      setExistingClientSearch('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add existing client to this month');
+    } finally {
+      setLoading(false);
+    }
+  }
 
    async function handleAssignClient(e: React.FormEvent) {
   e.preventDefault();
@@ -1306,6 +1357,16 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
               Import
             </button>
             <button
+              onClick={() => {
+                setExistingClientSearch('');
+                setShowAddExistingClientModal(true);
+              }}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${darkTheme ? 'text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/40 focus:ring-indigo-500 border-indigo-700/50' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:ring-indigo-500 border-indigo-200'}`}
+            >
+              <Plus className="w-4 h-4" />
+              Add Existing
+            </button>
+            <button
               onClick={() => setShowAddClient(true)}
               className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
@@ -1889,6 +1950,72 @@ export default function ClientManagement({ sdrs, onUpdate, darkTheme = false }: 
       )}
 
       {/* Assign Client Modal */}
+      {showAddExistingClientModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className={`rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className={`text-xl font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
+                Add Existing Client - {monthOptions.find(m => m.value === selectedMonth)?.label}
+              </h2>
+              <button
+                onClick={() => setShowAddExistingClientModal(false)}
+                className={darkTheme ? 'text-slate-400 hover:text-slate-200 transition-colors' : 'text-gray-400 hover:text-gray-600 transition-colors'}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className={`text-sm mb-4 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
+              Add an existing client to this month without creating a duplicate record.
+            </p>
+
+            <input
+              type="text"
+              value={existingClientSearch}
+              onChange={(e) => setExistingClientSearch(e.target.value)}
+              placeholder="Search existing clients..."
+              className={`w-full mb-4 rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+            />
+
+            <div className="overflow-y-auto max-h-[48vh] space-y-2">
+              {allClients
+                .filter((client) => !clients.some((visibleClient) => visibleClient.id === client.id))
+                .filter((client) => client.name.toLowerCase().includes(existingClientSearch.toLowerCase().trim()))
+                .map((client) => (
+                  <div
+                    key={client.id}
+                    className={`flex items-center justify-between rounded-md border p-3 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}
+                  >
+                    <div>
+                      <p className={`font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{client.name}</p>
+                      <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                        Default Targets: Set {client.monthly_set_target || 0}, Hold {client.monthly_hold_target || 0}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleAddExistingClientToMonth(client)}
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      Add to Month
+                    </button>
+                  </div>
+                ))}
+
+              {allClients
+                .filter((client) => !clients.some((visibleClient) => visibleClient.id === client.id))
+                .filter((client) => client.name.toLowerCase().includes(existingClientSearch.toLowerCase().trim()))
+                .length === 0 && (
+                <div className={`p-4 text-sm rounded-md ${darkTheme ? 'text-slate-400 bg-[#1d1f24]' : 'text-gray-500 bg-gray-50'}`}>
+                  No existing clients found outside this month.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAssignForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className={`rounded-lg shadow-xl p-6 w-full max-w-md ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
