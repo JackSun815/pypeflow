@@ -26,12 +26,6 @@ class Logger {
    */
   setUserInfo(userInfo: UserInfo | null) {
     this.userInfo = userInfo;
-    console.log('[AuditDebug] logger.setUserInfo', {
-      hasUserInfo: !!userInfo,
-      userId: userInfo?.userId,
-      role: userInfo?.role,
-      agencyId: userInfo?.agencyId,
-    });
   }
 
   /**
@@ -68,22 +62,13 @@ class Logger {
         status: entry.status || 'success',
       };
 
-      console.log('[AuditDebug] logger.audit payload', auditLog);
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('audit_logs')
         .insert(auditLog)
         .select();
 
       if (error) {
-        console.error('[AuditDebug] logger.audit insert error:', error);
-      } else {
-        console.log('[AuditDebug] logger.audit insert success:', {
-          action: entry.action,
-          entityType: entry.entityType,
-          insertedRows: data?.length || 0,
-          firstRow: data?.[0] || null,
-        });
+        console.error('❌ AUDIT LOG ERROR:', error);
       }
     } catch (error) {
       console.error('❌ AUDIT LOG ERROR:', error);

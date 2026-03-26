@@ -1816,16 +1816,16 @@ function SDRDashboardContent() {
               </span>
             </Link>
             <Link
-              to="audit"
+              to="activities"
               className={`${
-                location.pathname === `/dashboard/sdr/${token}/audit`
+                location.pathname === `/dashboard/sdr/${token}/activities` || location.pathname === `/dashboard/sdr/${token}/audit`
                   ? darkTheme ? 'border-blue-400 text-blue-400' : 'border-blue-500 text-blue-600'
                   : darkTheme ? 'border-transparent text-slate-300 hover:text-blue-400 hover:border-blue-400/50' : 'border-transparent text-gray-500 hover:text-blue-500 hover:border-blue-300'
               } group whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
             >
               <span className="flex items-center gap-2">
-                <Clock className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/audit` ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-orange-500'}`} />
-                Audit Trail
+                <Clock className={`w-4 h-4 transition-colors ${location.pathname === `/dashboard/sdr/${token}/activities` || location.pathname === `/dashboard/sdr/${token}/audit` ? '' : darkTheme ? 'group-hover:text-blue-400' : 'group-hover:text-orange-500'}`} />
+                Activities
               </span>
             </Link>
           </nav>
@@ -2358,6 +2358,7 @@ function SDRDashboardContent() {
           } 
         />
         <Route path="commissions" element={<Commissions sdrId={sdrId || ''} darkTheme={darkTheme} />} />
+        <Route path="activities" element={<SDRAuditTrail sdrId={sdrId || ''} darkTheme={darkTheme} />} />
         <Route path="audit" element={<SDRAuditTrail sdrId={sdrId || ''} darkTheme={darkTheme} />} />
         <Route path="calendar" element={
           <div className="space-y-8">

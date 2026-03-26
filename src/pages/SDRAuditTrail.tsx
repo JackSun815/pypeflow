@@ -35,6 +35,8 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [sdrNamesById, setSdrNamesById] = useState<Record<string, string>>({});
+  const [clientNamesById, setClientNamesById] = useState<Record<string, string>>({});
   
   // Filter states
   const [filterAction, setFilterAction] = useState<string>('');
@@ -58,6 +60,68 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
     }
   }, [sdrId, page, filterAction, filterEntityType, searchTerm, dateFrom, dateTo]);
 
+  useEffect(() => {
+    async function hydrateNamesForVisibleLogs() {
+      if (logs.length === 0) return;
+
+      const sdrIds = new Set<string>();
+      const clientIds = new Set<string>();
+
+      const captureIds = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return;
+        for (const [key, value] of Object.entries(obj)) {
+          if (typeof value !== 'string') continue;
+          if (key === 'sdr_id' || key === 'actor_id' || key === 'user_id') {
+            sdrIds.add(value);
+          }
+          if (key === 'client_id') {
+            clientIds.add(value);
+          }
+        }
+      };
+
+      for (const log of logs) {
+        captureIds(log.metadata);
+        captureIds(log.old_values);
+        captureIds(log.new_values);
+      }
+
+      if (sdrIds.size > 0) {
+        const ids = Array.from(sdrIds);
+        const { data } = await supabase
+          .from('profiles')
+          .select('id,full_name')
+          .in('id', ids);
+
+        if (data) {
+          const nextMap: Record<string, string> = {};
+          for (const row of data as Array<{ id: string; full_name: string | null }>) {
+            nextMap[row.id] = (row.full_name || '').trim() || 'Unknown SDR';
+          }
+          setSdrNamesById(prev => ({ ...prev, ...nextMap }));
+        }
+      }
+
+      if (clientIds.size > 0) {
+        const ids = Array.from(clientIds);
+        const { data } = await supabase
+          .from('clients')
+          .select('id,name')
+          .in('id', ids);
+
+        if (data) {
+          const nextMap: Record<string, string> = {};
+          for (const row of data as Array<{ id: string; name: string }>) {
+            nextMap[row.id] = row.name || 'Unknown Client';
+          }
+          setClientNamesById(prev => ({ ...prev, ...nextMap }));
+        }
+      }
+    }
+
+    hydrateNamesForVisibleLogs();
+  }, [logs]);
+
   async function fetchFilterOptions() {
     if (!sdrId) return;
     
@@ -72,9 +136,7 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
         .limit(500);
       
       const { data: logs, error: optionsError } = await baseQuery;
-      if (optionsError) {
-        console.error('[AuditDebug] fetchFilterOptions error', optionsError);
-      }
+      if (optionsError) throw optionsError;
       
       if (logs) {
         const sdrLogs = logs.filter((log: any) => log.user_id === sdrId || log?.metadata?.sdr_id === sdrId);
@@ -120,19 +182,8 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
 
       if (fetchError) throw fetchError;
 
-      console.log('[AuditDebug] SDRAuditTrail raw fetch', {
-        sdrId,
-        totalRows: data?.length || 0,
-        sample: data?.[0] || null,
-      });
-
       // Start with filtered logs from query.
       let filteredLogs = (data || []).filter((log: any) => log.user_id === sdrId || log?.metadata?.sdr_id === sdrId);
-
-      console.log('[AuditDebug] SDRAuditTrail after sdr filter', {
-        sdrId,
-        filteredRows: filteredLogs.length,
-      });
 
       // Apply action filter
       if (filterAction) {
@@ -162,13 +213,6 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
         (page - 1) * pageSize,
         page * pageSize
       );
-
-      console.log('[AuditDebug] SDRAuditTrail pagination', {
-        page,
-        pageSize,
-        totalCount,
-        pageRows: paginatedLogs.length,
-      });
 
       setLogs(paginatedLogs);
       setTotalCount(totalCount);
@@ -218,6 +262,74 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
     return String(value);
   }
 
+  function formatFieldLabel(key: string): string {
+    if (key === 'sdr_id' || key === 'actor_id' || key === 'user_id') return 'SDR';
+    if (key === 'client_id') return 'Client';
+    if (key === 'meeting_id') return 'Meeting';
+    return key;
+  }
+
+  function formatFieldValue(key: string, value: any): string {
+    if (typeof value === 'string' && value.trim() === '') return 'N/A';
+    if (typeof value !== 'string') return formatChangeValue(value);
+
+    if (key === 'sdr_id' || key === 'actor_id' || key === 'user_id') {
+      const name = sdrNamesById[value];
+      return name ? `${name} (${value})` : value;
+    }
+
+    if (key === 'client_id') {
+      const name = clientNamesById[value];
+      return name ? `${name} (${value})` : value;
+    }
+
+    return value;
+  }
+
+  function pickFirstNonEmptyValue(values: any[]): string | null {
+    for (const value of values) {
+      if (value === null || value === undefined) continue;
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed) return trimmed;
+        continue;
+      }
+      return String(value);
+    }
+    return null;
+  }
+
+  function getActivitySummary(log: AuditLog): string[] {
+    const contactName = pickFirstNonEmptyValue([
+      log?.new_values?.contact_full_name,
+      log?.old_values?.contact_full_name,
+      log?.changes?.contact_full_name,
+      log?.changes?.contact,
+      log?.metadata?.contact_full_name,
+      log?.metadata?.contact,
+    ]);
+
+    const company = pickFirstNonEmptyValue([
+      log?.new_values?.company,
+      log?.old_values?.company,
+      log?.changes?.company,
+      log?.metadata?.company,
+    ]);
+
+    const clientId = pickFirstNonEmptyValue([
+      log?.new_values?.client_id,
+      log?.old_values?.client_id,
+      log?.metadata?.client_id,
+    ]);
+
+    const summary: string[] = [];
+    if (contactName) summary.push(`Contact: ${contactName}`);
+    if (company) summary.push(`Company: ${company}`);
+    if (clientId) summary.push(`Client: ${formatFieldValue('client_id', clientId)}`);
+
+    return summary;
+  }
+
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
@@ -227,11 +339,11 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
         <div className="flex items-center gap-3 mb-2">
           <Clock className={`w-6 h-6 ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`} />
           <h2 className={`text-2xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-            Activity Audit Trail
+            Activities
           </h2>
         </div>
         <p className={darkTheme ? 'text-slate-400' : 'text-gray-600'}>
-          Track your meeting actions only: add, edit, delete, and status changes
+          Track your meeting actions: add, edit, delete, and status changes
         </p>
       </div>
 
@@ -412,11 +524,15 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
                   </p>
 
                   {/* Changes Preview */}
-                  {log.changes && Object.keys(log.changes).length > 0 && (
-                    <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
-                      {Object.keys(log.changes).map(key => log.changes[key]).join(' • ')}
+                  {getActivitySummary(log).length > 0 ? (
+                    <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>
+                      {getActivitySummary(log).join(' • ')}
                     </p>
-                  )}
+                  ) : log.changes && Object.keys(log.changes).length > 0 ? (
+                    <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                      {Object.keys(log.changes).map(key => formatFieldValue(key, log.changes[key])).join(' • ')}
+                    </p>
+                  ) : null}
                 </div>
 
                 {/* Expand Icon */}
@@ -440,7 +556,7 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
                         <div className={`p-3 rounded text-sm space-y-1 ${darkTheme ? 'bg-slate-700/30' : 'bg-gray-50'}`}>
                           {Object.entries(log.old_values).map(([key, value]) => (
                             <div key={key} className={darkTheme ? 'text-slate-300' : 'text-gray-700'}>
-                              <span className="font-medium">{key}:</span> {formatChangeValue(value)}
+                              <span className="font-medium">{formatFieldLabel(key)}:</span> {formatFieldValue(key, value)}
                             </div>
                           ))}
                         </div>
@@ -456,7 +572,7 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
                         <div className={`p-3 rounded text-sm space-y-1 ${darkTheme ? 'bg-slate-700/30' : 'bg-gray-50'}`}>
                           {Object.entries(log.new_values).map(([key, value]) => (
                             <div key={key} className={darkTheme ? 'text-slate-300' : 'text-gray-700'}>
-                              <span className="font-medium">{key}:</span> {formatChangeValue(value)}
+                              <span className="font-medium">{formatFieldLabel(key)}:</span> {formatFieldValue(key, value)}
                             </div>
                           ))}
                         </div>
@@ -472,7 +588,7 @@ export default function SDRAuditTrail({ sdrId, darkTheme = false }: SDRAuditTrai
                         <div className={`p-3 rounded text-sm space-y-1 ${darkTheme ? 'bg-slate-700/30' : 'bg-gray-50'}`}>
                           {Object.entries(log.metadata).map(([key, value]) => (
                             <div key={key} className={darkTheme ? 'text-slate-300' : 'text-gray-700'}>
-                              <span className="font-medium">{key}:</span> {formatChangeValue(value)}
+                              <span className="font-medium">{formatFieldLabel(key)}:</span> {formatFieldValue(key, value)}
                             </div>
                           ))}
                         </div>

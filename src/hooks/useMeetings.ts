@@ -264,11 +264,6 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       await fetchMeetings();
       
       // Log the action
-      console.log('[AuditDebug] meeting_create attempt', {
-        sdrId,
-        createdMeetingId,
-        clientId,
-      });
       await logger.logMeetingAction('create', createdMeetingId || sdrId, {
         contact: meetingDetails.contact_full_name || 'Unknown',
         company: meetingDetails.company || 'N/A',
@@ -327,10 +322,6 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
     await fetchMeetings();
     
     // Log the update action
-    console.log('[AuditDebug] meeting_update attempt', {
-      meetingId: updatedMeeting.id,
-      sdrId: updatedMeeting.sdr_id,
-    });
     await logger.logMeetingAction('update', updatedMeeting.id, {
       contact: updatedMeeting.contact_full_name,
       company: updatedMeeting.company,
@@ -383,10 +374,6 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       await fetchMeetings();
       
       // Log the action
-      console.log('[AuditDebug] meeting_update (held date) attempt', {
-        meetingId,
-        sdrId,
-      });
       await logger.logMeetingAction('update', meetingId, {
         held_at: heldDate || 'cleared',
         action: heldDate ? 'marked_held' : 'cleared_held_date'
@@ -423,10 +410,6 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       await fetchMeetings();
       
       // Log the action
-      console.log('[AuditDebug] meeting_update (confirmed date) attempt', {
-        meetingId,
-        sdrId,
-      });
       await logger.logMeetingAction('update', meetingId, {
         confirmed_at: confirmedDate || 'cleared',
         status: confirmedDate ? 'confirmed' : 'pending'
@@ -450,10 +433,6 @@ export function useMeetings(sdrId?: string | null, supabaseClient?: any, fetchAl
       if (error) throw error;
       
       // Log the action before refresh
-      console.log('[AuditDebug] meeting_delete attempt', {
-        meetingId,
-        sdrId,
-      });
       await logger.logMeetingAction('delete', meetingId, {
         meeting_id: meetingId
       }, {
