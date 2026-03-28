@@ -214,7 +214,7 @@ export default function ManagerDashboard() {
   
   const { sdrs, loading: sdrsLoading, error: sdrsError, fetchSDRs } = useSDRs(selectedMonth);
   const { clients, loading: clientsLoading, error: clientsError, fetchAllClients } = useAllClients();
-  const { meetings, loading: meetingsLoading, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
+  const { meetings, loading: meetingsLoading, updateMeeting, updateMeetingHeldDate, updateMeetingConfirmedDate } = useMeetings(null, undefined, true);
   const [selectedSDR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'users' | 'meetings' | 'history' | 'icp'>('overview');
   
@@ -234,6 +234,7 @@ export default function ManagerDashboard() {
   const [modalMeetings, setModalMeetings] = useState<any[]>([]);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<any>(null);
+  const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null);
   
   // Filter and sort/group state for meetings modal
   const [meetingFilter, setMeetingFilter] = useState<'all' | string>('all'); // 'all' or client_id or sdr_id
@@ -970,12 +971,62 @@ export default function ManagerDashboard() {
     handleSDRClientClick(sdrId, clientId, sdrName, clientName);
   };
 
+  const handlePendingMeetingSave = async (updatedMeeting: any) => {
+    try {
+      await updateMeeting(updatedMeeting);
+      setEditingMeetingId(null);
+
+      const replaceMeeting = (meetingList: any[] = []) =>
+        meetingList.map((meeting) =>
+          meeting.id === updatedMeeting.id
+            ? { ...meeting, ...updatedMeeting }
+            : meeting
+        );
+
+      setModalMeetings((prev) => replaceMeeting(prev));
+      setModalContent((prev: any) => {
+        if (!prev || prev.type !== 'sdrClientMeetings') {
+          return prev;
+        }
+
+        const nextSetMeetings = replaceMeeting(prev.setMeetings);
+        const nextHeldMeetings = replaceMeeting(prev.heldMeetings);
+        const nowDate = new Date();
+
+        const nextPendingMeetings = nextSetMeetings.filter((m: any) =>
+          m.status === 'pending' && !m.no_show && !m.held_at && new Date(m.scheduled_date) >= nowDate
+        );
+
+        const nextPastDuePendingMeetings = nextSetMeetings.filter((m: any) =>
+          (m.status === 'pending' || m.status === 'confirmed') &&
+          !m.no_show &&
+          !m.held_at &&
+          !(m as any).no_longer_interested &&
+          ((m as any).icp_status || 'pending') !== 'denied' &&
+          new Date(m.scheduled_date) < nowDate
+        );
+
+        return {
+          ...prev,
+          setMeetings: nextSetMeetings,
+          heldMeetings: nextHeldMeetings,
+          pendingMeetings: nextPendingMeetings,
+          pastDuePendingMeetings: nextPastDuePendingMeetings,
+        };
+      });
+    } catch (error) {
+      console.error('Failed to update meeting status:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update meeting status');
+    }
+  };
+
   const closeModal = () => {
     setModalOpen(false);
     setModalType(null);
     setModalMeetings([]);
     setModalContent(null);
     setModalTitle('');
+    setEditingMeetingId(null);
     // Reset filters when closing modal
     setMeetingFilter('all');
     setMeetingSortBy('date');
@@ -3530,6 +3581,11 @@ export default function ManagerDashboard() {
                               <div key={meeting.id}>
                                 <MeetingCard
                                   meeting={meeting}
+                                  editable={true}
+                                  editingMeetingId={editingMeetingId}
+                                  onEdit={(meetingToEdit) => setEditingMeetingId(meetingToEdit.id)}
+                                  onCancel={() => setEditingMeetingId(null)}
+                                  onSave={handlePendingMeetingSave}
                                   showSDR={false}
                                   darkTheme={darkTheme}
                                 />
@@ -3743,6 +3799,11 @@ export default function ManagerDashboard() {
                                     <MeetingCard
                                       key={meeting.id}
                                       meeting={meeting}
+                                      editable={modalType === 'pending'}
+                                      editingMeetingId={editingMeetingId}
+                                      onEdit={modalType === 'pending' ? (meetingToEdit) => setEditingMeetingId(meetingToEdit.id) : undefined}
+                                      onCancel={modalType === 'pending' ? () => setEditingMeetingId(null) : undefined}
+                                      onSave={modalType === 'pending' ? handlePendingMeetingSave : undefined}
                                       showSDR={true}
                                       darkTheme={darkTheme}
                                     />
@@ -3866,6 +3927,11 @@ export default function ManagerDashboard() {
                                     <MeetingCard
                                       key={meeting.id}
                                       meeting={meeting}
+                                      editable={modalType === 'pending'}
+                                      editingMeetingId={editingMeetingId}
+                                      onEdit={modalType === 'pending' ? (meetingToEdit) => setEditingMeetingId(meetingToEdit.id) : undefined}
+                                      onCancel={modalType === 'pending' ? () => setEditingMeetingId(null) : undefined}
+                                      onSave={modalType === 'pending' ? handlePendingMeetingSave : undefined}
                                       showSDR={true}
                                       darkTheme={darkTheme}
                                     />
@@ -3972,6 +4038,11 @@ export default function ManagerDashboard() {
                               <MeetingCard
                                 key={meeting.id}
                                 meeting={meeting}
+                                editable={modalType === 'pending'}
+                                editingMeetingId={editingMeetingId}
+                                onEdit={modalType === 'pending' ? (meetingToEdit) => setEditingMeetingId(meetingToEdit.id) : undefined}
+                                onCancel={modalType === 'pending' ? () => setEditingMeetingId(null) : undefined}
+                                onSave={modalType === 'pending' ? handlePendingMeetingSave : undefined}
                                 showSDR={true}
                                 darkTheme={darkTheme}
                               />
