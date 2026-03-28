@@ -221,6 +221,7 @@ export interface Database {
         Row: {
           id: string
           sdr_id: string
+          month: string
           commission_goal: number
           created_at: string
           updated_at: string
@@ -228,6 +229,7 @@ export interface Database {
         Insert: {
           id?: string
           sdr_id: string
+          month: string
           commission_goal?: number
           created_at?: string
           updated_at?: string
@@ -235,6 +237,7 @@ export interface Database {
         Update: {
           id?: string
           sdr_id?: string
+          month?: string
           commission_goal?: number
           created_at?: string
           updated_at?: string

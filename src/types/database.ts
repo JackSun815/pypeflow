@@ -64,6 +64,7 @@ export interface Meeting {
 export interface CommissionGoalOverride {
   id: string;
   sdr_id: string;
+  month: string;
   commission_goal: number;
   created_at: string;
   updated_at: string;

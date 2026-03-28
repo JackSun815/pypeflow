@@ -240,6 +240,7 @@ export default function ManagerMeetingHistory({
       .select('monthly_hold_target')
       .eq('sdr_id', sdrId)
       .eq('month', selectedMonth)
+      .or('is_active.is.null,is_active.eq.true')
       .eq('agency_id', agency.id);
 
     if (assignmentsError) {
@@ -268,6 +269,7 @@ export default function ManagerMeetingHistory({
       .from('commission_goal_overrides')
       .select('*')
       .eq('sdr_id', sdrId)
+      .eq('month', selectedMonth)
       .maybeSingle();
 
     console.log(`  🎯 Commission goal override:`, commissionGoalOverride);
@@ -434,6 +436,7 @@ export default function ManagerMeetingHistory({
         .select('monthly_hold_target')
         .eq('sdr_id', sdrId)
         .eq('month', monthString)
+        .or('is_active.is.null,is_active.eq.true')
         .eq('agency_id', agency?.id);
 
       const heldGoal = assignments?.reduce((sum, a) => sum + (a.monthly_hold_target || 0), 0) || 0;
@@ -451,6 +454,7 @@ export default function ManagerMeetingHistory({
         .from('commission_goal_overrides')
         .select('*')
         .eq('sdr_id', sdrId)
+        .eq('month', monthString)
         .maybeSingle();
 
       const finalHeldGoal = commissionGoalOverride?.commission_goal ?? heldGoal;

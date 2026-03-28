@@ -52,6 +52,10 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
   const [commissionGoalOverride, setCommissionGoalOverride] = useState<number>(0);
   const [hasOverride, setHasOverride] = useState<boolean>(false);
   const [calculatedGoal, setCalculatedGoal] = useState<number>(0);
+  const [currentMonthKey] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   // Load agency_id - try from context first, then fetch from SDR profile
   useEffect(() => {
@@ -123,6 +127,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           .from('commission_goal_overrides')
           .select('*')
           .eq('sdr_id', sdrId)
+          .eq('month', currentMonthKey)
           .maybeSingle();
 
         if (overrideError && overrideError.code !== 'PGRST116') {
@@ -132,6 +137,9 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
         if (overrideData) {
           setCommissionGoalOverride(overrideData.commission_goal);
           setHasOverride(true);
+        } else {
+          setCommissionGoalOverride(0);
+          setHasOverride(false);
         }
 
         // Calculate the current goal from current month's client assignments
@@ -145,7 +153,8 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
             monthly_hold_target
           `)
           .eq('sdr_id', sdrId)
-          .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`);
+          .eq('month', `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`)
+          .or('is_active.is.null,is_active.eq.true');
 
         if (assignmentsError) {
           console.error('Load assignments error:', assignmentsError);
@@ -166,7 +175,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
     }
 
     loadCompensation();
-  }, [sdrId]);
+  }, [sdrId, currentMonthKey]);
 
   async function handleSave() {
     setLoading(true);
@@ -289,6 +298,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
       if (hasOverride) {
         console.log('[DEBUG] Saving commission goal override:', {
           sdr_id: sdrId,
+          month: currentMonthKey,
           commission_goal: commissionGoalOverride
         });
         
@@ -297,6 +307,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
           .from('commission_goal_overrides')
           .select('id')
           .eq('sdr_id', sdrId)
+          .eq('month', currentMonthKey)
           .maybeSingle();
 
         if (checkError) {
@@ -313,7 +324,8 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
               commission_goal: commissionGoalOverride,
               updated_at: new Date().toISOString()
             })
-            .eq('sdr_id', sdrId);
+            .eq('sdr_id', sdrId)
+            .eq('month', currentMonthKey);
 
           if (overrideError) {
             console.error('[DEBUG] Update override error:', overrideError);
@@ -329,6 +341,7 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
             .insert({
               sdr_id: sdrId,
               agency_id: agencyIdToUse,
+              month: currentMonthKey,
               commission_goal: commissionGoalOverride
             });
 
@@ -346,7 +359,8 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
         const { error: deleteError } = await supabase
           .from('commission_goal_overrides')
           .delete()
-          .eq('sdr_id', sdrId);
+          .eq('sdr_id', sdrId)
+          .eq('month', currentMonthKey);
 
         if (deleteError) {
           console.error('[DEBUG] Delete override error:', deleteError);

@@ -41,7 +41,8 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
   const [showHistory, setShowHistory] = useState(false);
 
   // Calculate held goal and held meetings for commissions
-  const calculatedGoal = clients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
+  const activeClients = clients.filter((client: any) => (client as any).is_active !== false);
+  const calculatedGoal = activeClients.reduce((sum, client) => sum + (client.monthly_hold_target || 0), 0);
   const heldGoal = commissionGoalOverride ? commissionGoalOverride.commission_goal : calculatedGoal;
   
   // Filter meetings to current month only - using scheduled_date (month it was scheduled for)
@@ -49,6 +50,7 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
   const nextMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   
   const heldMeetings = meetings.filter(m => {
     // Must be actually held and not a no-show, and not no_longer_interested
@@ -103,6 +105,7 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
           .from('commission_goal_overrides')
           .select('*')
           .eq('sdr_id', sdrId as any)
+          .eq('month', currentMonthKey as any)
           .maybeSingle();
 
         if (overrideError && overrideError.code !== 'PGRST116') {
@@ -123,7 +126,7 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
     }
 
     loadCompensation();
-  }, [sdrId]);
+  }, [sdrId, currentMonthKey]);
 
   // Function to fetch historical commission data
   const fetchHistoricalData = async () => {
@@ -146,7 +149,15 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
           .from('assignments')
           .select('monthly_hold_target')
           .eq('sdr_id', sdrId as any)
-          .eq('month', monthKey as any);
+          .eq('month', monthKey as any)
+          .or('is_active.is.null,is_active.eq.true');
+
+        const { data: overrideData } = await supabase
+          .from('commission_goal_overrides')
+          .select('commission_goal')
+          .eq('sdr_id', sdrId as any)
+          .eq('month', monthKey as any)
+          .maybeSingle();
         
         // Fetch meetings for this month - we'll filter by scheduled_date in JS
         const { data: monthMeetings } = await supabase
@@ -172,9 +183,10 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
         }).length;
         
         // Calculate held goal
-        const heldGoal = (assignments || []).reduce((sum, assignment: any) => 
+        const calculatedHeldGoal = (assignments || []).reduce((sum, assignment: any) => 
           sum + (assignment.monthly_hold_target || 0), 0
         );
+        const heldGoal = overrideData?.commission_goal ?? calculatedHeldGoal;
         
         // Calculate commission for this month using the correct goal for that month
         const commission = calculateCommission(heldMeetings, heldGoal);
@@ -189,7 +201,8 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
           heldGoal,
           heldMeetings,
           progressPercentage,
-          commission
+          commission,
+          commissionGoalOverride: overrideData?.commission_goal
         });
       }
       
@@ -261,8 +274,8 @@ export default function Commissions({ sdrId, darkTheme = false }: { sdrId: strin
       }
     } else {
       // Calculate progress based on input meetings vs held goal
-      const percentageAchieved = heldGoal > 0 
-        ? (meetingsCount / heldGoal) * 100 
+      const percentageAchieved = goal > 0 
+        ? (meetingsCount / goal) * 100 
         : 0;
 
       const sortedTiers = [...structure.goal_tiers].sort((a, b) => b.percentage - a.percentage);
