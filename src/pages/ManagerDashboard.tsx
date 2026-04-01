@@ -3415,6 +3415,26 @@ export default function ManagerDashboard() {
                             {sdr.clients.length} {sdr.clients.length === 1 ? 'Client' : 'Clients'}
                           </span>
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                          <div className={`rounded-md px-3 py-2 ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
+                            <p className={`text-xs uppercase tracking-wide ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Start Date</p>
+                            <p className={`text-sm font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
+                              {sdr.created_at ? format(new Date(sdr.created_at), 'MMM d, yyyy') : 'N/A'}
+                            </p>
+                          </div>
+                          <div className={`rounded-md px-3 py-2 ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
+                            <p className={`text-xs uppercase tracking-wide ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Meetings Booked (Total)</p>
+                            <p className={`text-sm font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
+                              {sdr.totalMeetingsSetAllTime || 0}
+                            </p>
+                          </div>
+                          <div className={`rounded-md px-3 py-2 ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
+                            <p className={`text-xs uppercase tracking-wide ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Meetings Held (Total)</p>
+                            <p className={`text-sm font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
+                              {sdr.totalHeldMeetingsAllTime || 0}
+                            </p>
+                          </div>
+                        </div>
                         <div className="mt-3">
                           <h4 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                             <Users className="w-4 h-4 text-indigo-600" />

@@ -7,9 +7,11 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface SDRWithMetrics extends Profile {
   totalMeetingsSet: number;
+  totalMeetingsSetAllTime: number;
   totalConfirmedMeetings: number;
   totalPendingMeetings: number;
   totalHeldMeetings: number;
+  totalHeldMeetingsAllTime: number;
   totalNoShowMeetings: number;
   clients: Array<{
     id: string;
@@ -50,7 +52,7 @@ export function useSDRs(selectedMonth?: string) {
       // The filtering by active status will be done in the component based on context
       let sdrQuery = supabase
         .from('profiles')
-        .select('id, full_name, role, active, updated_at')
+        .select('id, full_name, role, active, created_at, updated_at')
         .eq('role', 'sdr' as any);
       
       if (agency) {
@@ -220,6 +222,20 @@ export function useSDRs(selectedMonth?: string) {
           (meeting: any) => meeting.status === 'confirmed' && !meeting.no_show
         ).length;
 
+        // All-time totals for manager overview details
+        const totalMeetingsSetAllTime = sdrMeetings.filter((meeting: any) => {
+          const icpStatus = meeting.icp_status;
+          const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+          return !isICPDisqualified;
+        }).length;
+
+        const totalHeldMeetingsAllTime = sdrMeetings.filter((meeting: any) => {
+          if (!meeting.held_at || meeting.no_show) return false;
+          const icpStatus = meeting.icp_status;
+          const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+          return !isICPDisqualified;
+        }).length;
+
         // Match the exact pending meetings calculation from Team Meetings
         const totalPendingMeetings = sdrMeetingsSet.filter(
           (meeting: any) => meeting.status === 'pending' && !meeting.no_show
@@ -235,9 +251,11 @@ export function useSDRs(selectedMonth?: string) {
           ...sdr,
           clients,
           totalMeetingsSet: sdrMeetingsSet.length,
+          totalMeetingsSetAllTime,
           totalConfirmedMeetings,
           totalPendingMeetings,
           totalHeldMeetings,
+          totalHeldMeetingsAllTime,
           totalNoShowMeetings: totalNoShows
         };
       });
