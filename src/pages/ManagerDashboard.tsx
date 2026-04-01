@@ -248,6 +248,7 @@ export default function ManagerDashboard() {
   
   // SDR creation date sort
   const [sdrCreationSort, setSdrCreationSort] = useState<'asc' | 'desc'>('desc');
+  const [sdrTableCreationSort, setSdrTableCreationSort] = useState<'none' | 'asc' | 'desc'>('none');
   const [sdrSortBy, setSdrSortBy] = useState<'createdAt' | 'booked' | 'held'>('createdAt');
   const [meetingSortOrder, setMeetingSortOrder] = useState<'asc' | 'desc'>('desc');
   const [meetingGroupBy, setMeetingGroupBy] = useState<'none' | 'client' | 'sdr'>('none');
@@ -1752,6 +1753,15 @@ export default function ManagerDashboard() {
                 return hasAssignments;
               });
 
+              // Apply creation-date sorting if enabled (same behavior as Clients Performance)
+              const sortedSDRsForMonth = sdrTableCreationSort === 'none'
+                ? activeSDRsForMonth
+                : [...activeSDRsForMonth].sort((a, b) => {
+                    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                    return sdrTableCreationSort === 'asc' ? dateA - dateB : dateB - dateA;
+                  });
+
               return (
             <div className={`rounded-lg shadow-md overflow-hidden mb-8 ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
               <div className={`px-6 py-4 border-b ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
@@ -1809,15 +1819,33 @@ export default function ManagerDashboard() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSdrPerformanceExportModalOpen(true)}
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors ${darkTheme ? 'text-green-300 bg-green-900/30 border border-green-700/50 hover:bg-green-900/40' : 'text-green-700 bg-green-50 border border-green-200 hover:bg-green-100'}`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export
-                  </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (sdrTableCreationSort === 'none') setSdrTableCreationSort('desc');
+                          else if (sdrTableCreationSort === 'desc') setSdrTableCreationSort('asc');
+                          else setSdrTableCreationSort('none');
+                        }}
+                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border transition-colors ${
+                          sdrTableCreationSort !== 'none'
+                            ? darkTheme ? 'text-blue-300 bg-blue-900/30 border-blue-700/50 hover:bg-blue-900/40' : 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100'
+                            : darkTheme ? 'text-slate-300 bg-[#1d1f24] border-[#2d3139] hover:bg-[#2d3139]' : 'text-gray-600 bg-gray-50 border-gray-300 hover:bg-gray-100'
+                        }`}
+                        title={sdrTableCreationSort === 'none' ? 'Sort by creation date' : sdrTableCreationSort === 'desc' ? 'Sorted: Newest first' : 'Sorted: Oldest first'}
+                      >
+                        <ArrowUpDown className="w-3 h-3" />
+                        {sdrTableCreationSort === 'asc' ? 'Oldest' : 'Newest'}
+                      </button>
+                      <button
+                        onClick={() => setSdrPerformanceExportModalOpen(true)}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors ${darkTheme ? 'text-green-300 bg-green-900/30 border border-green-700/50 hover:bg-green-900/40' : 'text-green-700 bg-green-50 border border-green-200 hover:bg-green-100'}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export
+                      </button>
+                    </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -1848,7 +1876,7 @@ export default function ManagerDashboard() {
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${darkTheme ? 'bg-[#232529] divide-[#2d3139]' : 'bg-white divide-gray-200'}`}>
-                    {activeSDRsForMonth.map((sdr) => {
+                    {sortedSDRsForMonth.map((sdr) => {
                       // Calculate separate set and held targets for this SDR from assignments for the selected month
                       const allSDRAssignments = assignments.filter(assignment => 
                         assignment.sdr_id === sdr.id && 
@@ -1933,6 +1961,11 @@ export default function ManagerDashboard() {
                                   <div className={`text-sm font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
                                     {sdr.full_name}
                                   </div>
+                                  {sdrTableCreationSort !== 'none' && sdr.created_at && (
+                                    <div className={`text-xs mt-0.5 ${darkTheme ? 'text-slate-500' : 'text-gray-400'}`}>
+                                      Added {new Date(sdr.created_at).toLocaleDateString()}
+                                    </div>
+                                  )}
                                   {sdr.active === false && (
                                     <div className="flex items-center gap-1 mt-1">
                                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-800'}`}>
