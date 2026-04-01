@@ -248,6 +248,7 @@ export default function ManagerDashboard() {
   
   // SDR creation date sort
   const [sdrCreationSort, setSdrCreationSort] = useState<'asc' | 'desc'>('desc');
+  const [sdrSortBy, setSdrSortBy] = useState<'createdAt' | 'booked' | 'held'>('createdAt');
   const [meetingSortOrder, setMeetingSortOrder] = useState<'asc' | 'desc'>('desc');
   const [meetingGroupBy, setMeetingGroupBy] = useState<'none' | 'client' | 'sdr'>('none');
   
@@ -3407,7 +3408,61 @@ export default function ManagerDashboard() {
               <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
                 {modalContent?.type === 'sdrs' ? (
                   <div className="space-y-4">
-                    {modalContent.data.map((sdr: any) => (
+                    <div className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
+                            Sort By
+                          </label>
+                          <select
+                            value={sdrSortBy}
+                            onChange={(e) => setSdrSortBy(e.target.value as 'createdAt' | 'booked' | 'held')}
+                            className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+                          >
+                            <option value="createdAt">Date Created</option>
+                            <option value="booked">Meetings Booked (Total)</option>
+                            <option value="held">Meetings Held (Total)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
+                            Order
+                          </label>
+                          <select
+                            value={sdrCreationSort}
+                            onChange={(e) => setSdrCreationSort(e.target.value as 'asc' | 'desc')}
+                            className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100' : 'border-gray-300'}`}
+                          >
+                            <option value="desc">Descending</option>
+                            <option value="asc">Ascending</option>
+                          </select>
+                        </div>
+                        <div className="flex items-end">
+                          <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
+                            Showing {modalContent.data.length} SDR{modalContent.data.length === 1 ? '' : 's'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    {[...modalContent.data]
+                      .sort((a: any, b: any) => {
+                        let valueA = 0;
+                        let valueB = 0;
+
+                        if (sdrSortBy === 'createdAt') {
+                          valueA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                          valueB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                        } else if (sdrSortBy === 'booked') {
+                          valueA = a.totalMeetingsSetAllTime || 0;
+                          valueB = b.totalMeetingsSetAllTime || 0;
+                        } else {
+                          valueA = a.totalHeldMeetingsAllTime || 0;
+                          valueB = b.totalHeldMeetingsAllTime || 0;
+                        }
+
+                        return sdrCreationSort === 'asc' ? valueA - valueB : valueB - valueA;
+                      })
+                      .map((sdr: any) => (
                       <div key={sdr.id} className={`rounded-lg shadow-md p-6 border-l-4 border-indigo-500 ${darkTheme ? 'bg-[#1d1f24]' : 'bg-white'}`}>
                         <div className="flex items-center justify-between mb-4">
                           <h3 className={`text-xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdr.full_name}</h3>
