@@ -257,6 +257,7 @@ export default function ManagerDashboard() {
   const [sdrCreationSort, setSdrCreationSort] = useState<'asc' | 'desc'>('desc');
   const [sdrTableCreationSort, setSdrTableCreationSort] = useState<'none' | 'asc' | 'desc'>('none');
   const [sdrSortBy, setSdrSortBy] = useState<'createdAt' | 'booked' | 'held'>('createdAt');
+  const [sdrSearchTerm, setSdrSearchTerm] = useState<string>('');
   const [meetingSortOrder, setMeetingSortOrder] = useState<'asc' | 'desc'>('desc');
   const [meetingGroupBy, setMeetingGroupBy] = useState<'none' | 'client' | 'sdr'>('none');
   
@@ -1041,6 +1042,7 @@ export default function ManagerDashboard() {
     setMeetingSortBy('date');
     setMeetingSortOrder('desc');
     setMeetingGroupBy('none');
+    setSdrSearchTerm('');
   };
 
   // Helper function to calculate breakdown by SDR
@@ -3676,8 +3678,28 @@ export default function ManagerDashboard() {
               <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
                 {modalContent?.type === 'sdrs' ? (
                   <div className="space-y-4">
+                    {(() => {
+                      // Filter SDRs by search term
+                      const filteredSdrList = modalContent.data.filter((sdr: any) =>
+                        sdr.full_name.toLowerCase().includes(sdrSearchTerm.toLowerCase())
+                      );
+
+                      return (
+                        <>
                     <div className={`p-4 rounded-lg border ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gray-50 border-gray-200'}`}>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                          <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
+                            Search SDR Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Type SDR name..."
+                            value={sdrSearchTerm}
+                            onChange={(e) => setSdrSearchTerm(e.target.value)}
+                            className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkTheme ? 'bg-[#232529] border-[#2d3139] text-slate-100 placeholder-slate-500' : 'border-gray-300 placeholder-gray-400'}`}
+                          />
+                        </div>
                         <div>
                           <label className={`block text-sm font-medium mb-1 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                             Sort By
@@ -3707,12 +3729,12 @@ export default function ManagerDashboard() {
                         </div>
                         <div className="flex items-end">
                           <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
-                            Showing {modalContent.data.length} SDR{modalContent.data.length === 1 ? '' : 's'}
+                            Showing {filteredSdrList.length} SDR{filteredSdrList.length === 1 ? '' : 's'}
                           </p>
                         </div>
                       </div>
                     </div>
-                    {[...modalContent.data]
+                    {filteredSdrList
                       .sort((a: any, b: any) => {
                         let valueA = 0;
                         let valueB = 0;
@@ -3859,6 +3881,9 @@ export default function ManagerDashboard() {
                         </div>
                       </div>
                     ))}
+                    </>
+                      );
+                    })()}
                   </div>
                 ) : modalContent?.type === 'setTarget' ? (
                   <div className="space-y-4">
