@@ -229,6 +229,13 @@ export default function ManagerDashboard() {
   const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
   const [expandedOtherHeldMeetings, setExpandedOtherHeldMeetings] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // State for expandable metric cards
+  const [expandedMetrics, setExpandedMetrics] = useState<Record<string, boolean>>({});
+  
+  // State for expandable SDR metrics in modal
+  const [expandedSdrMetrics, setExpandedSdrMetrics] = useState<Record<string, boolean>>({});
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'set' | 'held' | 'pending' | 'sdrs' | 'setTarget' | 'heldTarget' | 'sdrClientMeetings' | null>(null);
   const [modalMeetings, setModalMeetings] = useState<any[]>([]);
@@ -1036,6 +1043,83 @@ export default function ManagerDashboard() {
     setMeetingGroupBy('none');
   };
 
+  // Helper function to calculate breakdown by SDR
+  const getMeetingsSetBySDR = () => {
+    const breakdown: Record<string, number> = {};
+    monthlyMeetingsSet.forEach(meeting => {
+      const sdr = sdrs.find(s => s.id === meeting.sdr_id);
+      const sdrName = sdr?.full_name || 'Unknown SDR';
+      breakdown[sdrName] = (breakdown[sdrName] || 0) + 1;
+    });
+    return Object.entries(breakdown)
+      .map(([sdrName, count]) => ({ sdrName, count }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  const getMeetingsHeldBySDR = () => {
+    const breakdown: Record<string, number> = {};
+    monthlyMeetingsHeld.forEach(meeting => {
+      const sdr = sdrs.find(s => s.id === meeting.sdr_id);
+      const sdrName = sdr?.full_name || 'Unknown SDR';
+      breakdown[sdrName] = (breakdown[sdrName] || 0) + 1;
+    });
+    return Object.entries(breakdown)
+      .map(([sdrName, count]) => ({ sdrName, count }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  const getActiveSDRByMetrics = () => {
+    const activeSdrs = sdrs.filter(sdr => sdr.active !== false);
+    return activeSdrs.map(sdr => {
+      const setMeetings = monthlyMeetingsSet.filter(m => m.sdr_id === sdr.id).length;
+      const heldMeetings = monthlyMeetingsHeld.filter(m => m.sdr_id === sdr.id).length;
+      return { sdrName: sdr.full_name, clients: sdr.clients.length, meetings_set: setMeetings, meetings_held: heldMeetings };
+    });
+  };
+
+  const toggleMetricExpanded = (metricKey: string) => {
+    setExpandedMetrics(prev => ({
+      ...prev,
+      [metricKey]: !prev[metricKey]
+    }));
+  };
+
+  // Helper function to get all meetings for a specific SDR (total meetings set)
+  const getSdrMeetingsSet = (sdrId: string) => {
+    return meetings.filter(m => m.sdr_id === sdrId);
+  };
+
+  // Helper function to get all held meetings for a specific SDR
+  const getSdrMeetingsHeld = (sdrId: string) => {
+    return meetings.filter(m => m.sdr_id === sdrId && m.held_at);
+  };
+
+  // Helper to get total meetings set (all time) for SDR - matches MeetingsHistory calculation
+  const getSdrTotalMeetingsSet = (sdrId: string) => {
+    return getSdrMeetingsSet(sdrId).filter((m: any) => {
+      const icpStatus = m.icp_status;
+      const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+      return !isICPDisqualified;
+    }).length;
+  };
+
+  // Helper to get total meetings held (all time) for SDR - matches MeetingsHistory calculation
+  const getSdrTotalMeetingsHeld = (sdrId: string) => {
+    return getSdrMeetingsSet(sdrId).filter((m: any) => {
+      if (!m.held_at || m.no_show) return false;
+      const icpStatus = m.icp_status;
+      const isICPDisqualified = icpStatus === 'not_qualified' || icpStatus === 'rejected' || icpStatus === 'denied';
+      return !isICPDisqualified;
+    }).length;
+  };
+
+  const toggleSdrMetricExpanded = (key: string) => {
+    setExpandedSdrMetrics(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   if (sdrsLoading || meetingsLoading || clientsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1579,15 +1663,64 @@ export default function ManagerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {/* Total SDRs Card (clickable for modal) */}
               <div 
-                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-indigo-500/50' : 'bg-white hover:border-indigo-200'}`}
-                onClick={() => handleCardClick('sdrs')}
+                className={`rounded-lg shadow-md p-6 hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-indigo-500/50' : 'bg-white hover:border-indigo-200'}`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Active SDRs</h3>
-                  <Users className="w-6 h-6 text-indigo-600" />
+                  <div className="flex items-center gap-2">
+                    <Users className="w-6 h-6 text-indigo-600" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMetricExpanded('activeSdrs');
+                      }}
+                      className={`p-1 rounded transition-colors ${darkTheme ? 'hover:bg-[#2d3139]' : 'hover:bg-gray-100'}`}
+                    >
+                      {expandedMetrics['activeSdrs'] ? (
+                        <ChevronDown className="w-5 h-5 text-indigo-600" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{sdrs.filter(sdr => sdr.active !== false).length}</p>
-                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}>Click to view details →</p>
+                <button
+                  onClick={() => handleCardClick('sdrs')}
+                  className={`text-xs mt-2 font-medium ${darkTheme ? 'text-indigo-400' : 'text-indigo-600'}`}
+                >
+                  Click to view details →
+                </button>
+                
+                {/* Expandable Breakdown Section */}
+                {expandedMetrics['activeSdrs'] && (
+                  <div className={`mt-4 pt-4 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                    <p className={`text-xs font-semibold mb-3 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>SDR Overview:</p>
+                    <div className="space-y-2">
+                      {getActiveSDRByMetrics().map((item, idx) => (
+                        <div key={idx} className={`px-3 py-2 rounded-md text-sm ${darkTheme ? 'bg-[#2d3139]' : 'bg-gray-50'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className={`font-medium ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>{item.sdrName}</span>
+                            <div className="flex gap-4">
+                              <div className="text-center">
+                                <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Clients</p>
+                                <p className={`font-bold ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>{item.clients}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Set</p>
+                                <p className={`font-bold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{item.meetings_set}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Held</p>
+                                <p className={`font-bold ${darkTheme ? 'text-blue-400' : 'text-blue-600'}`}>{item.meetings_held}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Monthly Set Target Card (clickable for modal) */}
@@ -1628,11 +1761,25 @@ export default function ManagerDashboard() {
               {/* Meetings Set Card (clickable for modal) */}
               <div 
                 className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-green-500/50' : 'bg-white hover:border-green-200'}`}
-                onClick={() => handleCardClick('set')}
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meetings Set</h3>
-                  <Calendar className="w-6 h-6 text-indigo-600" />
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-6 h-6 text-indigo-600" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMetricExpanded('meetingsSet');
+                      }}
+                      className={`p-1 rounded transition-colors ${darkTheme ? 'hover:bg-[#2d3139]' : 'hover:bg-gray-100'}`}
+                    >
+                      {expandedMetrics['meetingsSet'] ? (
+                        <ChevronDown className="w-5 h-5 text-indigo-600" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{monthlyMeetingsSetCount}</p>
                 <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -1641,17 +1788,51 @@ export default function ManagerDashboard() {
                 <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                   Cumulative: {totalMeetingsSet}
                 </p>
-                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>Click to view meetings →</p>
+                <button
+                  onClick={() => handleCardClick('set')}
+                  className={`text-xs mt-2 font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}
+                >
+                  Click to view all meetings →
+                </button>
+                
+                {/* Expandable Breakdown Section */}
+                {expandedMetrics['meetingsSet'] && (
+                  <div className={`mt-4 pt-4 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                    <p className={`text-xs font-semibold mb-3 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>Breakdown by SDR:</p>
+                    <div className="space-y-2">
+                      {getMeetingsSetBySDR().map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{item.sdrName}</span>
+                          <span className={`text-sm font-semibold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{item.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Meetings Held Card (clickable for modal) */}
               <div 
                 className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-green-500/50' : 'bg-white hover:border-green-200'}`}
-                onClick={() => handleCardClick('held')}
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Meetings Held</h3>
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMetricExpanded('meetingsHeld');
+                      }}
+                      className={`p-1 rounded transition-colors ${darkTheme ? 'hover:bg-[#2d3139]' : 'hover:bg-gray-100'}`}
+                    >
+                      {expandedMetrics['meetingsHeld'] ? (
+                        <ChevronDown className="w-5 h-5 text-indigo-600" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{monthlyHeldMeetingsCount}</p>
                 <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -1660,17 +1841,51 @@ export default function ManagerDashboard() {
                 <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                   Cumulative: {totalHeldMeetings}
                 </p>
-                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>Click to view meetings →</p>
+                <button
+                  onClick={() => handleCardClick('held')}
+                  className={`text-xs mt-2 font-medium ${darkTheme ? 'text-green-400' : 'text-green-600'}`}
+                >
+                  Click to view all meetings →
+                </button>
+                
+                {/* Expandable Breakdown Section */}
+                {expandedMetrics['meetingsHeld'] && (
+                  <div className={`mt-4 pt-4 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                    <p className={`text-xs font-semibold mb-3 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>Breakdown by SDR:</p>
+                    <div className="space-y-2">
+                      {getMeetingsHeldBySDR().map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{item.sdrName}</span>
+                          <span className={`text-sm font-semibold ${darkTheme ? 'text-green-400' : 'text-green-600'}`}>{item.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Pending Card (clickable for modal) */}
               <div 
-                className={`rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-yellow-500/50' : 'bg-white hover:border-yellow-200'}`}
-                onClick={() => handleCardClick('pending')}
+                className={`rounded-lg shadow-md p-6 hover:shadow-lg hover:border-2 transition-all duration-200 border-2 border-transparent ${darkTheme ? 'bg-[#232529] hover:border-yellow-500/50' : 'bg-white hover:border-yellow-200'}`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-lg font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>Pending</h3>
-                  <Clock className="w-6 h-6 text-yellow-500" />
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-6 h-6 text-yellow-500" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMetricExpanded('pending');
+                      }}
+                      className={`p-1 rounded transition-colors ${darkTheme ? 'hover:bg-[#2d3139]' : 'hover:bg-gray-100'}`}
+                    >
+                      {expandedMetrics['pending'] ? (
+                        <ChevronDown className="w-5 h-5 text-indigo-600" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <p className={`text-3xl font-bold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{monthlyPendingMeetings}</p>
                 <p className={`text-sm mt-2 ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -1679,7 +1894,27 @@ export default function ManagerDashboard() {
                 <p className={`text-sm mt-1 ${darkTheme ? 'text-slate-300' : 'text-gray-600'}`}>
                   Cumulative: {totalPendingMeetings}
                 </p>
-                <p className={`text-xs mt-2 font-medium ${darkTheme ? 'text-yellow-400' : 'text-yellow-600'}`}>Click to view meetings →</p>
+                <button
+                  onClick={() => handleCardClick('pending')}
+                  className={`text-xs mt-2 font-medium ${darkTheme ? 'text-yellow-400' : 'text-yellow-600'}`}
+                >
+                  Click to view all meetings →
+                </button>
+                
+                {/* Expandable Breakdown Section */}
+                {expandedMetrics['pending'] && (
+                  <div className={`mt-4 pt-4 border-t ${darkTheme ? 'border-[#2d3139]' : 'border-gray-200'}`}>
+                    <p className={`text-xs font-semibold mb-3 ${darkTheme ? 'text-slate-300' : 'text-gray-700'}`}>Breakdown by SDR:</p>
+                    <div className="space-y-2">
+                      {getMeetingsHeldBySDR().map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <span className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{item.sdrName}</span>
+                          <span className={`text-sm font-semibold ${darkTheme ? 'text-yellow-400' : 'text-yellow-600'}`}>{item.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3510,19 +3745,104 @@ export default function ManagerDashboard() {
                               {sdr.created_at ? format(new Date(sdr.created_at), 'MMM d, yyyy') : 'N/A'}
                             </p>
                           </div>
-                          <div className={`rounded-md px-3 py-2 ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
+                          <div 
+                            onClick={() => toggleSdrMetricExpanded(`${sdr.id}_set`)}
+                            className={`rounded-md px-3 py-2 cursor-pointer transition-colors ${darkTheme ? 'bg-[#232529] hover:bg-[#2d3139]' : 'bg-gray-50 hover:bg-gray-100'}`}
+                          >
                             <p className={`text-xs uppercase tracking-wide ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Meetings Booked (Total)</p>
                             <p className={`text-sm font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
-                              {sdr.totalMeetingsSetAllTime || 0}
+                              {getSdrTotalMeetingsSet(sdr.id)} {expandedSdrMetrics[`${sdr.id}_set`] ? '▼' : '▶'}
                             </p>
                           </div>
-                          <div className={`rounded-md px-3 py-2 ${darkTheme ? 'bg-[#232529]' : 'bg-gray-50'}`}>
+                          <div 
+                            onClick={() => toggleSdrMetricExpanded(`${sdr.id}_held`)}
+                            className={`rounded-md px-3 py-2 cursor-pointer transition-colors ${darkTheme ? 'bg-[#232529] hover:bg-[#2d3139]' : 'bg-gray-50 hover:bg-gray-100'}`}
+                          >
                             <p className={`text-xs uppercase tracking-wide ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>Meetings Held (Total)</p>
                             <p className={`text-sm font-semibold ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>
-                              {sdr.totalHeldMeetingsAllTime || 0}
+                              {getSdrTotalMeetingsHeld(sdr.id)} {expandedSdrMetrics[`${sdr.id}_held`] ? '▼' : '▶'}
                             </p>
                           </div>
                         </div>
+
+                        {/* Expandable Meetings Set */}
+                        {expandedSdrMetrics[`${sdr.id}_set`] && (
+                          <div className={`mb-4 p-4 rounded-md border-l-4 border-green-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-green-50'}`}>
+                            <p className={`text-sm font-semibold mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>All Meetings Booked by {sdr.full_name}:</p>
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                              {getSdrMeetingsSet(sdr.id).length > 0 ? (
+                                getSdrMeetingsSet(sdr.id).map((meeting: any) => {
+                                  const client = clients.find(c => c.id === meeting.client_id);
+                                  const status = meeting.no_show ? 'No Show' : meeting.held_at ? 'Held' : meeting.status === 'confirmed' ? 'Confirmed' : 'Pending';
+                                  return (
+                                    <div key={meeting.id} className={`p-3 rounded-md text-sm ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1">
+                                          <p className={`font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</p>
+                                          <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{client?.name || 'Unknown Client'}</p>
+                                          {meeting.scheduled_date && (
+                                            <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                                              {format(new Date(meeting.scheduled_date), 'MMM d, yyyy h:mm a')}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                                          status === 'Held' ? (darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700') :
+                                          status === 'Confirmed' ? (darkTheme ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700') :
+                                          status === 'No Show' ? (darkTheme ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700') :
+                                          darkTheme ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                          {status}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings booked</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Expandable Meetings Held */}
+                        {expandedSdrMetrics[`${sdr.id}_held`] && (
+                          <div className={`mb-4 p-4 rounded-md border-l-4 border-blue-500 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-blue-50'}`}>
+                            <p className={`text-sm font-semibold mb-3 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>All Meetings Held by {sdr.full_name}:</p>
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                              {getSdrMeetingsHeld(sdr.id).length > 0 ? (
+                                getSdrMeetingsHeld(sdr.id).map((meeting: any) => {
+                                  const client = clients.find(c => c.id === meeting.client_id);
+                                  return (
+                                    <div key={meeting.id} className={`p-3 rounded-md text-sm ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1">
+                                          <p className={`font-medium ${darkTheme ? 'text-slate-100' : 'text-gray-900'}`}>{meeting.contact_full_name}</p>
+                                          <p className={`text-xs ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>{client?.name || 'Unknown Client'}</p>
+                                          {meeting.scheduled_date && (
+                                            <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                                              {format(new Date(meeting.scheduled_date), 'MMM d, yyyy h:mm a')}
+                                            </p>
+                                          )}
+                                          {meeting.held_at && (
+                                            <p className={`text-xs mt-1 ${darkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                                              Held: {format(new Date(meeting.held_at), 'MMM d, yyyy')}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${darkTheme ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}>
+                                          Held
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>No meetings held</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
                         <div className="mt-3">
                           <h4 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${darkTheme ? 'text-slate-200' : 'text-gray-700'}`}>
                             <Users className="w-4 h-4 text-indigo-600" />
