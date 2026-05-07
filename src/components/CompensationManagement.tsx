@@ -37,15 +37,14 @@ export default function CompensationManagement({ sdrId, fullName, onUpdate, onHi
 
   // Goal-based commission structure with default tiers
   const [goalTiers, setGoalTiers] = useState<GoalTier[]>([
-    { percentage: 140, bonus: 1500 },
-    { percentage: 130, bonus: 1200 },
-    { percentage: 120, bonus: 900 },
-    { percentage: 110, bonus: 700 },
-    { percentage: 100, bonus: 500 },
+    { percentage: 140, bonus: 2250 },
+    { percentage: 130, bonus: 1750 },
+    { percentage: 120, bonus: 1250 },
+    { percentage: 110, bonus: 900 },
+    { percentage: 100, bonus: 600 },
     { percentage: 90, bonus: 400 },
-    { percentage: 80, bonus: 350 },
-    { percentage: 70, bonus: 300 },
-    { percentage: 60, bonus: 200 }
+    { percentage: 80, bonus: 300 },
+    { percentage: 70, bonus: 200 }
   ]);
 
   // Commission goal override state
