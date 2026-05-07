@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Calendar, Clock, Users, AlertCircle, Rocket, X, Plus, Phone, User, Mail, Building, CheckCircle, AlertTriangle, CalendarDays, MessageSquare, Download, Upload, Edit2, Trash2, FileSpreadsheet, Copy, Send, Moon, Sun, ChevronDown, ChevronUp, Linkedin, BarChart2, Search, Briefcase, HelpCircle } from 'lucide-react';
@@ -1852,6 +1853,7 @@ export default function ClientDashboard() {
         ? 'bg-[#16191f]' 
         : 'bg-gradient-to-br from-purple-50 via-white to-blue-50'
     }`}>
+      <Helmet><title>Pypeflow Client Dashboard</title></Helmet>
       {/* Header */}
       <header className={`shadow-lg border-b relative overflow-hidden transition-colors duration-200 ${
         isDarkMode

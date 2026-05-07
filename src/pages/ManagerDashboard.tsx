@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { format, subMonths } from 'date-fns';
 import { useAuth } from '../hooks/useAuth';
 import { useSDRs } from '../hooks/useSDRs';
@@ -1234,6 +1235,7 @@ export default function ManagerDashboard() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkTheme ? 'bg-[#16191f]' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
+      <Helmet><title>Pypeflow Manager Dashboard</title></Helmet>
       {isDemoMode && <DemoBanner />}
       <header className={`shadow-lg border-b relative transition-colors duration-300 ${darkTheme ? 'bg-[#1d1f24] border-[#2d3139]' : 'bg-gradient-to-r from-white via-indigo-50/30 to-white border-indigo-100'}`}>
         {/* Background Pattern */}

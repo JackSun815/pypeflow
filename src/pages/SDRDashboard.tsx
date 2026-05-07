@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { useMeetings } from '../hooks/useMeetings';
@@ -1270,6 +1271,7 @@ function SDRDashboardContent() {
 
   return (
     <>
+    <Helmet><title>Pypeflow SDR Dashboard</title></Helmet>
     {showAddMeeting && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className={`p-8 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto ${darkTheme ? 'bg-[#232529]' : 'bg-white'}`}>
