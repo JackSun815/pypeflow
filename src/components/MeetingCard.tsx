@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Calendar, CheckCircle, Mail, Phone, Trash2, User, XCircle, AlertCircle, Save, Edit2, ChevronDown, ChevronUp, Clipboard, Sparkles } from 'lucide-react';
+import { Trash2, User, Edit2, ChevronDown, ChevronUp, Clipboard } from 'lucide-react';
 import { formatTimeFromISOString, formatDateToEST } from '../utils/timeUtils';
 import type { Meeting } from '../types/database';
 import TimeSelector from './TimeSelector';
 import { DateTime } from 'luxon';
-import { Link, useLocation } from 'react-router-dom';
+
 
 interface MeetingCardProps {
   meeting: Meeting & { sdr_name?: string; client_name?: string; clients?: { name?: string } | null };
@@ -35,8 +35,6 @@ export function MeetingCard({
   showSDR = false,
   darkTheme = false,
 }: MeetingCardProps) {
-  const DEMO_AGENCY_ID = 'a6143f83-7af3-442f-9df6-b5249fcd3fa5';
-
   const isEditing = editingMeetingId === meeting.id;
   const [editedData, setEditedData] = useState({
     contact_full_name: meeting.contact_full_name || '',
@@ -58,22 +56,6 @@ export function MeetingCard({
 
   const [collapsed, setCollapsed] = useState(true);
   const [copied, setCopied] = useState(false);
-  const location = useLocation();
-
-  const isDemoEnvironment = useMemo(() => {
-    // Primary gate: use the meeting row's tenant id.
-    if ((meeting as any).agency_id === DEMO_AGENCY_ID) {
-      return true;
-    }
-
-    // Fallbacks for routes where agency is inferred from URL/host.
-    const hostname = window.location.hostname.toLowerCase();
-    if (hostname === 'demo.pypeflow.com') return true;
-
-    const params = new URLSearchParams(window.location.search);
-    return params.get('agency')?.toLowerCase() === 'demo';
-  }, [meeting]);
-
   // Helper functions
   const getDatePart = (isoString: string) => isoString.split('T')[0];
   const getTimePart = (isoString: string) => isoString.split('T')[1]?.substring(0, 5) || '00:00';
@@ -242,21 +224,6 @@ export function MeetingCard({
 
   const clientName = meeting.client_name || meeting.clients?.name;
   const clientColorClass = clientName ? getClientColor(clientName) : 'bg-gray-100 text-gray-800 border-gray-200';
-  const practicePath = useMemo(() => {
-    const path = location.pathname;
-    if (!path.startsWith('/dashboard/sdr')) {
-      return null;
-    }
-
-    const parts = path.split('/').filter(Boolean);
-    const token = parts[2] && parts[2] !== 'practice' ? parts[2] : null;
-
-    if (token) {
-      return `/dashboard/sdr/${token}/practice/${meeting.id}`;
-    }
-
-    return `/practice/${meeting.id}`;
-  }, [location.pathname, meeting.id]);
 
   // Helper to format the Slack message
   const getSlackMessage = () => {
@@ -337,19 +304,7 @@ export function MeetingCard({
                     {meeting.sdr_name && (
                       <p className={`text-sm ${darkTheme ? 'text-slate-400' : 'text-gray-500'}`}>SDR: {meeting.sdr_name}</p>
                     )}
-                    {!isEditing && practicePath && isDemoEnvironment && (
-                      <Link
-                        to={practicePath}
-                        className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                          darkTheme
-                            ? 'bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20'
-                            : 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
-                        }`}
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Practice with AI Prospect
-                      </Link>
-                    )}
+
                   </div>
                   <div className="flex items-center gap-2">
                     {isEditing ? (
