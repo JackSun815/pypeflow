@@ -20,11 +20,11 @@ import {
 import DemoViewer from '../components/DemoViewer';
 import ManagerVideoSlideshow from '../components/ManagerVideoSlideshow';
 import ContactForm from '../components/ContactForm';
-import carousel1 from '../demo-video/homepage/carousel-1.gif';
-import carousel2 from '../demo-video/homepage/carousel-2.gif';
-import carousel3 from '../demo-video/homepage/carousel-3.gif';
-import carousel4 from '../demo-video/homepage/carousel-4.gif';
-import carousel5 from '../demo-video/homepage/carousel-5.gif';
+const carousel1 = '/demo-video/homepage/carousel-1.gif';
+const carousel2 = '/demo-video/homepage/carousel-2.gif';
+const carousel3 = '/demo-video/homepage/carousel-3.gif';
+const carousel4 = '/demo-video/homepage/carousel-4.gif';
+const carousel5 = '/demo-video/homepage/carousel-5.gif';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Import videos - Vite will handle these as static assets
-import video1 from '../demo-video/manager/1.webm';
-import video2 from '../demo-video/manager/2.webm';
-import video3 from '../demo-video/manager/3.webm';
-import video4 from '../demo-video/manager/4.webm';
-import video5 from '../demo-video/manager/5.webm';
-import video6 from '../demo-video/manager/6.webm';
-
-const VIDEOS = [video1, video2, video3, video4, video5, video6];
+const VIDEOS = [
+  '/demo-video/manager/1.webm',
+  '/demo-video/manager/2.webm',
+  '/demo-video/manager/3.webm',
+  '/demo-video/manager/4.webm',
+  '/demo-video/manager/5.webm',
+  '/demo-video/manager/6.webm',
+];
 const VIDEO_DURATION = 5000; // 5 seconds per video
 
 const VIDEO_FEATURES = [
