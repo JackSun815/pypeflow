@@ -28,3 +28,5 @@ dist-ssr
 *.sln
 *.sw?
 src/demo-video/
+src/demo-video/
+public/demo-video/
