@@ -24,23 +24,25 @@ import { Link } from 'react-router-dom';
 
 type Section = 'manager' | 'sdr' | 'client';
 
+const MEDIA_BASE = 'https://jadpfguancqrtkyzziei.supabase.co/storage/v1/object/public/demo-video';
+
 const videoPaths: Record<string, string> = {
   // Manager videos
-  'manager-overview': '/demo-video/manager/manager-overview-1.mp4',
-  'manager-team-management': '/demo-video/manager/manager-teamsmeetings-1.mp4',
-  'manager-analytics': '/demo-video/manager/manager-overview-2.mp4',
-  'manager-meetings': '/demo-video/manager/manager-teamsmeetings-2.mp4',
-  'manager-clients': '/demo-video/manager/client-management-1.mp4',
-  'manager-users': '/demo-video/manager/user-management-1.mp4',
-  'manager-history': '/demo-video/manager/meeting-history-1.mp4',
+  'manager-overview': `${MEDIA_BASE}/manager-overview-1.mp4`,
+  'manager-team-management': `${MEDIA_BASE}/manager-teamsmeetings-1.mp4`,
+  'manager-analytics': `${MEDIA_BASE}/manager-overview-2.mp4`,
+  'manager-meetings': `${MEDIA_BASE}/manager-teamsmeetings-2.mp4`,
+  'manager-clients': `${MEDIA_BASE}/client-management-1.mp4`,
+  'manager-users': `${MEDIA_BASE}/user-management-1.mp4`,
+  'manager-history': `${MEDIA_BASE}/meeting-history-1.mp4`,
   'manager-icp': '',
   // SDR videos
-  'sdr-dashboard': '/demo-video/sdr/sdr-dashboard-1.mp4',
-  'sdr-goals': '/demo-video/sdr/sdr-dashboard-2.mp4',
-  'sdr-meetings': '/demo-video/sdr/sdr-dashboard-3.mp4',
-  'sdr-analytics': '/demo-video/sdr/sdr-dashboard-4.mp4',
-  'sdr-commissions': '/demo-video/sdr/sdr-commissions-1.mp4',
-  'sdr-history': '/demo-video/sdr/sdr-meetinghistory-1.mp4',
+  'sdr-dashboard': `${MEDIA_BASE}/sdr-dashboard-1.mp4`,
+  'sdr-goals': `${MEDIA_BASE}/sdr-dashboard-2.mp4`,
+  'sdr-meetings': `${MEDIA_BASE}/sdr-dashboard-3.mp4`,
+  'sdr-analytics': `${MEDIA_BASE}/sdr-dashboard-4.mp4`,
+  'sdr-commissions': `${MEDIA_BASE}/sdr-commissions-1.mp4`,
+  'sdr-history': `${MEDIA_BASE}/sdr-meetinghistory-1.mp4`,
   // Client videos
   'client-overview': '',
   'client-meetings': '',
@@ -235,7 +237,7 @@ export default function Documentation() {
           {
                 title: 'Understanding the Overview Dashboard',
                 content: 'The Manager Dashboard Overview serves as your primary window into the health and performance of your entire SDR team. When you first land on this tab, you\'re greeted by six strategically positioned metric cards that provide an immediate snapshot of your team\'s current status. These cards aren\'t just static displays—they\'re interactive portals that unlock detailed information with a single click. The layout is designed to give you both high-level visibility and the ability to drill down into specifics when needed, creating a workflow that supports both quick status checks and deep analysis.',
-                videoPath: '/demo-video/manager/manager-overview-1.mp4',
+                videoPath: `${MEDIA_BASE}/manager-overview-1.mp4`,
                 additionalContent: 'The Overview tab is designed to answer the most critical questions managers face daily: How is my team performing? Are we on track to meet our goals? Which areas need attention? By presenting key metrics prominently and making detailed data accessible through interactive cards, the dashboard ensures you always have the information you need to make informed decisions.',
           },
           {
@@ -266,7 +268,7 @@ export default function Documentation() {
               {
                 title: 'Individual SDR Performance Tracking',
                 content: 'The SDR Performance section provides a comprehensive, month-by-month view of how each individual team member is performing. This table is one of the most valuable tools for understanding team dynamics and identifying both top performers and those who may need additional support. The month dropdown at the top allows you to navigate through time, viewing performance for any past or current month, which enables you to track trends, compare performance across different periods, and understand how individual SDRs are progressing over time. Each row in the table represents one SDR and displays their key performance metrics in a format that makes comparison easy.',
-                videoPath: '/demo-video/manager/manager-overview-2.mp4',
+                videoPath: `${MEDIA_BASE}/manager-overview-2.mp4`,
                 additionalContent: 'The table format makes it easy to scan and compare performance across team members. Visual progress bars provide immediate insight into who\'s on track and who might be struggling, while the numerical data gives you precise metrics for detailed analysis.',
               },
               {
@@ -288,7 +290,7 @@ export default function Documentation() {
               {
                 title: 'Understanding Client-Level Performance',
                 content: 'While the SDR Performance section focuses on individual team members, the Clients Performance section shifts the perspective to your client relationships. This view is essential for understanding which clients are meeting their goals, which may need additional attention, and how your team\'s efforts are distributed across your client portfolio. The table format mirrors the SDR Performance table for consistency, but the data is organized by client rather than by SDR, giving you a different analytical lens through which to view your team\'s work. Each row represents one client and shows their performance metrics, assigned SDR, and progress toward goals.',
-                videoPath: '/demo-video/manager/manager-overview-3.mp4',
+                videoPath: `${MEDIA_BASE}/manager-overview-3.mp4`,
                 additionalContent: 'This client-centric view complements the SDR-focused view, giving you two different perspectives on the same data. By switching between these views, you can understand both how individual SDRs are performing and how client relationships are progressing, which is essential for managing both team performance and client satisfaction.',
               },
               {
@@ -305,7 +307,7 @@ export default function Documentation() {
           {
                 title: 'Monitoring Daily Booking Activity',
                 content: 'The "Meetings Booked Today" section provides real-time visibility into your team\'s daily booking activity, showing all meetings that were created today regardless of when they\'re scheduled to occur. This immediate view of booking activity is invaluable for understanding daily productivity, identifying trends in booking patterns, and ensuring that your team is maintaining consistent activity levels. The section displays meetings as they\'re created throughout the day, giving you a live feed of your team\'s work. Each meeting card shows comprehensive information, allowing you to quickly understand what meetings are being booked and by whom.',
-                videoPath: '/demo-video/manager/manager-overview-4.mp4',
+                videoPath: `${MEDIA_BASE}/manager-overview-4.mp4`,
                 additionalContent: 'This real-time view of booking activity helps you stay connected to your team\'s daily work. By monitoring bookings as they happen, you can quickly identify if activity levels are appropriate, spot any issues that arise, and celebrate wins as they occur. This immediate visibility supports proactive management and helps you maintain awareness of your team\'s activity without needing to constantly check individual SDR dashboards.',
               },
               {
@@ -322,7 +324,7 @@ export default function Documentation() {
           {
                 title: 'Understanding Performance Through Visualizations',
                 content: 'The Visualization section transforms your team\'s performance data into visual insights that make patterns, trends, and relationships immediately apparent. While tables and lists provide detailed information, charts and graphs help you see the big picture and identify insights that might not be obvious in raw data. The section includes multiple interactive charts, each designed to answer different questions about your team\'s performance. You can toggle each chart on or off using the dropdown menu in the visualization controls, allowing you to customize your view based on what you want to analyze at any given moment.',
-                videoPath: '/demo-video/manager/manager-overview-5.mp4',
+                videoPath: `${MEDIA_BASE}/manager-overview-5.mp4`,
                 additionalContent: 'These visualizations serve different analytical purposes, helping you understand trends over time, pipeline health, team analysis, and relationship management. Together, they provide a comprehensive visual understanding of your organization\'s performance.',
           },
           {
@@ -350,7 +352,7 @@ export default function Documentation() {
           {
                 title: 'Four Perspectives on Team Meetings',
                 content: 'The Team\'s Meetings tab recognizes that different situations call for different views of the same data. To support this, it provides four distinct calendar views, each optimized for different use cases and analytical needs. The Month View displays all meetings for an entire month in a traditional calendar grid format, perfect for getting a high-level overview of team activity and understanding the distribution of meetings across time. The Week View zooms in to focus on a single week with detailed time slots, ideal for planning and coordination when you need to understand scheduling patterns and identify potential conflicts. The Day View provides the most granular perspective, showing a single day with hourly breakdown, which is great for detailed daily planning and understanding exactly what\'s happening on specific days. Finally, the Agenda View presents meetings as a chronological list, best for seeing meetings sequentially and understanding the flow of activity over time.',
-                videoPath: '/demo-video/manager/manager-teamsmeetings-1.mp4',
+                videoPath: `${MEDIA_BASE}/manager-teamsmeetings-1.mp4`,
                 additionalContent: 'The ability to switch between these views seamlessly means you can zoom in and out as needed, moving from big-picture planning to detailed coordination without losing context. This flexibility ensures that the calendar interface adapts to your workflow rather than forcing you to adapt to it.',
           },
           {
@@ -391,7 +393,7 @@ export default function Documentation() {
                   { label: 'No Longer Interested', color: 'bg-purple-100 border-purple-300 text-purple-800' },
                   { label: 'Not ICP Qualified', color: 'bg-gray-100 border-gray-300 text-gray-800' },
                 ],
-                videoPath: '/demo-video/manager/manager-teamsmeetings-2.mp4',
+                videoPath: `${MEDIA_BASE}/manager-teamsmeetings-2.mp4`,
                 additionalContent: 'This status-based organization transforms a simple list into a pipeline management tool. By grouping meetings by status, the interface makes it immediately clear where meetings are in their lifecycle, which meetings need attention, and what the overall health of your pipeline looks like.',
               },
               {
@@ -429,7 +431,7 @@ export default function Documentation() {
               {
                 title: 'Understanding the Client Management Interface',
                 content: 'The Client Management tab serves as your central command center for overseeing all client relationships and SDR assignments. When you first open this tab, you\'ll see a comprehensive view of all clients in your agency, organized in an intuitive card-based layout. Each client card provides a wealth of information at a glance, showing not just basic client details, but real-time performance metrics, assignment status, and progress indicators that help you quickly assess which clients are thriving and which may need attention.',
-                videoPath: '/demo-video/manager/client-management-1.mp4',
+                videoPath: `${MEDIA_BASE}/client-management-1.mp4`,
                 additionalContent: 'The interface is designed with efficiency in mind, allowing you to manage multiple clients and their complex assignment structures without feeling overwhelmed. You can view clients for any month—past, present, or future—giving you the flexibility to review historical performance, manage current assignments, and plan ahead for upcoming months.',
               },
               {
@@ -532,7 +534,7 @@ export default function Documentation() {
               {
                 title: 'The Three-Tier User Structure',
                 content: 'The User Management tab organizes all users in your system into three distinct groups, each with specific roles and capabilities. Understanding these groups is fundamental to effective user administration. Managers represent the administrative tier with super admin powers, giving them complete control over the system. SDRs are the operational tier, responsible for booking and managing meetings. Clients are the external tier, with read-only access to view their meetings and SDR assignments. This three-tier structure ensures proper separation of concerns while maintaining security and appropriate access levels.',
-                videoPath: '/demo-video/manager/user-management-1.mp4',
+                videoPath: `${MEDIA_BASE}/user-management-1.mp4`,
                 cardFeatures: [
                   { label: 'Manager', color: 'bg-red-50 border-red-200 text-red-700' },
                   { label: 'SDR', color: 'bg-blue-50 border-blue-200 text-blue-700' },
@@ -619,7 +621,7 @@ export default function Documentation() {
               {
                 title: 'Understanding Manager Meeting History',
                 content: 'The Meeting History tab in the Manager Dashboard provides a comprehensive view of all meetings across your entire team, similar to the meeting history feature available to SDRs but with expanded scope and manager-specific capabilities. While SDRs see only their own meetings, managers can view meetings from all SDRs, all clients, and across all time periods. This broader perspective enables you to analyze team-wide performance, identify trends, and make data-driven decisions about resource allocation and strategy. The interface is designed to handle large volumes of historical data efficiently, allowing you to navigate through months of meeting records with ease.',
-                videoPath: '/demo-video/manager/meeting-history-1.mp4',
+                videoPath: `${MEDIA_BASE}/meeting-history-1.mp4`,
                 additionalContent: 'The Manager Meeting History serves as both a record-keeping tool and an analytical resource. You can use it to review past performance, understand what worked well, identify areas for improvement, and maintain accurate historical records for reporting and compliance purposes.',
               },
               {
@@ -762,7 +764,7 @@ export default function Documentation() {
               {
                 title: 'Understanding Your Monthly Targets',
                 content: 'At the top of your dashboard, prominently displayed metric cards show your monthly set target and monthly held target—the two primary goals that define your success each month. These targets aren\'t arbitrary numbers; they\'re carefully assigned by your manager based on your client assignments and are designed to reflect both your capacity and the needs of the clients you serve. The targets update monthly as your assignments change, ensuring they always reflect your current responsibilities. Each target card is interactive—clicking on either card opens a detailed breakdown that shows how your targets are distributed across all your assigned clients. This breakdown is invaluable for understanding your workload, planning your approach to each client, and ensuring you\'re allocating your time and effort appropriately across all your accounts.',
-                videoPath: '/demo-video/sdr/sdr-dashboard-1.mp4',
+                videoPath: `${MEDIA_BASE}/sdr-dashboard-1.mp4`,
                 additionalContent: 'Understanding how your targets are distributed helps you prioritize your work and ensures that no client relationship is neglected. By seeing the breakdown, you can identify which clients require more attention and plan your outreach accordingly.',
               },
               {
@@ -773,7 +775,7 @@ export default function Documentation() {
               {
                 title: 'Monitoring Pending and No-Show Meetings',
                 content: 'The "Pending" card shows all meetings scheduled for this month that are awaiting confirmation from prospects. This card is crucial for pipeline management, as it shows you which meetings need follow-up and which prospects are actively engaged. The "No Shows" card displays meetings where prospects didn\'t attend, which is important for understanding conversion rates and identifying potential issues with qualification or scheduling. Both cards are fully interactive, opening detailed meeting lists with the same comprehensive filtering, sorting, and grouping options available in other views. This consistency ensures that once you learn how to use these tools, you can apply that knowledge across all parts of the dashboard.',
-                videoPath: '/demo-video/sdr/sdr-dashboard-2.mp4',
+                videoPath: `${MEDIA_BASE}/sdr-dashboard-2.mp4`,
                 additionalContent: 'Monitoring pending and no-show meetings helps you understand not just how many meetings you\'re booking, but how effective those bookings are at moving prospects through the pipeline. By tracking these metrics, you can identify patterns, improve your approach, and increase your conversion rates.',
               },
             ],
@@ -790,7 +792,7 @@ export default function Documentation() {
               {
                 title: 'Drilling Down into Client Details',
                 content: 'Clicking on any client card opens a comprehensive detailed view that shows all meetings for that specific client, organized into three intuitive sections: Meetings Set, Meetings Held, and Pending. This organization helps you understand the full lifecycle of your relationship with that client, from initial bookings through successful completions. Within each section, you can preview meeting information by clicking on individual meetings, and expand any meeting to see full details including contact information, notes, status, and all other relevant data. This hierarchical view—from client card to meeting list to individual meeting details—provides a complete picture of your work with each client while maintaining an organized, navigable structure.',
-                videoPath: '/demo-video/sdr/sdr-dashboard-3.mp4',
+                videoPath: `${MEDIA_BASE}/sdr-dashboard-3.mp4`,
                 additionalContent: 'The ability to drill down from high-level client performance to individual meeting details means you can quickly move from understanding overall performance to addressing specific meetings or prospects. This flexibility supports both strategic planning and tactical execution.',
               },
             ],
@@ -802,20 +804,20 @@ export default function Documentation() {
               {
                 title: 'Booking New Meetings',
                 content: 'The "Add Meeting" button is your primary tool for booking new meetings directly from your dashboard. When clicked, it opens an intuitive form that guides you through entering all the necessary information. The form is designed to be both comprehensive and efficient, collecting all the details needed for a complete meeting record while making the process as smooth as possible. Required fields ensure that essential information is always captured, while optional fields allow you to add additional context when available. The meeting booked date automatically defaults to the current day, saving you time while still allowing you to adjust if needed. The prospect\'s timezone is required to ensure accurate scheduling, with options covering all major US time zones including EST, CST, MST, PST, Arizona, Alaska, and Hawaii.',
-                videoPath: '/demo-video/sdr/sdr-dashboard-4.mp4',
+                videoPath: `${MEDIA_BASE}/sdr-dashboard-4.mp4`,
                 additionalContent: 'The form balances completeness with efficiency, ensuring you can quickly book meetings while still capturing all the information needed for effective follow-up and relationship management.',
               },
               {
                 title: 'Batch Import for Efficiency',
                 content: 'While adding meetings one at a time works well for individual bookings, there are times when you have multiple meetings to book from a spreadsheet, exported data, or other sources. The batch import feature recognizes this reality and allows you to import multiple meetings at once from a CSV file. This capability dramatically increases efficiency when you have lists of meetings to book, eliminating the need to manually enter each meeting individually. The import process handles the same information fields as the individual meeting form, ensuring consistency whether you\'re adding meetings one at a time or in bulk.',
-                videoPath: '/demo-video/sdr/import-meetings.mp4',
+                videoPath: `${MEDIA_BASE}/import-meetings.mp4`,
                 additionalContent: 'The batch import feature transforms what could be hours of manual data entry into a quick, automated process. This efficiency gain allows you to focus on relationship building and outreach rather than data entry.',
               },
               {
                 title: 'Organizing Meetings by Status',
                 content: 'Below the metric cards, your dashboard organizes all meetings into intuitive lists grouped by status. This status-based organization helps you understand where meetings are in their lifecycle and which ones need attention. When you book a new meeting, it automatically appears in the "Pending" section, where it remains until the prospect confirms or you update the status. The dashboard organizes meetings into seven distinct status categories: Pending (awaiting confirmation), Confirmed (prospects have committed), Past Due Pending (scheduled time passed without status update), Held (successfully completed), No Show (prospects didn\'t attend), No Longer Interested (prospects asked to stop contact), and Not ICP Qualified (don\'t match client criteria).',
                 additionalContent: 'Pending meetings with scheduled times within 24 hours require confirmation and will flash yellow to draw your attention. To change meeting status, click the pencil button, select the correct status from the dropdown, and click save. To delete a meeting, click the trash can button. You can also change status by dragging and dropping meeting cards between status sections.',
-                videoPath: '/demo-video/sdr/sdr-dashboard-5.mp4',
+                videoPath: `${MEDIA_BASE}/sdr-dashboard-5.mp4`,
               },
             ],
           },
@@ -826,7 +828,7 @@ export default function Documentation() {
               {
                 title: 'Understanding Performance Through Visualizations',
                 content: 'The dashboard includes three interactive charts that transform your performance data into visual insights, making patterns and trends immediately apparent. These visualizations complement the numerical metrics and detailed lists by providing a different perspective on your performance—one that helps you see the big picture and identify insights that might not be obvious in raw data. You can toggle each chart on or off using the dropdown menu in the name card at the top, allowing you to customize your view based on what you want to analyze.',
-                videoPath: '/demo-video/sdr/sdr-dashboard-6.mp4',
+                videoPath: `${MEDIA_BASE}/sdr-dashboard-6.mp4`,
                 additionalContent: 'These visualizations serve different analytical purposes. The monthly performance chart helps you understand trends over time, the status distribution shows pipeline health, and the client comparison enables you to optimize your approach across different accounts. Together, they provide a comprehensive visual understanding of your performance.',
               },
             ],
@@ -840,7 +842,7 @@ export default function Documentation() {
           {
             title: 'Four Perspectives on Your Schedule',
             content: 'The Calendar tab recognizes that different situations call for different views of your schedule, and provides four distinct calendar views optimized for different use cases. The Month View displays all meetings for an entire month in a traditional calendar grid format. The Week View zooms in to focus on a single week with detailed time slots. The Day View provides the most granular perspective, showing a single day with hourly breakdown. The Agenda View presents meetings as a chronological list.',
-            videoPath: '/demo-video/sdr/sdr-calendar-1.mp4',
+            videoPath: `${MEDIA_BASE}/sdr-calendar-1.mp4`,
             additionalContent: 'The ability to switch between these views seamlessly means you can zoom in and out as needed, moving from big-picture planning to detailed coordination without losing context. This flexibility ensures that the calendar interface adapts to your workflow rather than forcing you to adapt to it.',
           },
           {
@@ -862,7 +864,7 @@ export default function Documentation() {
           {
             title: 'Understanding Commission Structures',
             content: 'Your manager configures how your commission is calculated based on your organization\'s compensation structure. The system supports multiple commission types, each designed to align incentives with performance goals. The Per Meeting commission type provides a base amount for each meeting booked and an additional amount for each meeting held. When you exceed your monthly held goal, meetings beyond the goal earn the full rate. The Goal Based commission type offers bonuses for achieving specific percentage milestones of your monthly held goal, rewarding consistent high performance.',
-            videoPath: '/demo-video/sdr/sdr-commissions-1.mp4',
+            videoPath: `${MEDIA_BASE}/sdr-commissions-1.mp4`,
             additionalContent: 'The commission structure is designed to reward both activity (booking meetings) and results (holding meetings), with additional incentives for exceeding goals. This balanced approach encourages consistent performance while providing extra rewards for exceptional achievement.',
           },
           {
@@ -904,7 +906,7 @@ export default function Documentation() {
               {
                 title: 'Analyzing Performance Month by Month',
                 content: 'Below the all-time statistics, the Meeting History page allows you to dive deep into monthly performance, viewing historical data for any past month through an intuitive month dropdown selector. This month-by-month view displays monthly targets, actual performance, and progress percentages for the selected month, providing detailed insights into your performance trends over time. This granular view helps you understand not just what happened overall, but how your performance varied from month to month, what factors contributed to better or worse months, and how you\'ve improved over time. By comparing months, you can identify patterns, understand seasonal variations, and recognize improvements in your approach.',
-                videoPath: '/demo-video/sdr/sdr-meetinghistory-1.mp4',
+                videoPath: `${MEDIA_BASE}/sdr-meetinghistory-1.mp4`,
                 additionalContent: 'The ability to view any past month means you can analyze specific time periods, compare performance across different months, and understand the context behind your all-time statistics. This flexibility transforms historical data from a static record into a dynamic analytical resource.',
               },
               {

@@ -20,11 +20,12 @@ import {
 import DemoViewer from '../components/DemoViewer';
 import ManagerVideoSlideshow from '../components/ManagerVideoSlideshow';
 import ContactForm from '../components/ContactForm';
-const carousel1 = '/demo-video/homepage/carousel-1.gif';
-const carousel2 = '/demo-video/homepage/carousel-2.gif';
-const carousel3 = '/demo-video/homepage/carousel-3.gif';
-const carousel4 = '/demo-video/homepage/carousel-4.gif';
-const carousel5 = '/demo-video/homepage/carousel-5.gif';
+const MEDIA_BASE = 'https://jadpfguancqrtkyzziei.supabase.co/storage/v1/object/public/demo-video';
+const carousel1 = `${MEDIA_BASE}/carousel-1.gif`;
+const carousel2 = `${MEDIA_BASE}/carousel-2.gif`;
+const carousel3 = `${MEDIA_BASE}/carousel-3.gif`;
+const carousel4 = `${MEDIA_BASE}/carousel-4.gif`;
+const carousel5 = `${MEDIA_BASE}/carousel-5.gif`;
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

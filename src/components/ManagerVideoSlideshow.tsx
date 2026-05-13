@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+const BASE = 'https://jadpfguancqrtkyzziei.supabase.co/storage/v1/object/public/demo-video';
+
 const VIDEOS = [
-  '/demo-video/manager/1.webm',
-  '/demo-video/manager/2.webm',
-  '/demo-video/manager/3.webm',
-  '/demo-video/manager/4.webm',
-  '/demo-video/manager/5.webm',
-  '/demo-video/manager/6.webm',
+  `${BASE}/1.webm`,
+  `${BASE}/2.webm`,
+  `${BASE}/3.webm`,
+  `${BASE}/4.webm`,
+  `${BASE}/5.webm`,
+  `${BASE}/6.webm`,
 ];
 const VIDEO_DURATION = 5000; // 5 seconds per video
 
